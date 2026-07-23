@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Точка опоры</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ice-white:#d8eaff;
+    --void:#000000;
+    --carbon:#0d0d0f;
+    --graphite:#232529;
+    --slate:#2b2f33;
+    --iron:#41464c;
+    --steel:#565e66;
+    --fog:#6c757f;
+    --iron-edge:#565657;
+    --cobalt:#1f58f2;
+    --orange:#ff4105;
+
+    --font-monument:'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+    --radius-tags:8px;
+    --radius-cards:16px;
+    --radius-pills:40.798px;
+    --radius-buttons:8px;
+    --radius-large:24px;
+
+    --section-gap:100px;
+    --card-padding:32px;
+    --ease-out: cubic-bezier(0.16,1,0.3,1);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--void); color:var(--ice-white);
+    font-family:var(--font-monument); font-weight:400;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{ font-family:var(--font-monument); font-weight:400; letter-spacing:-0.01em; }
+  .container{ max-width:1400px; margin:0 auto; padding:0 32px; }
+  ::selection{ background:var(--cobalt); color:var(--void); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+  }
+
+  section{ position:relative; padding:var(--section-gap) 0; }
+  section.alt{ background:var(--carbon); }
+
+  /* ---------- mono micro-label / kicker ---------- */
+  .kicker{
+    display:flex; align-items:center; gap:12px; margin-bottom:24px;
+  }
+  .kicker-text{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--ice-white);
+  }
+  .sparkle{ width:22px; height:22px; flex-shrink:0; color:var(--cobalt); }
+
+  .section-head{ font-size:clamp(30px,4vw,56px); line-height:1.08; letter-spacing:-0.01em; max-width:760px; color:var(--ice-white); font-weight:400; }
+  .section-head .hl{ color:var(--cobalt); }
+
+  /* ---------- wireframe border utility ---------- */
+  .wire{
+    border:1px solid rgba(216,234,255,0.18);
+    background:var(--carbon);
+    border-radius:var(--radius-cards);
+  }
+  .wire-large{ border-radius:var(--radius-large); }
+
+  /* ---------- buttons ---------- */
+  .btn-outline{
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--orange); border-radius:var(--radius-buttons);
+    padding:14px 28px; background:transparent;
+    color:var(--orange); font-family:var(--font-mono); font-size:12px; font-weight:500;
+    letter-spacing:0.06em; text-transform:uppercase; text-decoration:none; cursor:pointer;
+    transition: background .2s var(--ease-out), color .2s var(--ease-out);
+  }
+  .btn-outline:hover{ background:rgba(255,65,5,0.08); }
+  .btn-ghost{
+    display:inline-flex; align-items:center; gap:8px;
+    color:var(--ice-white); font-size:14.5px; text-decoration:none;
+    border-bottom:1px solid rgba(216,234,255,0.35); padding-bottom:3px;
+    transition:border-color .2s;
+  }
+  .btn-ghost:hover{ border-color:var(--ice-white); }
+  .btn-ghost svg{ width:14px; height:14px; transition:transform .2s var(--ease-out); }
+  .btn-ghost:hover svg{ transform:translateX(3px); }
+
+  /* ---------- hero ---------- */
+  .hero{ position:relative; min-height:100vh; min-height:100dvh; overflow:hidden; background:var(--carbon); display:flex; flex-direction:column; }
+  #particleCanvas{ position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+  .hero-overlay{ position:absolute; inset:0; z-index:1; pointer-events:none; background:rgba(0,0,0,0.35); }
+
+  .hero-nav{ position:relative; z-index:20; padding:24px 32px; }
+  .hero-nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    max-width:1400px; margin:0 auto;
+  }
+  .hero-logo{ display:flex; align-items:center; gap:10px; color:var(--ice-white); font-size:16px; }
+  .hero-logo svg{ width:22px; height:22px; color:var(--ice-white); }
+  .hero-navlinks{ display:none; align-items:center; gap:32px; }
+  .hero-navlinks a{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--ice-white); text-decoration:none; transition:color .2s;
+  }
+  .hero-navlinks a:hover{ color:var(--orange); }
+  .hero-nav-right{ display:flex; align-items:center; gap:20px; }
+  .hero-nav-right .plain{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--ice-white); text-decoration:none;
+  }
+  @media (min-width:768px){ .hero-navlinks{ display:flex; } }
+
+  .hero-main{
+    position:relative; z-index:10; flex:1; display:flex; flex-direction:column;
+    align-items:flex-start; justify-content:center; padding:48px 32px; text-align:left;
+    max-width:1400px; margin:0 auto; width:100%;
+  }
+  .hero-kicker{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--fog); margin-bottom:24px;
+    opacity:0; transform:translateY(10px); animation:heroFadeUp .8s var(--ease-out) .05s forwards;
+  }
+  .hero-heading{
+    font-family:var(--font-monument); font-weight:400; color:var(--ice-white);
+    font-size:clamp(40px,7.5vw,96px); line-height:1.00; letter-spacing:-0.03em; margin-bottom:28px;
+    opacity:0; transform:translateY(16px); animation:heroFadeUp .9s var(--ease-out) .2s forwards;
+  }
+  .hero-heading .hl{ color:var(--cobalt); }
+  @keyframes heroFadeUp{ to{ opacity:1; transform:translateY(0); } }
+  .hero-actions{ max-width:560px; }
+  .hero-subtitle{ color:var(--ice-white); opacity:0.85; font-size:17px; line-height:1.65; margin-bottom:36px; }
+  .hero-cta-row{ display:flex; align-items:center; gap:28px; flex-wrap:wrap; }
+
+  .hero-social{ position:relative; z-index:10; display:flex; justify-content:flex-start; gap:14px; padding:0 32px 48px; max-width:1400px; margin:0 auto; width:100%; }
+  .hero-social a{
+    width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(216,234,255,0.2); color:var(--ice-white); transition:all .2s;
+  }
+  .hero-social a:hover{ border-color:var(--orange); color:var(--orange); }
+  .hero-social svg{ width:18px; height:18px; }
+
+  .reveal-heading{ opacity:0; transform:translateY(16px); transition:opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+  .reveal-heading.in{ opacity:1; transform:translateY(0); }
+
+  /* ---------- lever signature visual ---------- */
+  .lever-box{ padding:56px 40px; text-align:center; }
+  .lever-diagram{ width:100%; max-width:420px; height:auto; margin:0 auto; display:block; }
+  .lever-beam{ transform-origin:140px 150px; transition:transform 1.1s var(--ease-out); }
+  .lever-beam.wobble{ animation:leverWobble 1.3s ease-in-out 2; }
+  @keyframes leverWobble{
+    0%,100%{ transform:rotate(0deg); }
+    25%{ transform:rotate(-9deg); }
+    75%{ transform:rotate(9deg); }
+  }
+  .fulcrum-b{ opacity:0; transition:opacity .6s var(--ease-out); }
+  .fulcrum-b.show{ opacity:1; }
+  .lever-label{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--fog); margin-top:20px; transition:color .4s var(--ease-out);
+  }
+  .lever-label.stable{ color:var(--cobalt); }
+
+  /* ---------- manifest ---------- */
+  .manifest-card{ padding:56px; text-align:center; }
+  .manifest-title{ font-size:clamp(26px,3.6vw,44px); font-weight:400; max-width:840px; margin:0 auto 36px; }
+  .manifest-title .hl{ color:var(--cobalt); }
+  .manifest-title .hl2{ color:var(--ice-white); }
+  .manifest-p{ max-width:680px; margin:0 auto; font-size:18px; line-height:2.0; color:var(--fog); }
+  .manifest-p span{ transition:opacity .05s linear; }
+
+  /* ---------- stats ---------- */
+  .stats-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:56px; }
+  .stat{ opacity:0; transform:translateY(20px); transition:opacity .7s var(--ease-out), transform .7s var(--ease-out); padding:28px; }
+  .stat.in{ opacity:1; transform:translateY(0); }
+  .stat-num{ font-family:var(--font-monument); font-size:clamp(32px,3.6vw,48px); color:var(--ice-white); font-weight:400; letter-spacing:-0.01em; }
+  .stat-label{ font-family:var(--font-mono); color:var(--fog); font-size:11.5px; margin-top:12px; line-height:1.5; letter-spacing:0.02em; }
+
+  /* ---------- tracks ---------- */
+  .tracks{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:56px; perspective:1200px; }
+  .track-card{
+    padding:40px; opacity:0; transition:opacity .8s var(--ease-out), transform .8s var(--ease-out);
+    transform-style:preserve-3d; will-change:transform;
+  }
+  .track-card.pre-left{ transform:translateX(-40px); } .track-card.pre-right{ transform:translateX(40px); }
+  .track-card.in{ opacity:1; transform:translateX(0); }
+  @media (max-width:860px){
+    .track-card.pre-left, .track-card.pre-right{ transform:none; }
+  }
+  .track-tag{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--orange);
+  }
+  .track-title{ font-size:28px; font-weight:400; margin:16px 0 16px; color:var(--ice-white); }
+  .track-desc{ color:var(--fog); line-height:1.7; margin-bottom:24px; font-size:15px; }
+  .track-list{ list-style:none; }
+  .track-list li{ display:flex; gap:12px; margin-bottom:13px; font-size:14.5px; color:var(--ice-white); }
+  .track-list li::before{ content:"→"; color:var(--cobalt); flex-shrink:0; }
+
+  /* ---------- timeline ---------- */
+  .timeline-wrap{ position:relative; margin-top:64px; display:grid; grid-template-columns:28px 1fr; gap:0; }
+  .timeline-svg{ position:sticky; top:0; }
+  .tl-items{ display:flex; flex-direction:column; gap:56px; padding-left:34px; }
+  .tl-item{ opacity:0; transform:translateY(20px); transition:opacity .6s var(--ease-out), transform .6s var(--ease-out); }
+  .tl-item.in{ opacity:1; transform:translateY(0); }
+  .tl-month{ font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--fog); margin-bottom:10px; }
+  .tl-title{ font-size:20px; font-weight:500; margin-bottom:8px; color:var(--ice-white); }
+  .tl-desc{ color:var(--fog); font-size:14.5px; max-width:520px; }
+
+  /* ---------- format ---------- */
+  .format-list{ display:flex; flex-direction:column; gap:16px; margin-top:56px; }
+  .format-row{
+    display:flex; gap:28px; align-items:flex-start; padding:28px 32px;
+    opacity:0; transform:translateY(20px); transition:opacity .6s var(--ease-out), transform .6s var(--ease-out);
+  }
+  .format-row.in{ opacity:1; transform:translateY(0); }
+  .format-num{ font-family:var(--font-mono); font-size:14px; letter-spacing:0.1em; color:var(--cobalt); flex-shrink:0; width:36px; padding-top:4px; }
+  .format-row h4{ font-size:17px; font-weight:500; margin-bottom:8px; color:var(--ice-white); }
+  .format-row p{ color:var(--fog); font-size:14.5px; line-height:1.6; max-width:580px; }
+
+  /* ---------- features ---------- */
+  .features-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:56px; }
+  .feature{ padding:28px; opacity:0; transform:translateY(20px); transition:opacity .6s var(--ease-out), transform .6s var(--ease-out); }
+  .feature.in{ opacity:1; transform:translateY(0); }
+  .feature .icon{
+    width:44px; height:44px; border-radius:var(--radius-tags); border:1px solid rgba(216,234,255,0.18); color:var(--cobalt);
+    display:flex; align-items:center; justify-content:center; margin-bottom:22px;
+  }
+  .feature .icon svg{ width:20px; height:20px; }
+  .feature h4{ font-size:16.5px; font-weight:500; margin-bottom:9px; color:var(--ice-white); }
+  .feature p{ color:var(--fog); font-size:14px; line-height:1.6; }
+
+  /* ---------- price ---------- */
+  .price-block{ padding:56px; text-align:center; margin-top:0; }
+  .price-num{ font-family:var(--font-monument); font-size:clamp(52px,7vw,100px); color:var(--ice-white); font-weight:400; line-height:1; letter-spacing:-0.02em; }
+  .price-sub{ font-family:var(--font-mono); color:var(--fog); font-size:12px; letter-spacing:0.06em; text-transform:uppercase; margin:16px 0 40px; }
+  .price-cols{ display:grid; grid-template-columns:1fr 1fr; gap:36px; text-align:left; max-width:780px; margin:0 auto; }
+  .price-cols h5{ font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--fog); margin-bottom:16px; }
+  .price-cols ul{ list-style:none; } .price-cols li{ font-size:14px; margin-bottom:11px; padding-left:20px; position:relative; color:var(--ice-white); }
+  .price-cols li::before{ content:"+"; position:absolute; left:0; color:var(--cobalt); }
+  .price-cols.no li::before{ content:"–"; color:var(--fog); }
+  .price-cols.no li{ color:var(--fog); }
+
+  /* ---------- faq ---------- */
+  .faq-item{ border-bottom:1px solid rgba(216,234,255,0.15); padding:26px 4px; cursor:pointer; }
+  .faq-q{ display:flex; justify-content:space-between; align-items:center; font-size:17px; font-weight:500; color:var(--ice-white); }
+  .faq-q .plus{ transition:transform .35s var(--ease-out); color:var(--orange); font-size:20px; font-family:var(--font-mono); }
+  .faq-item.open .plus{ transform:rotate(45deg); }
+  .faq-a{ max-height:0; overflow:hidden; transition:max-height .4s var(--ease-out); }
+  .faq-item.open .faq-a{ max-height:220px; }
+  .faq-a p{ color:var(--fog); padding-top:16px; font-size:14.5px; line-height:1.7; max-width:640px; }
+
+  /* ---------- final ---------- */
+  .final{ text-align:center; padding:72px 0; }
+  .final-title{ font-size:clamp(28px,4.6vw,52px); font-weight:400; margin-bottom:32px; color:var(--ice-white); }
+
+  /* ---------- apply ---------- */
+  .apply-card{ padding:56px; max-width:720px; margin:0 auto; }
+  .apply-title{ font-size:clamp(24px,3.4vw,36px); font-weight:400; text-align:center; margin-bottom:40px; color:var(--ice-white); }
+  .apply-form{ display:grid; grid-template-columns:1fr 1fr; gap:22px 24px; }
+  .apply-field{ display:flex; flex-direction:column; gap:8px; }
+  .apply-field label{ font-family:var(--font-mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--fog); }
+  .apply-field input{
+    background:transparent; border:none; border-bottom:1px solid rgba(216,234,255,0.25); padding:10px 2px;
+    color:var(--ice-white); font-size:16px; font-family:var(--font-monument); outline:none;
+    transition:border-color .2s;
+  }
+  .apply-field input:focus{ border-color:var(--orange); }
+  .apply-field input::placeholder{ color:rgba(216,234,255,0.3); }
+  .apply-submit{
+    grid-column:1 / -1; margin-top:12px; background:transparent; color:var(--orange); border:1px solid var(--orange);
+    border-radius:var(--radius-buttons); padding:16px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase;
+    font-family:var(--font-mono); font-weight:500; cursor:pointer; transition:background .2s;
+  }
+  .apply-submit:hover{ background:rgba(255,65,5,0.08); }
+  .apply-note{ grid-column:1 / -1; text-align:center; color:var(--cobalt); font-size:13px; min-height:20px; font-family:var(--font-mono); }
+
+  @media (max-width:600px){
+    .apply-form{ grid-template-columns:1fr; }
+    .apply-card{ padding:36px 24px; }
+  }
+
+  footer{ border-top:1px solid rgba(216,234,255,0.12); padding:28px 0; }
+  .foot-row{ display:flex; justify-content:space-between; align-items:center; color:var(--fog); font-size:12px; font-family:var(--font-mono); letter-spacing:0.04em; }
+
+  @media (max-width:860px){
+    .stats-grid{ grid-template-columns:repeat(2,1fr); }
+    .tracks{ grid-template-columns:1fr; }
+    .features-grid{ grid-template-columns:1fr 1fr; }
+    .price-cols{ grid-template-columns:1fr; }
+    .manifest-card{ padding:44px 26px; }
+    .price-block{ padding:44px 28px; }
+    .timeline-wrap{ grid-template-columns:1fr; }
+  }
+
+  @media (max-width:600px){
+    .stats-grid{ grid-template-columns:1fr; }
+    .features-grid{ grid-template-columns:1fr; }
+    .hero-nav{ padding:16px; }
+    .hero-nav-right .plain{ display:none; }
+    .timeline-svg{ display:none; }
+    .timeline-wrap{ margin-top:44px; }
+    .tl-items{ gap:40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero" id="heroSection">
+  <canvas id="particleCanvas"></canvas>
+  <div class="hero-overlay"></div>
+
+  <nav class="hero-nav">
+    <div class="hero-nav-inner">
+      <div class="hero-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 8 L8 20 L16 20 Z" stroke="#1f58f2"/><line x1="4" y1="14.5" x2="20" y2="9.5" stroke="currentColor"/><circle cx="4" cy="14.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="20" cy="9.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+        Точка опоры
+      </div>
+      <div class="hero-navlinks">
+        <a href="#tracks">Треки</a>
+        <a href="#program">Программа</a>
+        <a href="#price">Цена</a>
+      </div>
+      <div class="hero-nav-right">
+        <a href="#faq" class="plain">Вопросы</a>
+        <a href="#price" class="btn-outline">Записаться</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="hero-main">
+    <div class="hero-kicker">Программа Ольги Пузановой</div>
+    <h1 class="hero-heading">Точка <span class="hl">опоры</span></h1>
+    <div class="hero-actions">
+      <p class="hero-subtitle">Один склад, одна площадка, одна работа: это ставка, а не бизнес. 3 месяца, чтобы у вашего дохода появилась вторая опора.</p>
+      <div class="hero-cta-row">
+        <a href="#tracks" class="btn-outline">Выбрать свой трек</a>
+        <a href="#program" class="btn-ghost">Смотреть программу
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-social">
+    <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></a>
+    <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l6 3-6 3Z"/></svg></a>
+    <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+  </div>
+</div>
+
+<!-- LEVER SIGNATURE VISUAL -->
+<section id="lever-visual">
+  <div class="container">
+    <div class="lever-box wire wire-large">
+      <svg class="lever-diagram" viewBox="0 0 400 190" aria-hidden="true">
+        <line x1="20" y1="172" x2="380" y2="172" stroke="rgba(216,234,255,0.15)" stroke-width="1"/>
+        <path class="fulcrum fulcrum-a" d="M128 172 L152 172 L140 150 Z" fill="none" stroke="#1f58f2" stroke-width="1.6"/>
+        <path class="fulcrum fulcrum-b" d="M248 172 L272 172 L260 150 Z" fill="none" stroke="#ff4105" stroke-width="1.6"/>
+        <g class="lever-beam" id="leverBeam">
+          <line x1="70" y1="150" x2="330" y2="150" stroke="#d8eaff" stroke-width="2"/>
+          <circle cx="70" cy="150" r="7" fill="#0d0d0f" stroke="#d8eaff" stroke-width="1.6"/>
+          <circle cx="330" cy="150" r="7" fill="#0d0d0f" stroke="#d8eaff" stroke-width="1.6"/>
+        </g>
+      </svg>
+      <p class="lever-label" id="leverLabel">Одна точка опоры — риск обвала</p>
+    </div>
+  </div>
+</section>
+
+<!-- MANIFEST -->
+<section>
+  <div class="container">
+    <div class="manifest-card wire wire-large">
+      <h2 class="manifest-title" id="manifest-h2"></h2>
+      <p class="manifest-p" id="manifest-p"></p>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM STATS -->
+<section class="alt">
+  <div class="container">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Почему сейчас</span>
+    </div>
+    <h2 class="section-head">Ставка на одну точку продаж или один доход уже не стратегия, а <span class="hl">риск</span></h2>
+    <div class="stats-grid">
+      <div class="stat wire"><div class="stat-num">-6%</div><div class="stat-label">продавцов ушло с крупных площадок в 2025 году</div></div>
+      <div class="stat wire"><div class="stat-num">до 70%</div><div class="stat-label">может доходить суммарная нагрузка комиссий и сборов на маркетплейсах</div></div>
+      <div class="stat wire"><div class="stat-num">+22%</div><div class="stat-label">рост оборота нишевых площадок за год</div></div>
+      <div class="stat wire"><div class="stat-num">3 мес.</div><div class="stat-label">чтобы появилась вторая опора для дохода</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACKS -->
+<section id="tracks">
+  <div class="container">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Два пути</span>
+    </div>
+    <h2 class="section-head">Выбираете трек под свою <span class="hl">ситуацию</span></h2>
+    <div class="tracks">
+      <div class="track-card wire pre-left" id="trackA">
+        <div class="track-tag">Трек А</div>
+        <div class="track-title">Свой актив</div>
+        <p class="track-desc">Для владельцев бренда и товара. Строим вторую опору для продаж: площадки, сайт, трафик, аудитория.</p>
+        <ul class="track-list">
+          <li>Доп. площадки помимо основной</li>
+          <li>Свой сайт с приёмом оплаты</li>
+          <li>Холодный трафик и своя аудитория</li>
+          <li>Юридический и финансовый блок</li>
+        </ul>
+      </div>
+      <div class="track-card wire pre-right" id="trackB">
+        <div class="track-tag">Трек Б</div>
+        <div class="track-title">Новая опора</div>
+        <p class="track-desc">Для тех, кто боится потерять работу. Строим новый навык на ИИ и первый платящий доход.</p>
+        <ul class="track-list">
+          <li>Конкретный ИИ-навык под ваш опыт</li>
+          <li>Первые оплаченные заказы</li>
+          <li>Портфолио и профиль на бирже</li>
+          <li>План масштабирования дохода</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="alt" id="program">
+  <div class="container">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Программа</span>
+    </div>
+    <h2 class="section-head">12 недель, по <span class="hl">месяцам</span></h2>
+    <div class="timeline-wrap" id="timelineWrap">
+      <div class="timeline-svg">
+        <svg width="28" height="100%" style="position:absolute; top:0; left:0; height:100%;">
+          <line x1="14" y1="0" x2="14" y2="100%" stroke="rgba(216,234,255,0.15)" stroke-width="2"/>
+          <line id="tlProgress" x1="14" y1="0" x2="14" y2="0" stroke="#1f58f2" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="tl-items" id="tlItems">
+        <div class="tl-item"><div class="tl-month">Месяц 1</div><div class="tl-title">Выбор и первые шаги</div><div class="tl-desc">Диагностика, выбор трека, первый навык или первая площадка</div></div>
+        <div class="tl-item"><div class="tl-month">Месяц 2</div><div class="tl-title">Построение</div><div class="tl-desc">Сайт и трафик, либо первые клиенты и практика</div></div>
+        <div class="tl-item"><div class="tl-month">Месяц 3</div><div class="tl-title">Масштабирование</div><div class="tl-desc">Аудитория и воронка, либо рост цены и второй канал</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMAT -->
+<section>
+  <div class="container">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Формат</span>
+    </div>
+    <h2 class="section-head">Как проходит <span class="hl">программа</span></h2>
+    <div class="format-list">
+      <div class="format-row wire">
+        <div class="format-num">01</div>
+        <div>
+          <h4>Еженедельный созвон в Zoom</h4>
+          <p>Раз в неделю живой разбор материала, ответы на вопросы и обсуждение прогресса каждого участника.</p>
+        </div>
+      </div>
+      <div class="format-row wire">
+        <div class="format-num">02</div>
+        <div>
+          <h4>Запись остаётся</h4>
+          <p>Если пропустили созвон, запись доступна в любое время, темп программы не теряется.</p>
+        </div>
+      </div>
+      <div class="format-row wire">
+        <div class="format-num">03</div>
+        <div>
+          <h4>Практика каждую неделю</h4>
+          <p>Конкретное задание под трек, которое нужно сделать до следующего созвона, без него материал не закрепляется.</p>
+        </div>
+      </div>
+      <div class="format-row wire">
+        <div class="format-num">04</div>
+        <div>
+          <h4>Закрытый чат на все 12 недель</h4>
+          <p>Вопросы разбираются не только на созвоне, а в течение всей недели, с обратной связью по вашему прогрессу.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="alt">
+  <div class="container">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Что входит</span>
+    </div>
+    <h2 class="section-head">Не только программа, полный набор <span class="hl">материалов</span></h2>
+    <div class="features-grid">
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><h4>17 готовых шаблонов</h4><p>Претензии, юнит-экономика, брифы, договоры под конкретные задачи обоих треков.</p></div>
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.36 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><h4>База проверенных контактов</h4><p>Юристы, страховые, кураторы площадок, блогеры, логистика по регионам.</p></div>
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><h4>Библиотека промптов</h4><p>Готовые формулировки для сайтов, стратегии, визуала и видео с ИИ.</p></div>
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><h4>Доступы к нейросетям</h4><p>На период активной практики, без отдельных подписок с вашей стороны.</p></div>
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div><h4>Юридический блок</h4><p>Рамка «судиться или нет», три сценария развития событий и план под каждый.</p></div>
+      <div class="feature wire"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h4>Закрытый чат</h4><p>Еженедельные разборы и обратная связь на всех 12 неделях программы.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICE -->
+<section id="price">
+  <div class="container">
+    <div class="price-block wire wire-large">
+      <div class="price-num">12 999 ₽</div>
+      <div class="price-sub">за 3 месяца — оба трека по одной цене</div>
+      <div class="price-cols">
+        <div>
+          <h5>Входит</h5>
+          <ul>
+            <li>Полная 12-недельная программа</li>
+            <li>17 шаблонов и чек-листов</li>
+            <li>База контактов и промптов</li>
+            <li>Доступы к нейросетям на практику</li>
+            <li>Закрытый чат и разборы</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Не входит</h5>
+          <ul class="no">
+            <li>Рекламные бюджеты (Директ, VK Ads)</li>
+            <li>Платные тарифы площадок сверх базовых</li>
+            <li>Ведение вашего судебного дела юристом</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="alt" id="faq">
+  <div class="container" style="max-width:840px;">
+    <div class="kicker">
+      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.5 4.5l4 4M15.5 15.5l4 4M19.5 4.5l-4 4M8.5 15.5l-4 4"/></svg>
+      <span class="kicker-text">Вопросы</span>
+    </div>
+    <h2 class="section-head" style="margin-bottom:10px;">Прежде чем <span class="hl">присоединиться</span></h2>
+    <div style="margin-top:44px;">
+      <div class="faq-item">
+        <div class="faq-q"><span>Как понять, какой трек мой?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Если у вас есть бренд или товар, ваш трек А. Если вы наёмный специалист и хотите запасной доход, ваш трек Б. На первой неделе разбираем индивидуально.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Это гарантированный доход?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Нет. Мы даём инструменты, шаблоны и сопровождение, результат зависит от вашей практики и ниши.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Дадите ли вы юриста для моего дела?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Нет, это рамка и шаблоны, не индивидуальная юридическая консультация. Ведение дела оформляется как отдельная услуга.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Можно сменить трек в процессе?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Да, но лучше определиться до конца недели 2, дальше треки расходятся по программе.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="container">
+    <h2 class="final-title" id="final-h2"></h2>
+    <a href="#apply" class="btn-outline">Присоединиться к программе →</a>
+  </div>
+</section>
+
+<!-- APPLY FORM -->
+<section id="apply">
+  <div class="container">
+    <div class="apply-card wire wire-large">
+      <h2 class="apply-title">Присоединиться на антикризисную программу</h2>
+      <form class="apply-form" id="applyForm">
+        <div class="apply-field">
+          <label for="f-name">Имя</label>
+          <input type="text" id="f-name" name="name" required>
+        </div>
+        <div class="apply-field">
+          <label for="f-phone">Телефон</label>
+          <input type="tel" id="f-phone" name="phone" required>
+        </div>
+        <div class="apply-field">
+          <label for="f-tg">Ник в Telegram</label>
+          <input type="text" id="f-tg" name="telegram" placeholder="@username" required>
+        </div>
+        <div class="apply-field">
+          <label for="f-email">Почта</label>
+          <input type="email" id="f-email" name="email" required>
+        </div>
+        <button type="submit" class="apply-submit">Отправить заявку</button>
+        <p class="apply-note" id="applyNote"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container foot-row">
+    <span style="display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 8 L8 20 L16 20 Z" stroke="#1f58f2"/><line x1="4" y1="14.5" x2="20" y2="9.5" stroke="currentColor"/><circle cx="4" cy="14.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="20" cy="9.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+      Точка опоры
+    </span>
+    <span>3 месяца, 12 999 ₽</span>
+  </div>
+</footer>
+
+<script>
+  /* ============ hero particle cloud canvas ============ */
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){
+    canvas.width = canvas.offsetWidth * devicePixelRatio;
+    canvas.height = canvas.offsetHeight * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const PARTICLE_COUNT = 220;
+  const particles = [];
+  function seedParticles(){
+    particles.length = 0;
+    const w = canvas.offsetWidth, h = canvas.offsetHeight;
+    for(let i=0;i<PARTICLE_COUNT;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: Math.random()*1.5+0.5,
+        amp: Math.random()*30+10,
+        speed: Math.random()*0.6+0.2,
+        phase: Math.random()*Math.PI*2
+      });
+    }
+  }
+  seedParticles();
+  window.addEventListener('resize', seedParticles);
+
+  function drawParticles(t){
+    const w = canvas.offsetWidth, h = canvas.offsetHeight;
+    ctx.clearRect(0,0,w,h);
+    particles.forEach(p => {
+      const y = p.y + Math.sin(t*0.0004*p.speed + p.phase) * p.amp;
+      const alpha = 0.25 + 0.35*(0.5+0.5*Math.sin(t*0.0006+p.phase));
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(31,88,242,${alpha})`;
+      ctx.arc(p.x, y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  requestAnimationFrame(drawParticles);
+
+  /* ============ lever signature animation (replays on every scroll-into-view) ============ */
+  const leverBeam = document.getElementById('leverBeam');
+  const leverLabel = document.getElementById('leverLabel');
+  const fulcrumB = document.querySelector('.fulcrum-b');
+  if(leverBeam){
+    const resetLever = () => {
+      leverBeam.classList.remove('wobble');
+      fulcrumB.classList.remove('show');
+      leverLabel.textContent = 'Одна точка опоры — риск обвала';
+      leverLabel.classList.remove('stable');
+    };
+    const playLever = () => {
+      resetLever();
+      // force reflow so the animation restarts even if it already ran
+      void leverBeam.offsetWidth;
+      leverBeam.classList.add('wobble');
+    };
+    const leverObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          playLever();
+        } else {
+          resetLever();
+        }
+      });
+    }, {threshold:0.4});
+    leverObserver.observe(document.getElementById('lever-visual'));
+
+    leverBeam.addEventListener('animationend', () => {
+      leverBeam.classList.remove('wobble');
+      fulcrumB.classList.add('show');
+      leverLabel.textContent = 'Две точки опоры — устойчивость';
+      leverLabel.classList.add('stable');
+    });
+  }
+
+  /* ============ heading copy ============ */
+  document.getElementById('manifest-h2').innerHTML =
+    'Мы не обещаем <span class="hl">лёгкий</span> путь, мы даём <span class="hl2">конкретный</span> план';
+  document.getElementById('final-h2').textContent = "Готовы к второй опоре?";
+
+  const manifestText = "Склады горят, оферты меняются, компенсации не покрывают убыток. Пока одни ждут решения площадки, другие уже строят то, что не зависит от одной точки. Эта программа: конкретный трёхмесячный план для обеих ситуаций.";
+  const mp = document.getElementById('manifest-p');
+  mp.innerHTML = manifestText.split("").map(c => `<span>${c}</span>`).join("");
+
+  document.querySelectorAll('h2, .manifest-title').forEach(h => h.classList.add('reveal-heading'));
+  const wordObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        wordObserver.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.2});
+  document.querySelectorAll('.reveal-heading').forEach(h => wordObserver.observe(h));
+
+  /* ============ generic reveal ============ */
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        setTimeout(()=> entry.target.classList.add('in'), (entry.target.dataset.i||0)*90);
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.15});
+  document.querySelectorAll('.stat, .feature, .format-row').forEach((el,i) => { el.dataset.i = i%6; revealObserver.observe(el); });
+  document.querySelectorAll('.tl-item').forEach((el) => revealObserver.observe(el));
+
+  const trackObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){ entry.target.classList.add('in'); trackObserver.unobserve(entry.target); }
+    });
+  }, {threshold:0.2});
+  document.querySelectorAll('.track-card').forEach(el => trackObserver.observe(el));
+
+  /* ============ scroll-linked character reveal ============ */
+  function updateManifestReveal(){
+    const rect = mp.getBoundingClientRect(); const vh = window.innerHeight;
+    const start = vh*0.9, end = vh*0.25;
+    let progress = (start - rect.top) / (start - end);
+    progress = Math.max(0, Math.min(1, progress));
+    const chars = mp.querySelectorAll('span');
+    chars.forEach((c,i) => {
+      const charProgress = i / chars.length;
+      const local = (progress - charProgress) * 5;
+      c.style.opacity = Math.max(0.2, Math.min(1, 0.2 + local*0.8));
+    });
+  }
+  window.addEventListener('scroll', updateManifestReveal); updateManifestReveal();
+
+  /* ============ SVG timeline draw-on-scroll ============ */
+  const tlProgress = document.getElementById('tlProgress');
+  const tlWrap = document.getElementById('timelineWrap');
+  function updateTimeline(){
+    const rect = tlWrap.getBoundingClientRect(); const vh = window.innerHeight;
+    let progress = (vh*0.75 - rect.top) / rect.height;
+    progress = Math.max(0, Math.min(1, progress));
+    tlProgress.setAttribute('y2', (progress*100) + '%');
+  }
+  window.addEventListener('scroll', updateTimeline); updateTimeline();
+
+  /* ============ card tilt on mousemove (tracks) ============ */
+  const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if(hasHover){
+    document.querySelectorAll('.track-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left)/r.width - 0.5, py = (e.clientY - r.top)/r.height - 0.5;
+        card.style.transform = `perspective(900px) rotateY(${px*6}deg) rotateX(${-py*6}deg) translateY(0)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = 'perspective(900px) rotateY(0) rotateX(0)'; });
+    });
+  }
+
+  /* ============ apply form ============ */
+  const applyForm = document.getElementById('applyForm');
+  const applyNote = document.getElementById('applyNote');
+  if(applyForm){
+    applyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyNote.textContent = 'Заявка отправлена. Свяжемся с вами в ближайшее время.';
+      applyForm.reset();
+    });
+  }
+
+  /* ============ FAQ accordion ============ */
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if(!wasOpen) item.classList.add('open');
+    });
+  });
+
+  /* ============ failsafe: force-reveal everything if observers didn't fire ============ */
+  setTimeout(() => {
+    document.querySelectorAll('.stat, .feature, .format-row, .tl-item, .track-card, .reveal-heading').forEach(el => el.classList.add('in'));
+    if(leverBeam && !fulcrumB.classList.contains('show')){
+      leverBeam.classList.remove('wobble');
+      fulcrumB.classList.add('show');
+      leverLabel.textContent = 'Две точки опоры — устойчивость';
+      leverLabel.classList.add('stable');
+    }
+  }, 3000);
+</script>
+</body>
+</html>
