@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Точка опоры</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --color-void-black:#000000;
+  --color-bone-cream:#ebe4d8;
+  --color-ash-taupe:#c3bdb3;
+  --color-alarm-red:#ff4034;
+
+  --font-spektra:'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
+  --font-body:'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --text-caption:14px; --lh-caption:1.27;
+  --text-body:16px; --lh-body:1.27;
+  --text-subheading:28px; --lh-subheading:1.5;
+  --text-heading-sm:30px; --lh-heading-sm:1.5;
+  --text-heading:40px; --lh-heading:0.88;
+  --text-heading-lg:100px; --lh-heading-lg:0.88;
+  --text-display:202px; --lh-display:0.82;
+
+  --sp-7:7px; --sp-8:8px; --sp-12:12px; --sp-14:14px; --sp-15:15px;
+  --sp-20:20px; --sp-25:25px; --sp-29:29px; --sp-30:30px; --sp-40:40px;
+  --sp-60:60px; --sp-80:80px; --sp-100:100px; --sp-168:168px;
+
+  --radius-card:2520px; --radius-input:10px;
+  --radius-btn-lg:120px; --radius-btn-md:80px; --radius-btn-sm:48px;
+
+  --page-max-width:680px; --section-gap:80px;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; background:var(--color-void-black); }
+body{
+  background:var(--color-void-black);
+  color:var(--color-bone-cream);
+  font-family:var(--font-body);
+  font-size:var(--text-body); line-height:var(--lh-body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{ background:var(--color-alarm-red); color:var(--color-void-black); }
+.wrap{ max-width:var(--page-max-width); margin:0 auto; padding:0 24px; position:relative; }
+h1,h2,h3,.spektra{ font-family:var(--font-spektra); font-weight:400; text-transform:uppercase; letter-spacing:0.01em; }
+section{ padding:var(--section-gap) 0; position:relative; }
+img,svg{ display:block; }
+a{ color:inherit; }
+
+/* ---------- kicker / siteline ---------- */
+.kicker{
+  font-family:var(--font-spektra); font-size:var(--sp-30); line-height:1;
+  color:var(--color-bone-cream); text-align:center; margin-bottom:var(--sp-20);
+}
+.eyebrow{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  font-size:var(--text-caption); letter-spacing:3px; text-transform:uppercase;
+  color:var(--color-bone-cream); opacity:0.75; margin-bottom:var(--sp-15);
+}
+.eyebrow::before{ content:""; width:8px; height:8px; background:var(--color-alarm-red); flex-shrink:0; }
+.section-head{
+  font-size:clamp(30px, 6vw, var(--text-heading-lg)); line-height:0.9; text-align:center;
+  max-width:640px; margin:0 auto var(--sp-40); color:var(--color-bone-cream);
+}
+
+/* ---------- links (editorial annotation devices) ---------- */
+.link-underline{ color:var(--color-bone-cream); text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px; }
+.link-strike{ color:var(--color-alarm-red); text-decoration:line-through; text-decoration-thickness:1px; }
+
+/* ---------- hazard icon marker ---------- */
+.hazard{
+  width:20px; height:20px; background:var(--color-alarm-red); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.hazard svg{ width:12px; height:12px; }
+
+/* ---------- radar concentric field (hero decoration) ---------- */
+.radar{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; overflow:hidden; z-index:0; }
+.radar svg{ width:min(900px, 140vw); height:min(900px,140vw); opacity:0.9; }
+
+/* ---------- hero ---------- */
+.hero{
+  min-height:100vh; min-height:100dvh; background:var(--color-void-black);
+  display:flex; flex-direction:column; position:relative; overflow:hidden;
+}
+.hero-nav{ position:relative; z-index:10; padding:var(--sp-25) 24px; display:flex; align-items:center; justify-content:space-between; max-width:960px; margin:0 auto; width:100%; }
+.hero-nav .brand{ font-family:var(--font-spektra); font-size:20px; letter-spacing:0.02em; }
+.hero-nav a.navlink{ font-size:var(--text-caption); text-decoration:underline; text-underline-offset:2px; opacity:0.85; }
+.hero-nav .navlinks{ display:none; gap:28px; }
+@media (min-width:768px){ .hero-nav .navlinks{ display:flex; } }
+
+.hero-main{
+  position:relative; z-index:5; flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:60px 24px;
+}
+.hero-siteline{ font-family:var(--font-spektra); font-size:clamp(20px,3vw,32px); color:var(--color-bone-cream); opacity:0.85; margin-bottom:var(--sp-14); }
+.hero-heading{
+  font-size:clamp(64px, 16vw, var(--text-display)); line-height:0.82; color:var(--color-bone-cream);
+  margin-bottom:var(--sp-25);
+}
+.hero-sub{ max-width:520px; margin:0 auto var(--sp-40); color:var(--color-bone-cream); opacity:0.9; font-size:16px; line-height:1.5; }
+.hero-ctas{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:24px; }
+
+.hazard-scatter{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+.hazard-scatter .hz{ position:absolute; }
+
+/* ---------- buttons ---------- */
+.btn{
+  font-family:var(--font-body); font-weight:800; font-size:16px; text-decoration:none;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer; border:none;
+  transition:transform 0.12s ease, box-shadow 0.12s ease;
+}
+.btn-lg{
+  background:var(--color-bone-cream); color:var(--color-void-black);
+  padding:20px 60px; border-radius:var(--radius-btn-lg);
+  box-shadow:0 4px 0 var(--color-ash-taupe);
+}
+.btn-lg:active{ transform:translateY(4px); box-shadow:0 0 0 var(--color-ash-taupe); }
+.btn-outline{
+  background:transparent; color:var(--color-bone-cream); border:1px solid var(--color-bone-cream);
+  padding:19px 40px; border-radius:var(--radius-btn-lg);
+}
+.btn-compact{
+  background:var(--color-bone-cream); color:var(--color-void-black); font-weight:800; font-size:14px;
+  padding:7px 15px; border-radius:var(--radius-btn-md); box-shadow:0 4px 0 var(--color-ash-taupe);
+}
+
+/* ---------- manifest / prose ---------- */
+.prose{
+  max-width:680px; margin:0 auto; text-align:center; font-size:16px; line-height:1.27;
+  color:var(--color-bone-cream);
+}
+.prose p{ margin-bottom:var(--sp-30); }
+.prose p:last-child{ margin-bottom:0; }
+
+/* ---------- stats ---------- */
+.stats-row{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:var(--sp-40) var(--sp-25);
+  border-top:1px solid var(--color-bone-cream); padding-top:var(--sp-40); margin-top:var(--sp-40);
+}
+@media (min-width:700px){ .stats-row{ grid-template-columns:repeat(4,1fr); } }
+.stat{ text-align:center; }
+.stat-num{ font-family:var(--font-spektra); font-size:clamp(36px,6vw,var(--text-heading)); line-height:1; font-variant-numeric:tabular-nums; }
+.stat-label{ font-size:var(--text-caption); opacity:0.75; margin-top:var(--sp-8); line-height:1.4; }
+
+/* ---------- tracks ---------- */
+.track{ padding:var(--sp-40) 0; border-bottom:1px solid var(--color-bone-cream); }
+.track:last-child{ border-bottom:none; }
+.track-tag{ display:flex; align-items:center; gap:10px; font-size:var(--text-caption); letter-spacing:2px; text-transform:uppercase; opacity:0.85; margin-bottom:var(--sp-14); }
+.track-title{ font-size:clamp(32px,5vw,var(--text-heading)); line-height:0.9; margin-bottom:var(--sp-14); }
+.track-desc{ opacity:0.9; margin-bottom:var(--sp-20); max-width:600px; }
+.track-list{ list-style:none; display:flex; flex-direction:column; gap:10px; }
+.track-list li{ display:flex; gap:12px; font-size:15px; }
+.track-list li::before{ content:"→"; color:var(--color-alarm-red); flex-shrink:0; }
+
+/* ---------- timeline ---------- */
+.tl-list{ display:flex; flex-direction:column; gap:var(--sp-40); margin-top:var(--sp-40); }
+.tl-item{ display:flex; gap:var(--sp-20); align-items:flex-start; }
+.tl-month{ font-size:var(--text-caption); letter-spacing:2px; text-transform:uppercase; opacity:0.7; margin-bottom:6px; }
+.tl-title{ font-size:22px; font-weight:800; margin-bottom:6px; }
+.tl-desc{ opacity:0.85; font-size:14.5px; max-width:520px; }
+
+/* ---------- format (numbered) ---------- */
+.format-row{ display:flex; gap:var(--sp-25); align-items:flex-start; padding:var(--sp-25) 0; border-bottom:1px solid var(--color-bone-cream); }
+.format-row:last-child{ border-bottom:none; }
+.format-num{ font-family:var(--font-spektra); font-size:48px; line-height:1; width:70px; flex-shrink:0; opacity:0.9; }
+.format-row h4{ font-family:var(--font-body); font-weight:800; font-size:17px; margin-bottom:8px; }
+.format-row p{ opacity:0.85; font-size:14.5px; line-height:1.5; max-width:520px; }
+
+/* ---------- features ---------- */
+.features-list{ display:flex; flex-direction:column; gap:var(--sp-25); margin-top:var(--sp-40); }
+.feature-row{ display:flex; gap:var(--sp-20); align-items:flex-start; }
+.feature-row h4{ font-weight:800; font-size:16px; margin-bottom:6px; }
+.feature-row p{ opacity:0.85; font-size:14px; line-height:1.5; }
+
+/* ---------- price ---------- */
+.price-num{ font-family:var(--font-spektra); font-size:clamp(72px,14vw,var(--text-heading-lg)); line-height:0.85; text-align:center; }
+.price-sub{ text-align:center; opacity:0.8; margin:var(--sp-14) 0 var(--sp-40); }
+.price-cols{ display:grid; grid-template-columns:1fr; gap:var(--sp-40); max-width:560px; margin:0 auto; }
+@media (min-width:600px){ .price-cols{ grid-template-columns:1fr 1fr; } }
+.price-cols h5{ font-size:var(--text-caption); letter-spacing:2px; text-transform:uppercase; opacity:0.75; margin-bottom:var(--sp-14); }
+.price-cols ul{ list-style:none; display:flex; flex-direction:column; gap:10px; }
+.price-cols li{ font-size:14px; padding-left:22px; position:relative; }
+.price-cols.yes li::before{ content:"+"; position:absolute; left:0; color:var(--color-alarm-red); font-weight:800; }
+.price-cols.no li::before{ content:"–"; position:absolute; left:0; color:var(--color-alarm-red); font-weight:800; }
+
+/* ---------- faq ---------- */
+.faq-item{ border-bottom:1px solid var(--color-bone-cream); padding:var(--sp-25) 4px; cursor:pointer; }
+.faq-q{ display:flex; justify-content:space-between; align-items:center; font-size:17px; font-weight:800; gap:16px; }
+.faq-q .plus{ color:var(--color-alarm-red); font-size:24px; flex-shrink:0; transition:transform 0.15s ease; line-height:1; }
+.faq-item.open .plus{ transform:rotate(45deg); }
+.faq-a{ max-height:0; overflow:hidden; transition:max-height 0.15s ease; }
+.faq-item.open .faq-a{ max-height:220px; }
+.faq-a p{ opacity:0.85; padding-top:var(--sp-14); font-size:14.5px; line-height:1.6; max-width:600px; }
+
+/* ---------- final cta ---------- */
+.final{ text-align:center; }
+.final-title{ font-size:clamp(36px,7vw,var(--text-heading-lg)); line-height:0.88; margin-bottom:var(--sp-40); }
+
+/* ---------- apply form ---------- */
+.apply-title{ font-size:clamp(28px,5vw,var(--text-heading)); line-height:0.9; text-align:center; margin-bottom:var(--sp-40); }
+.apply-form{ display:grid; grid-template-columns:1fr; gap:var(--sp-20); max-width:520px; margin:0 auto; }
+@media (min-width:600px){ .apply-form{ grid-template-columns:1fr 1fr; } }
+.apply-field{ display:flex; flex-direction:column; gap:8px; }
+.apply-field.full{ grid-column:1 / -1; }
+.apply-field label{ font-size:12.5px; letter-spacing:1.5px; text-transform:uppercase; opacity:0.75; }
+.apply-field input{
+  background:var(--color-void-black); border:1px solid var(--color-bone-cream); border-radius:var(--radius-input);
+  padding:16px 20px; color:var(--color-bone-cream); font-size:16px; font-family:var(--font-body); outline:none;
+}
+.apply-field input::placeholder{ color:var(--color-ash-taupe); }
+.apply-field input:focus{ border-width:2px; }
+.apply-submit{ grid-column:1 / -1; margin-top:8px; width:100%; }
+.apply-note{ grid-column:1 / -1; text-align:center; color:var(--color-alarm-red); font-size:14px; min-height:20px; }
+
+/* ---------- flame footer ---------- */
+.flames{ position:relative; height:120px; overflow:hidden; margin-top:var(--sp-60); }
+.flames svg{ position:absolute; bottom:0; left:0; width:100%; height:100%; }
+
+footer{ border-top:1px solid var(--color-bone-cream); padding:var(--sp-30) 0; }
+.foot-row{ display:flex; justify-content:space-between; align-items:center; font-size:13px; opacity:0.8; flex-wrap:wrap; gap:10px; }
+
+@media (max-width:600px){
+  .hero-nav .navlinks{ display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="radar" aria-hidden="true">
+    <svg viewBox="0 0 600 600">
+      <circle cx="300" cy="300" r="80" fill="none" stroke="#ff4034" stroke-opacity="0.55" stroke-width="1.5"/>
+      <circle cx="300" cy="300" r="150" fill="none" stroke="#ff4034" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="6 8"/>
+      <circle cx="300" cy="300" r="220" fill="none" stroke="#ff4034" stroke-opacity="0.28" stroke-width="1.5"/>
+      <circle cx="300" cy="300" r="290" fill="none" stroke="#ff4034" stroke-opacity="0.16" stroke-width="1.5" stroke-dasharray="6 8"/>
+    </svg>
+  </div>
+
+  <div class="hazard-scatter" aria-hidden="true">
+    <div class="hz" style="top:14%; left:10%;"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 2 L14 9 L21 9 L15 13 L17 21 L12 16 L7 21 L9 13 L3 9 L10 9 Z"/></svg></div></div>
+    <div class="hz" style="top:22%; right:8%;"><div class="hazard"><circle cx="12" cy="12" r="0"></circle><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div></div>
+    <div class="hz" style="bottom:16%; left:14%;"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div></div>
+    <div class="hz" style="bottom:20%; right:12%;"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 2c2 3 5 6 5 10a5 5 0 0 1-10 0c0-1.5 1-2.5 1-2.5s.5 1.5 1.5 1.5 1-1 1-2c0-1.5-1.5-3-1.5-4.5C9 3 12 2 12 2Z"/></svg></div></div>
+  </div>
+
+  <nav class="hero-nav">
+    <div class="brand">Точка опоры</div>
+    <div class="navlinks">
+      <a href="#tracks" class="navlink">Треки</a>
+      <a href="#program" class="navlink">Программа</a>
+      <a href="#price" class="navlink">Цена</a>
+      <a href="#faq" class="navlink">Вопросы</a>
+    </div>
+    <a href="#apply" class="btn btn-compact">Записаться</a>
+  </nav>
+
+  <div class="hero-main">
+    <div class="hero-siteline">Программа Ольги Пузановой</div>
+    <h1 class="hero-heading">Точка<br>опоры</h1>
+    <p class="hero-sub">Один склад, одна площадка, одна работа: это ставка, а не бизнес. 3 месяца, чтобы у вашего дохода появилась вторая опора.</p>
+    <div class="hero-ctas">
+      <a href="#tracks" class="btn btn-lg">Выбрать свой трек</a>
+      <a href="#program" class="btn btn-outline">Смотреть программу</a>
+    </div>
+  </div>
+</div>
+
+<!-- MANIFEST -->
+<section>
+  <div class="wrap">
+    <div class="prose">
+      <p style="font-family:var(--font-spektra); font-size:clamp(28px,4vw,var(--text-heading)); line-height:0.95; margin-bottom:var(--sp-30);">
+        Мы не обещаем <span class="link-underline">лёгкий</span> путь, мы даём <span class="link-strike">конкретный</span> план
+      </p>
+      <p>Склады горят, оферты меняются, компенсации не покрывают убыток. Пока одни ждут решения площадки, другие уже строят то, что не зависит от одной точки. Эта программа: конкретный трёхмесячный план для обеих ситуаций.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM STATS -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Почему сейчас</div>
+    <h2 class="section-head">Ставка на одну точку продаж или один доход — уже не стратегия, а риск</h2>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">-6%</div><div class="stat-label">продавцов ушло с крупных площадок в 2025 году</div></div>
+      <div class="stat"><div class="stat-num">70%</div><div class="stat-label">может доходить суммарная нагрузка комиссий и сборов на маркетплейсах</div></div>
+      <div class="stat"><div class="stat-num">+22%</div><div class="stat-label">рост оборота нишевых площадок за год</div></div>
+      <div class="stat"><div class="stat-num">3 мес</div><div class="stat-label">чтобы появилась вторая опора для дохода</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACKS -->
+<section id="tracks">
+  <div class="wrap">
+    <div class="eyebrow">Два пути</div>
+    <h2 class="section-head">Выбираете трек под свою ситуацию</h2>
+
+    <div class="track">
+      <div class="track-tag"><div class="hazard" style="width:16px;height:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M12 2 L14 9 L21 9 L15 13 L17 21 L12 16 L7 21 L9 13 L3 9 L10 9 Z"/></svg></div>Трек А — Свой актив</div>
+      <div class="track-title">Свой актив</div>
+      <p class="track-desc">Для владельцев бренда и товара. Строим вторую опору для продаж: площадки, сайт, трафик, аудитория.</p>
+      <ul class="track-list">
+        <li>Доп. площадки помимо основной</li>
+        <li>Свой сайт с приёмом оплаты</li>
+        <li>Холодный трафик и своя аудитория</li>
+        <li>Юридический и финансовый блок</li>
+      </ul>
+    </div>
+
+    <div class="track">
+      <div class="track-tag"><div class="hazard" style="width:16px;height:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div>Трек Б — Новая опора</div>
+      <div class="track-title">Новая опора</div>
+      <p class="track-desc">Для тех, кто боится потерять работу. Строим новый навык на ИИ и первый платящий доход.</p>
+      <ul class="track-list">
+        <li>Конкретный ИИ-навык под ваш опыт</li>
+        <li>Первые оплаченные заказы</li>
+        <li>Портфолио и профиль на бирже</li>
+        <li>План масштабирования дохода</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="program">
+  <div class="wrap">
+    <div class="eyebrow">Программа</div>
+    <h2 class="section-head">12 недель, по месяцам</h2>
+    <div class="tl-list">
+      <div class="tl-item">
+        <div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div>
+        <div><div class="tl-month">Месяц 1</div><div class="tl-title">Выбор и первые шаги</div><div class="tl-desc">Диагностика, выбор трека, первый навык или первая площадка.</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div>
+        <div><div class="tl-month">Месяц 2</div><div class="tl-title">Построение</div><div class="tl-desc">Сайт и трафик, либо первые клиенты и практика.</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div>
+        <div><div class="tl-month">Месяц 3</div><div class="tl-title">Масштабирование</div><div class="tl-desc">Аудитория и воронка, либо рост цены и второй канал.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMAT -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Формат</div>
+    <h2 class="section-head">Как проходит программа</h2>
+    <div>
+      <div class="format-row">
+        <div class="format-num">01</div>
+        <div><h4>Еженедельный созвон в Zoom</h4><p>Раз в неделю живой разбор материала, ответы на вопросы и обсуждение прогресса каждого участника.</p></div>
+      </div>
+      <div class="format-row">
+        <div class="format-num">02</div>
+        <div><h4>Запись остаётся</h4><p>Если пропустили созвон, запись доступна в любое время, темп программы не теряется.</p></div>
+      </div>
+      <div class="format-row">
+        <div class="format-num">03</div>
+        <div><h4>Практика каждую неделю</h4><p>Конкретное задание под трек, которое нужно сделать до следующего созвона.</p></div>
+      </div>
+      <div class="format-row">
+        <div class="format-num">04</div>
+        <div><h4>Закрытый чат на все 12 недель</h4><p>Вопросы разбираются в течение всей недели, с обратной связью по вашему прогрессу.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Что входит</div>
+    <h2 class="section-head">Не только программа, полный набор материалов</h2>
+    <div class="features-list">
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div><h4>17 готовых шаблонов</h4><p>Претензии, юнит-экономика, брифы, договоры под конкретные задачи обоих треков.</p></div></div>
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.6 12.6 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div><h4>База проверенных контактов</h4><p>Юристы, страховые, кураторы площадок, блогеры, логистика по регионам.</p></div></div>
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div><h4>Библиотека промптов</h4><p>Готовые формулировки для сайтов, стратегии, визуала и видео с ИИ.</p></div></div>
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><h4>Доступы к нейросетям</h4><p>На период активной практики, без отдельных подписок с вашей стороны.</p></div></div>
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div><div><h4>Юридический блок</h4><p>Рамка «судиться или нет», три сценария развития событий и план под каждый.</p></div></div>
+      <div class="feature-row"><div class="hazard"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><h4>Закрытый чат</h4><p>Еженедельные разборы и обратная связь на всех 12 неделях программы.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICE -->
+<section id="price">
+  <div class="wrap">
+    <div class="eyebrow">Цена</div>
+    <div class="price-num">12 999 ₽</div>
+    <div class="price-sub">за 3 месяца, оба трека по одной цене</div>
+    <div class="price-cols">
+      <div>
+        <h5>Входит</h5>
+        <ul class="yes">
+          <li>Полная 12-недельная программа</li>
+          <li>17 шаблонов и чек-листов</li>
+          <li>База контактов и промптов</li>
+          <li>Доступы к нейросетям на практику</li>
+          <li>Закрытый чат и разборы</li>
+        </ul>
+      </div>
+      <div>
+        <h5>Не входит</h5>
+        <ul class="no">
+          <li>Рекламные бюджеты (Директ, VK Ads)</li>
+          <li>Платные тарифы площадок сверх базовых</li>
+          <li>Ведение вашего судебного дела юристом</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap" style="max-width:640px;">
+    <div class="eyebrow">Вопросы</div>
+    <h2 class="section-head">Прежде чем присоединиться</h2>
+    <div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Как понять, какой трек мой?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Если у вас есть бренд или товар, ваш трек А. Если вы наёмный специалист и хотите запасной доход, ваш трек Б. На первой неделе разбираем индивидуально.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Это гарантированный доход?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Нет. Мы даём инструменты, шаблоны и сопровождение, результат зависит от вашей практики и ниши.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Дадите ли вы юриста для моего дела?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Нет, это рамка и шаблоны, не индивидуальная юридическая консультация. Ведение дела оформляется как отдельная услуга.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span>Можно сменить трек в процессе?</span><span class="plus">+</span></div>
+        <div class="faq-a"><p>Да, но лучше определиться до конца недели 2, дальше треки расходятся по программе.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <h2 class="final-title">Готовы<br>к второй опоре?</h2>
+    <a href="#apply" class="btn btn-lg">Присоединиться к программе</a>
+  </div>
+</section>
+
+<!-- APPLY FORM -->
+<section id="apply">
+  <div class="wrap">
+    <h2 class="apply-title">Присоединиться на антикризисную программу</h2>
+    <form class="apply-form" id="applyForm">
+      <div class="apply-field"><label for="f-name">Имя</label><input type="text" id="f-name" name="name" required></div>
+      <div class="apply-field"><label for="f-phone">Телефон</label><input type="tel" id="f-phone" name="phone" required></div>
+      <div class="apply-field"><label for="f-tg">Ник в Telegram</label><input type="text" id="f-tg" name="telegram" placeholder="@username" required></div>
+      <div class="apply-field"><label for="f-email">Почта</label><input type="email" id="f-email" name="email" required></div>
+      <button type="submit" class="btn btn-lg apply-submit">Отправить заявку</button>
+      <p class="apply-note" id="applyNote"></p>
+    </form>
+  </div>
+</section>
+
+<!-- FLAME FOOTER -->
+<div class="flames" aria-hidden="true">
+  <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+    <path fill="#ff4034" d="M0,120 L0,70 C15,40 25,90 40,60 C55,30 65,80 80,50 C95,20 105,75 120,45
+      C135,15 145,70 160,40 C175,10 185,65 200,35 C215,5 225,60 240,30
+      C255,0 265,55 280,25 C295,-5 305,50 320,20 L320,120 Z
+      M320,120 L320,60 C335,30 345,85 360,55 C375,25 385,80 400,50 C415,20 425,75 440,45
+      C455,15 465,70 480,40 C495,10 505,65 520,35 C535,5 545,60 560,30
+      C575,0 585,55 600,25 L600,120 Z
+      M600,120 L600,65 C615,35 625,90 640,60 C655,30 665,85 680,55 C695,25 705,80 720,50
+      C735,20 745,75 760,45 C775,15 785,70 800,40 C815,10 825,65 840,35
+      C855,5 865,60 880,30 L880,120 Z
+      M880,120 L880,70 C895,40 905,90 920,60 C935,30 945,80 960,50 C975,20 985,75 1000,45
+      C1015,15 1025,70 1040,40 C1055,10 1065,65 1080,35 C1095,5 1105,60 1120,30
+      C1135,0 1145,55 1160,25 C1175,-5 1185,50 1200,20 L1200,120 Z"/>
+  </svg>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <span>Точка опоры</span>
+    <span>3 месяца, 12 999 ₽</span>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if(!wasOpen) item.classList.add('open');
+    });
+  });
+
+  const applyForm = document.getElementById('applyForm');
+  const applyNote = document.getElementById('applyNote');
+  if(applyForm){
+    applyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyNote.textContent = 'Заявка отправлена. Свяжемся с вами в ближайшее время.';
+      applyForm.reset();
+    });
+  }
+</script>
+</body>
+</html>
