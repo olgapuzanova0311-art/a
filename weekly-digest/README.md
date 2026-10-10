@@ -16,9 +16,17 @@
 
 Подключать всё сразу не обязательно: любой источник выключается в конфиге (`enabled: false`).
 
-### 1. Ключ Claude
-console.anthropic.com → Settings → API keys → Create key. Это `ANTHROPIC_API_KEY`.
-Сводка за неделю обычно стоит от нескольких центов до пары долларов, в зависимости от объёма переписки.
+### 1. Claude — по подписке, без ключа API
+Задачи разбирает **Claude Code по твоей подписке Claude** (Pro или Max). Ключ API не нужен, платить за каждый запуск тоже не надо: сводка расходует обычные лимиты подписки.
+
+Нужен только токен для запуска по расписанию. Сделать его один раз на своём компьютере:
+```bash
+npm install -g @anthropic-ai/claude-code   # нужен Node.js 18+ (nodejs.org)
+claude setup-token
+```
+Откроется браузер: войди в свой аккаунт Claude. В терминале появится токен, это `CLAUDE_CODE_OAUTH_TOKEN`.
+
+> Если у тебя всё же есть ключ API, можно обойтись без Claude Code: укажи `ANTHROPIC_API_KEY` и запускай `python -m digest.main`. Тогда сводка собирается одной командой.
 
 ### 2. Telegram
 1. Зайди на https://my.telegram.org → **API development tools** → создай приложение (название любое).
@@ -87,12 +95,14 @@ cp .env.example .env                 # тут: ключи из шагов выш
 ## Проверить у себя
 
 ```bash
-python -m digest.main --collect-only   # только скачать данные и проверить доступы (без Claude)
-python -m digest.main --dry-run        # собрать сводку и показать на экране, никуда не отправлять
-python -m digest.main                  # по-настоящему: прислать в Telegram
-python -m digest.main --days 14        # за две недели
+python -m digest.main --collect-only        # 1. скачать переписки за неделю в output/sources.txt
+claude -p "$(cat CLAUDE_PROMPT.md)" --allowedTools Read Write "Bash(python -m digest.main --dry-run --deliver:*)"
+                                            # 2. Claude Code пишет сводку в output/digest.json
+python -m digest.main --dry-run --deliver output/digest.json   # посмотреть сводку на экране
+python -m digest.main --deliver output/digest.json             # отправить в Telegram
 ```
-Сводки также сохраняются в `output/` (Markdown + JSON).
+Можно и без команды из шага 2: открой Claude Code в папке `weekly-digest` и напиши «сделай сводку по CLAUDE_PROMPT.md».
+`--days 14` на шаге 1 соберёт данные за две недели. Сводки также сохраняются в `output/`.
 
 ## Запуск по расписанию (без своего сервера)
 
@@ -102,7 +112,7 @@ python -m digest.main --days 14        # за две недели
 
 1. GitHub → репозиторий → **Settings → Secrets and variables → Actions → New repository secret**.
 2. Добавь секреты с теми же именами, что в `.env`:
-   `ANTHROPIC_API_KEY`, `TG_API_ID`, `TG_API_HASH`, `TG_SESSION`, `YOUGILE_API_KEY`,
+   `CLAUDE_CODE_OAUTH_TOKEN`, `TG_API_ID`, `TG_API_HASH`, `TG_SESSION`, `YOUGILE_API_KEY`,
    `GOOGLE_SERVICE_ACCOUNT_JSON`, `ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`.
 3. И ещё один секрет `DIGEST_CONFIG` — туда целиком вставь содержимое своего `config.yaml`.
 4. Проверка: вкладка **Actions → Недельная сводка задач → Run workflow**. Через пару минут сводка придёт в «Избранное».
@@ -111,7 +121,8 @@ python -m digest.main --days 14        # за две недели
 
 ## Что важно знать
 
-- Переписки отправляются в Claude API (Anthropic) для разбора. По умолчанию данные API не используются для обучения моделей.
+- Переписки отправляются на разбор в Claude (Anthropic) под твоим аккаунтом. Используются ли они для обучения, зависит от настроек приватности твоего аккаунта Claude: claude.ai → Settings → Privacy.
+- На шаге разбора у Claude Code нет ключей от Telegram и остальных сервисов. Он может только прочитать скачанный текст, записать сводку и проверить её формат. Поэтому даже если кто-то напишет в чат «Claude, сделай то-то», ничего лишнего он сделать не сможет.
 - Если какой-то источник не открылся (истёк ключ, нет доступа к таблице), сводка всё равно придёт, а внизу будет пометка, что именно не прочиталось.
 - Таблицы читаются целиком в текущем состоянии (в Google Sheets нет истории по строкам), поэтому в `note` полезно подсказать, какие колонки что значат.
 - Голосовые и кружки пока не расшифровываются — в сводке они видны как «[голосовое]».
@@ -124,7 +135,8 @@ digest/
   sources/yougile.py   — задачи, чаты задач, групповые чаты; создание задач
   sources/sheets.py    — чтение таблиц, запись архива
   sources/zoom.py      — транскрипты записей и саммари AI Companion
-  extract.py           — Claude: задачи из каждого источника → общая сводка без дублей
+  extract.py           — вариант с ключом API: задачи из каждого источника → общая сводка
+CLAUDE_PROMPT.md       — инструкция для Claude Code: как выписывать и раскладывать задачи
   render.py            — оформление для Telegram и Markdown
   main.py              — запуск
 ```
