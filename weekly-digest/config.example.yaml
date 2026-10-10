@@ -1,0 +1,53 @@
+# Скопируй в config.yaml и поправь под себя.
+# Ключи и пароли сюда НЕ пишем — они в .env (локально) или в секретах GitHub.
+
+me: "Ольга Пузанова"     # как тебя зовут в чатах — чтобы понимать, какие задачи твои
+days: 7                  # за сколько дней собирать
+output_dir: output
+
+telegram:
+  enabled: true
+  # Вариант 1: перечислить рабочие чаты (название как в Telegram, @username или id)
+  chats:
+    - "Команда проекта"
+    - "@my_work_group"
+  # Вариант 2: брать ВСЕ группы и личку, где была активность за неделю
+  all_active: false
+  include_private: true   # личные переписки (при all_active: true)
+  exclude:                # что точно не читать
+    - "Семья"
+  max_messages_per_chat: 2000
+
+yougile:
+  enabled: true
+  boards: []              # пусто = все доски; или ["Маркетинг", "Продажи"]
+  max_task_chats: 300
+
+sheets:
+  enabled: true
+  max_rows: 500
+  spreadsheets:
+    - url: "https://docs.google.com/spreadsheets/d/XXXXXXXX/edit"
+      worksheets: ["План"]          # необязательно; без этого — все листы
+      note: "Контент-план: колонка «Ответственный» — кто делает"
+
+zoom:
+  enabled: true
+  user: "me"              # или email владельца записей в Zoom
+  use_ai_summary: true    # брать саммари AI Companion, если оно есть
+
+notes:                    # папка с транскриптами/заметками встреч без облачной записи
+  enabled: false
+  dir: notes
+
+deliver:
+  telegram:
+    enabled: true
+    to: "me"              # "me" = «Избранное»; можно @username или название чата
+  sheets:                 # дописывать задачи в таблицу-архив
+    enabled: false
+    spreadsheet_id: "XXXXXXXX"
+    worksheet: "Задачи"
+  yougile:                # автоматически заводить новые задачи в YouGile
+    enabled: false
+    column_id: "id-колонки-входящие"
