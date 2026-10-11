@@ -151,29 +151,44 @@ function upsertUser(d, when) {
   if (!r.tgid && !digits10(r.phone) && !r.email) return;
   var n = sh.getLastRow() - 1;
   var rows = n > 0 ? sh.getRange(2, 1, n, U_HEADERS.length).getValues() : [];
-  var idx = findUser(rows, r);
-  if (idx < 0) {
-    var row = new Array(U_HEADERS.length).fill('');
-    row[U.name] = r.name; row[U.phone] = r.phone; row[U.email] = r.email; row[U.tg] = r.tg; row[U.tgid] = r.tgid;
-    row[U.tariff] = r.tariff; row[U.survey] = r.survey; row[U.src] = r.src; row[U.first] = when; row[U.last] = when;
-    sh.appendRow(row);
-    return;
-  }
-  var cur = rows[idx];
+  var idx = findUsers(rows, r);
+  if (!idx.length) { sh.appendRow(newUserRow(r, when)); return; }
+  var cur = rows[idx[0]];
+  for (var j = 1; j < idx.length; j++) mergeRows(cur, rows[idx[j]]);
   mergeInto(cur, r, when);
-  // Менеджерские колонки (Статус, Комментарий) не трогаем
-  sh.getRange(idx + 2, 1, 1, 10).setValues([cur.slice(0, 10)]);
+  sh.getRange(idx[0] + 2, 1, 1, U_HEADERS.length).setValues([cur]);
+  // Лишние строки того же человека удаляем снизу вверх
+  for (var k = idx.length - 1; k >= 1; k--) sh.deleteRow(idx[k] + 2);
 }
 
-function findUser(rows, r) {
-  var p = digits10(r.phone);
+// Все строки, которые относятся к этому человеку: по Telegram id, телефону или почте
+function findUsers(rows, r) {
+  var p = digits10(r.phone), out = [];
   for (var i = 0; i < rows.length; i++) {
     var row = rows[i];
-    if (r.tgid && String(row[U.tgid]) === r.tgid) return i;
-    if (p && digits10(row[U.phone]) === p) return i;
-    if (r.email && String(row[U.email]).toLowerCase() === r.email) return i;
+    var rp = digits10(row[U.phone]), rt = String(row[U.tgid] || '');
+    // Почта склеивает, только если телефон и Telegram не противоречат (люди пишут test@mail.ru)
+    var emailOk = r.email && String(row[U.email]).toLowerCase() === r.email &&
+                  !(r.tgid && rt && rt !== r.tgid) && !(p && rp && rp !== p);
+    if ((r.tgid && rt === r.tgid) || (p && rp === p) || emailOk) out.push(i);
   }
-  return -1;
+  return out;
+}
+
+// Склеивает строку b в строку a (когда выяснилось, что это один человек)
+function mergeRows(a, b) {
+  for (var k = 0; k < a.length; k++) if (a[k] === '' || a[k] === null) a[k] = b[k];
+  if ((TARIFF_RANK[b[U.tariff]] || 0) > (TARIFF_RANK[a[U.tariff]] || 0)) a[U.tariff] = b[U.tariff];
+  if (b[U.src] && a[U.src] !== b[U.src] && a[U.src] !== 'сайт и бот') a[U.src] = 'сайт и бот';
+  if (b[U.first] && a[U.first] && b[U.first] < a[U.first]) a[U.first] = b[U.first];
+  if (b[U.last] && (!a[U.last] || b[U.last] > a[U.last])) a[U.last] = b[U.last];
+}
+
+function newUserRow(r, when) {
+  var row = new Array(U_HEADERS.length).fill('');
+  row[U.name] = r.name; row[U.phone] = r.phone; row[U.email] = r.email; row[U.tg] = r.tg; row[U.tgid] = r.tgid;
+  row[U.tariff] = r.tariff; row[U.survey] = r.survey; row[U.src] = r.src; row[U.first] = when; row[U.last] = when;
+  return row;
 }
 
 var TARIFF_RANK = {'': 0, 'Бесплатно': 1, 'Выбрал VIP (проверить оплату)': 2, 'VIP оплачен': 3};
@@ -205,15 +220,11 @@ function rebuildUsers(sh) {
     var r = parseLead({name: v[1], phone: phone, email: v[3], tariff: v[4], event: v[7], page: v[8]});
     if (!r.tgid && !digits10(r.phone) && !r.email) continue;
     var when = v[0] instanceof Date ? v[0] : new Date();
-    var k = findUser(rows, r);
-    if (k < 0) {
-      var row = new Array(U_HEADERS.length).fill('');
-      row[U.name] = r.name; row[U.phone] = r.phone; row[U.email] = r.email; row[U.tg] = r.tg; row[U.tgid] = r.tgid;
-      row[U.tariff] = r.tariff; row[U.survey] = r.survey; row[U.src] = r.src; row[U.first] = when; row[U.last] = when;
-      rows.push(row);
-    } else {
-      mergeInto(rows[k], r, when);
-    }
+    var idx = findUsers(rows, r);
+    if (!idx.length) { rows.push(newUserRow(r, when)); continue; }
+    var cur = rows[idx[0]];
+    for (var q = idx.length - 1; q >= 1; q--) { mergeRows(cur, rows[idx[q]]); rows.splice(idx[q], 1); }
+    mergeInto(cur, r, when);
   }
   if (rows.length) sh.getRange(2, 1, rows.length, U_HEADERS.length).setValues(rows);
 }
