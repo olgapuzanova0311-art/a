@@ -44,7 +44,7 @@ function doPost(e) {
 
   // Уведомление в Telegram отправляется даже если запись в таблицу не удалась
   notify(d, saved, error);
-  sendWelcomeEmail(d);
+  try { sendWelcomeEmail(d); } catch (err) { notifyText('⚠️ Письмо не отправилось: ' + err); }
 
   return ContentService.createTextOutput(JSON.stringify({ok: saved, error: error}))
     .setMimeType(ContentService.MimeType.JSON);
@@ -125,7 +125,7 @@ function sendWelcomeEmail(d) {
     MailApp.sendEmail({
       to: email,
       name: 'Ольга Пузанова',
-      subject: 'Ты в списке! Подарки и ссылки на интенсив 17–18 октября',
+      subject: 'Твой билет на интенсив «Собери ИИ-команду за выходные»',
       htmlBody: welcomeHtml(d.name, vip)
     });
     props.setProperty(key, new Date().toISOString());
@@ -181,7 +181,7 @@ function notifyText(text) {
 // Запустите вручную: письмо придёт на почту владельца скрипта
 function testEmail() {
   MailApp.sendEmail({to: Session.getEffectiveUser().getEmail(), name: 'Ольга Пузанова',
-    subject: '[Тест] Ты в списке! Подарки и ссылки на интенсив 17–18 октября', htmlBody: welcomeHtml('Оля', false)});
+    subject: '[Тест] Твой билет на интенсив «Собери ИИ-команду за выходные»', htmlBody: welcomeHtml('Оля', false)});
 }
 
 function doGet() {
