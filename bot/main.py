@@ -394,7 +394,9 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/vip @ник или телефон или id · отметить оплату VIP\n'
   '/circle · ответь этой командой на кружок, и он станет приветствием\n'
   '/broadcast · ответь этой командой на любое сообщение, бот разошлёт его всем\n'
-  '/export · выгрузка участников в CSV\n'
+  '/users · список всех участников (листается кнопками)\n'
+  '/find имя, ник, телефон или почта · найти участника\n'
+  '/export · выгрузка участников в файл для Excel\n'
   '/backup · прислать бэкап базы (он же приходит каждую ночь)\n'
   '/restore · ответь на файл бэкапа, чтобы восстановить базу\n'
   '/test · прислать себе приветствие\n'
@@ -485,6 +487,57 @@ async def bc_go(c: CallbackQuery):
             if 'blocked' in str(e) or 'deactivated' in str(e): q('UPDATE users SET blocked=1 WHERE id=?', r['id'])
         await asyncio.sleep(0.05)
     await bot.send_message(c.from_user.id, f'✅ Доставлено: {ok}')
+
+PAGE = 15
+
+def user_line(r):
+    from html import escape
+    nick = f"@{r['username']}" if r['username'] else f"<a href=\"tg://user?id={r['id']}\">профиль</a>"
+    marks = ('💛 VIP · ' if r['vip'] else '') + ('🚫 заблокировал · ' if r['blocked'] else '')
+    fr = friends_count(r['id'])
+    return (f"<b>{escape(r['first_name'] or 'без имени')}</b> {nick}\n"
+            f"📞 {escape(r['phone'] or '—')} · ✉️ {escape(r['email'] or '—')}\n"
+            f"{marks}🕒 {datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m %H:%M')}"
+            + (f' · 👥 друзей: {fr}' if fr else '') + (f" · {escape(r['source'])}" if r['source'] else ''))
+
+def users_page(page):
+    total = q('SELECT COUNT(*) FROM users').fetchone()[0]
+    pages = max(1, (total + PAGE - 1) // PAGE)
+    page = min(max(page, 0), pages - 1)
+    rows = q('SELECT * FROM users ORDER BY created DESC LIMIT ? OFFSET ?', PAGE, page * PAGE).fetchall()
+    text = f'👥 <b>Участники: {total}</b> · стр. {page + 1} из {pages} (сначала новые)\n\n' + '\n\n'.join(user_line(r) for r in rows)
+    nav = []
+    if page > 0: nav.append(InlineKeyboardButton(text='◀️ Новее', callback_data=f'us:{page - 1}'))
+    if page < pages - 1: nav.append(InlineKeyboardButton(text='Старше ▶️', callback_data=f'us:{page + 1}'))
+    return text, InlineKeyboardMarkup(inline_keyboard=[nav] if nav else [])
+
+@router.message(Command('users'))
+@admin_only
+async def users_cmd(m: Message):
+    text, kb = users_page(0)
+    await m.answer(text, reply_markup=kb, disable_web_page_preview=True)
+
+@router.callback_query(F.data.startswith('us:'))
+async def users_nav(c: CallbackQuery):
+    if not is_admin(c.from_user.id): return await c.answer()
+    await c.answer()
+    text, kb = users_page(int(c.data[3:]))
+    try: await c.message.edit_text(text, reply_markup=kb, disable_web_page_preview=True)
+    except Exception: pass
+
+@router.message(Command('find'))
+@admin_only
+async def find_cmd(m: Message, command: CommandObject):
+    s = (command.args or '').strip().lstrip('@').lower()
+    if not s:
+        return await m.answer('Напиши, кого искать: /find Анна, /find @nick, /find 9001234567 или /find почта')
+    digits = re.sub(r'\D', '', s)[-10:]
+    def hit(r):
+        txt = ' '.join(str(r[k] or '') for k in ('first_name', 'username', 'email')).lower()
+        return s in txt or (len(digits) >= 4 and digits in re.sub(r'\D', '', r['phone'] or ''))
+    rows = [r for r in q('SELECT * FROM users ORDER BY created DESC').fetchall() if hit(r)][:20]
+    if not rows: return await m.answer('Никого не нашла 🤷‍♀️')
+    await m.answer(f'🔎 Нашла: {len(rows)}\n\n' + '\n\n'.join(user_line(r) for r in rows), disable_web_page_preview=True)
 
 @router.message(Command('export'))
 @admin_only
