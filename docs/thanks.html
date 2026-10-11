@@ -21,7 +21,8 @@ a{color:inherit}
 .shape.b{width:min(380px,44vw);aspect-ratio:1;right:-12vw;bottom:-60px;background:var(--sky);clip-path:polygon(18% 0,100% 18%,82% 100%,0 72%);animation:drift 18s ease-in-out infinite alternate-reverse}
 @keyframes drift{to{transform:translate(30px,24px) rotate(6deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(22px);filter:blur(6px)}}
-.card{position:relative;z-index:1;width:min(720px,100%);background:var(--white);border-radius:40px;padding:clamp(28px,5vw,56px);text-align:center;display:grid;justify-items:center;gap:18px;animation:fadeUp 1s var(--ease) both}
+.wrapx{width:min(720px,100%);margin-inline:auto;position:relative;z-index:1}
+.card{position:relative;z-index:1;width:100%;background:var(--white);border-radius:40px;padding:clamp(28px,5vw,56px);text-align:center;display:grid;justify-items:center;gap:18px;animation:fadeUp 1s var(--ease) both}
 .check{width:84px;height:84px}
 .check circle{fill:var(--yellow);stroke:var(--ink);stroke-width:2;stroke-dasharray:240;stroke-dashoffset:240;animation:draw 1s var(--ease) .2s forwards}
 .check path{fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .7s var(--ease) .8s forwards}
@@ -36,7 +37,7 @@ h1 .hl{color:var(--blue)}
 .steps span.on{background:var(--blue);color:var(--white)}
 .choose{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
 @media (max-width:560px){.choose{grid-template-columns:minmax(0,1fr)}}
-.ch{display:grid;gap:10px;justify-items:start;text-align:left;padding:22px;border-radius:24px;text-decoration:none;border:1.5px solid var(--ink);transition:transform .4s var(--ease),background .3s}
+.ch{display:grid;gap:10px;justify-items:center;text-align:center;padding:22px;border-radius:24px;text-decoration:none;border:1.5px solid var(--ink);transition:transform .4s var(--ease),background .3s}
 .ch:hover{transform:translateY(-4px)}
 .ch.tg{background:var(--blue);color:var(--white);border-color:var(--blue)}
 .ch.mx{background:var(--yellow);color:var(--ink)}
@@ -56,7 +57,7 @@ h1 .hl{color:var(--blue)}
 </head>
 <body>
 <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span>
-<div>
+<div class="wrapx">
   <main class="card">
     <svg class="check" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36"/><path d="M25 41l10 10 20-22"/></svg>
     <span class="chip" id="chip">Регистрация прошла</span>
