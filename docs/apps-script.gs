@@ -27,15 +27,17 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    var sheet = journalSheet();
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(HEADERS);
       sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#FFBA09');
       sheet.setFrozenRows(1);
     }
-    sheet.appendRow([new Date(), d.name || '', d.phone || '', d.email || '', d.tariff || '',
+    // Апостроф: телефон «+7 (900)…» хранится как текст, без #ERROR!
+    sheet.appendRow([new Date(), d.name || '', d.phone ? "'" + d.phone : '', d.email || '', d.tariff || '',
       d.consent_data || '', d.consent_mailing || '', d.event || '', d.page || '']);
     saved = true;
+    try { upsertUser(d, new Date()); } catch (err) { notifyText('⚠️ Лист «' + USERS_SHEET + '» не обновился: ' + err); }
   } catch (err) {
     error = String(err);
   } finally {
@@ -94,6 +96,126 @@ function getChatId() {
     }
   } catch (err) {}
   return '';
+}
+
+// ---------- Лист «Участники»: один человек = одна строка ----------
+var USERS_SHEET = 'Участники';
+var U_HEADERS = ['Имя', 'Телефон', 'Почта', 'Telegram', 'Telegram id', 'Тариф', 'Опрос', 'Откуда', 'Первая регистрация', 'Последнее действие', 'Статус (менеджер)', 'Комментарий (менеджер)'];
+var U = {name: 0, phone: 1, email: 2, tg: 3, tgid: 4, tariff: 5, survey: 6, src: 7, first: 8, last: 9};
+
+// Журнал всех заявок: первый лист, который не «Участники»
+function journalSheet() {
+  var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  for (var i = 0; i < sheets.length; i++) if (sheets[i].getName() !== USERS_SHEET) return sheets[i];
+  return SpreadsheetApp.getActiveSpreadsheet().insertSheet('Лист1', 0);
+}
+
+function usersSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(USERS_SHEET);
+  if (sh) return sh;
+  sh = ss.insertSheet(USERS_SHEET);
+  sh.appendRow(U_HEADERS);
+  sh.getRange(1, 1, 1, U_HEADERS.length).setFontWeight('bold').setBackground('#FFBA09');
+  sh.setFrozenRows(1);
+  sh.getRange('B:B').setNumberFormat('@');
+  sh.getRange('E:E').setNumberFormat('@');
+  sh.getRange('I:J').setNumberFormat('dd.MM.yyyy HH:mm');
+  rebuildUsers(sh);
+  return sh;
+}
+
+function digits10(p) { var x = String(p || '').replace(/\D/g, ''); return x.length >= 10 ? x.slice(-10) : ''; }
+
+// Разбирает данные заявки: сайт присылает поля формы, бот ещё и строку «Telegram @ник id 123 · источник … · опрос: …»
+function parseLead(d) {
+  var page = String(d.page || ''), m;
+  var r = {name: String(d.name || '').trim(), phone: String(d.phone || '').replace(/^'/, '').trim(), email: String(d.email || '').trim().toLowerCase(),
+           tg: '', tgid: '', survey: '', tariff: '', src: ''};
+  if ((m = page.match(/^Telegram @(\S+) id (\d+)/))) {
+    r.tgid = m[2]; r.tg = m[1] === '-' ? '' : '@' + m[1]; r.src = 'бот';
+    if ((m = page.match(/опрос: (.+)$/))) r.survey = m[1];
+  } else {
+    r.src = 'сайт';
+  }
+  var ev = String(d.event || '');
+  if (/Оплата VIP/.test(ev)) r.tariff = 'VIP оплачен';
+  else if (String(d.tariff || '').indexOf('VIP') === 0) r.tariff = r.src === 'сайт' ? 'Выбрал VIP (проверить оплату)' : 'VIP оплачен';
+  else r.tariff = 'Бесплатно';
+  return r;
+}
+
+function upsertUser(d, when) {
+  var sh = usersSheet();
+  var r = parseLead(d);
+  if (!r.tgid && !digits10(r.phone) && !r.email) return;
+  var n = sh.getLastRow() - 1;
+  var rows = n > 0 ? sh.getRange(2, 1, n, U_HEADERS.length).getValues() : [];
+  var idx = findUser(rows, r);
+  if (idx < 0) {
+    var row = new Array(U_HEADERS.length).fill('');
+    row[U.name] = r.name; row[U.phone] = r.phone; row[U.email] = r.email; row[U.tg] = r.tg; row[U.tgid] = r.tgid;
+    row[U.tariff] = r.tariff; row[U.survey] = r.survey; row[U.src] = r.src; row[U.first] = when; row[U.last] = when;
+    sh.appendRow(row);
+    return;
+  }
+  var cur = rows[idx];
+  mergeInto(cur, r, when);
+  // Менеджерские колонки (Статус, Комментарий) не трогаем
+  sh.getRange(idx + 2, 1, 1, 10).setValues([cur.slice(0, 10)]);
+}
+
+function findUser(rows, r) {
+  var p = digits10(r.phone);
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    if (r.tgid && String(row[U.tgid]) === r.tgid) return i;
+    if (p && digits10(row[U.phone]) === p) return i;
+    if (r.email && String(row[U.email]).toLowerCase() === r.email) return i;
+  }
+  return -1;
+}
+
+var TARIFF_RANK = {'': 0, 'Бесплатно': 1, 'Выбрал VIP (проверить оплату)': 2, 'VIP оплачен': 3};
+function mergeInto(cur, r, when) {
+  if (r.name && !cur[U.name]) cur[U.name] = r.name;
+  if (r.phone && !cur[U.phone]) cur[U.phone] = r.phone;
+  if (r.email) cur[U.email] = r.email;
+  if (r.tg) cur[U.tg] = r.tg;
+  if (r.tgid) cur[U.tgid] = r.tgid;
+  if (r.survey) cur[U.survey] = r.survey;
+  if ((TARIFF_RANK[r.tariff] || 0) > (TARIFF_RANK[cur[U.tariff]] || 0)) cur[U.tariff] = r.tariff;
+  if (r.src && String(cur[U.src]).indexOf(r.src) < 0) cur[U.src] = cur[U.src] ? 'сайт и бот' : r.src;
+  if (!cur[U.first]) cur[U.first] = when;
+  cur[U.last] = when;
+}
+
+// Собирает лист «Участники» из всех старых заявок. Вызывается сам при первом создании листа.
+function rebuildUsers(sh) {
+  sh = sh || usersSheet();
+  var j = journalSheet();
+  var n = j.getLastRow() - 1;
+  if (n < 1) return;
+  var rng = j.getRange(2, 1, n, HEADERS.length);
+  var vals = rng.getValues(), forms = rng.getFormulas();
+  var rows = [];
+  for (var i = 0; i < vals.length; i++) {
+    var v = vals[i];
+    var phone = forms[i][2] ? forms[i][2].replace(/^=/, '') : String(v[2] || '');
+    var r = parseLead({name: v[1], phone: phone, email: v[3], tariff: v[4], event: v[7], page: v[8]});
+    if (!r.tgid && !digits10(r.phone) && !r.email) continue;
+    var when = v[0] instanceof Date ? v[0] : new Date();
+    var k = findUser(rows, r);
+    if (k < 0) {
+      var row = new Array(U_HEADERS.length).fill('');
+      row[U.name] = r.name; row[U.phone] = r.phone; row[U.email] = r.email; row[U.tg] = r.tg; row[U.tgid] = r.tgid;
+      row[U.tariff] = r.tariff; row[U.survey] = r.survey; row[U.src] = r.src; row[U.first] = when; row[U.last] = when;
+      rows.push(row);
+    } else {
+      mergeInto(rows[k], r, when);
+    }
+  }
+  if (rows.length) sh.getRange(2, 1, rows.length, U_HEADERS.length).setValues(rows);
 }
 
 // ---------- Письмо участнику ----------
