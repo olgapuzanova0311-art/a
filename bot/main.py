@@ -9,7 +9,7 @@
   DB_PATH        путь к базе (по умолчанию /data/bot.db)
   PORT           порт веб-сервера (Railway задаёт сам)
 """
-import asyncio, csv, hashlib, hmac, inspect, io, json, logging, os, secrets, sqlite3, time
+import asyncio, re, csv, hashlib, hmac, inspect, io, json, logging, os, secrets, sqlite3, time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, quote
 
@@ -55,6 +55,10 @@ CREATE TABLE IF NOT EXISTS admins(id INTEGER PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS prizes(level INTEGER, user_id INTEGER, PRIMARY KEY(level, user_id));
 ''')
 db.commit()
+try:
+    db.execute('ALTER TABLE users ADD COLUMN email TEXT'); db.commit()
+except sqlite3.OperationalError:
+    pass
 
 def q(sql, *a):
     cur = db.execute(sql, a); db.commit(); return cur
@@ -129,7 +133,7 @@ def fill(text, u):
 # ---------------- таблица и уведомления ----------------
 async def to_sheet(u, event):
     if not SHEET_URL: return
-    payload = dict(event=event, name=u['first_name'] or '', phone=u['phone'] or '', email='',
+    payload = dict(event=event, name=u['first_name'] or '', phone=u['phone'] or '', email=u['email'] or '',
                    tariff='VIP 490 ₽' if u['vip'] else 'Бесплатно 0 ₽', consent_data='да (бот)', consent_mailing='да (бот)',
                    page=f'Telegram @{u["username"] or "-"} id {u["id"]} · источник {u["source"] or "-"}' + (f' · опрос: {u["survey"]}' if u['survey'] else ''))
     try:
@@ -183,7 +187,10 @@ async def start(m: Message, command: CommandObject):
     u = user(m.from_user.id)
     if u:
         q('UPDATE users SET blocked=0, username=?, first_name=? WHERE id=?', m.from_user.username, m.from_user.first_name, u['id'])
-        await send(u['id'], T.ALREADY, T.WELCOME_BTNS)
+        if u['email']:
+            await send(u['id'], T.ALREADY, T.MENU_BTNS)
+        else:
+            await next_step(u, u['id'])
         return
     u = new_user(m, (command.args or '').strip())
     circle = setting('circle')
@@ -195,30 +202,37 @@ async def start(m: Message, command: CommandObject):
 
 async def ask_contact(uid):
     await bot.send_message(uid, T.ASK_CONTACT, reply_markup=ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text='📱 Поделиться номером', request_contact=True)], [KeyboardButton(text=T.SKIP_CONTACT)]],
+        keyboard=[[KeyboardButton(text='📱 Поделиться номером', request_contact=True)]],
         resize_keyboard=True, one_time_keyboard=True))
 
 @router.callback_query(F.data == 'gifts')
 async def cb_gifts(c: CallbackQuery):
     await c.answer()
     u = user(c.from_user.id)
-    if u and u['phone']:
-        await give_gifts(u, again=True)
-    else:
-        await ask_contact(c.from_user.id)
+    await next_step(u, c.from_user.id)
+
+async def next_step(u, uid):
+    if not u or not u['phone']:
+        return await ask_contact(uid)
+    if not u['email']:
+        return await ask_email(uid)
+    await give_gifts(u)
+
+async def ask_email(uid):
+    await bot.send_message(uid, T.ASK_EMAIL, reply_markup=ReplyKeyboardRemove())
 
 @router.message(Command('podarki'))
 async def cmd_gifts(m: Message):
     u = user(m.from_user.id)
     if not u: return await start(m, CommandObject(prefix='/', command='start', args=None))
-    await give_gifts(u, again=True)
+    await next_step(u, m.from_user.id)
 
 def gift_rows(keys):
     return [[('url', '🎁 ' + T.GIFT[k][0], T.GIFT[k][1])] for k in keys]
 
 async def give_gifts(u, again=False):
     await bot.send_message(u['id'], '🎁', reply_markup=ReplyKeyboardRemove())
-    await send(u['id'], T.GIFTS_TEXT, gift_rows(T.REG_GIFTS) + [[('app', '👤 Личный кабинет')], [('url', '🔗 Позвать друга', '{SHARE}')]])
+    await send(u['id'], T.GIFTS_TEXT, gift_rows(T.REG_GIFTS) + T.MENU_BTNS + [[('url', '🔗 Позвать друга', '{SHARE}')]])
 
 @router.message(F.contact)
 async def got_contact(m: Message):
@@ -230,16 +244,29 @@ async def got_contact(m: Message):
     first_time = not u['phone']
     q('UPDATE users SET phone=? WHERE id=?', m.contact.phone_number, u['id'])
     u = user(u['id'])
-    await give_gifts(u)
     if first_time:
-        asyncio.create_task(to_sheet(u, 'Регистрация через бота'))
+        asyncio.create_task(to_sheet(u, 'Регистрация через бота: телефон'))
         await credit_referrer(u)
+    await next_step(u, u['id'])
 
-@router.message(F.text == T.SKIP_CONTACT)
-async def skip_contact(m: Message):
-    u = user(m.from_user.id) or new_user(m, 'бот')
-    await give_gifts(u)
-    await credit_referrer(u)
+EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$')
+
+@router.message(F.text & ~F.text.startswith('/'))
+async def got_text(m: Message):
+    u = user(m.from_user.id)
+    if not u:
+        return await start(m, CommandObject(prefix='/', command='start', args=None))
+    if u['phone'] and not u['email']:
+        mail = m.text.strip().lower()
+        if not EMAIL_RE.match(mail):
+            return await m.answer(T.BAD_EMAIL)
+        q('UPDATE users SET email=? WHERE id=?', mail, u['id'])
+        u = user(u['id'])
+        asyncio.create_task(to_sheet(u, 'Регистрация через бота'))
+        return await give_gifts(u)
+    if not u['phone']:
+        return await ask_contact(u['id'])
+    await m.answer(T.HELP)
 
 # ---------------- друзья ----------------
 async def is_channel_member(uid):
@@ -386,6 +413,7 @@ async def stats(m: Message):
     c = lambda sql: q(sql).fetchone()[0]
     await m.answer(f'📊 Всего: <b>{c("SELECT COUNT(*) FROM users")}</b>\n'
                    f'С телефоном: <b>{c("SELECT COUNT(*) FROM users WHERE phone IS NOT NULL")}</b>\n'
+                   f'С почтой: <b>{c("SELECT COUNT(*) FROM users WHERE email IS NOT NULL")}</b>\n'
                    f'VIP: <b>{c("SELECT COUNT(*) FROM users WHERE vip=1")}</b>\n'
                    f'Прошли опрос: <b>{c("SELECT COUNT(*) FROM users WHERE survey IS NOT NULL")}</b>\n'
                    f'Пришли по ссылкам друзей: <b>{c("SELECT COUNT(*) FROM users WHERE credited=1")}</b>\n'
@@ -467,9 +495,9 @@ async def test(m: Message):
 # ---------------- бэкап ----------------
 def export_csv():
     buf = io.StringIO(); w = csv.writer(buf, delimiter=';')
-    w.writerow(['id', 'ник', 'имя', 'телефон', 'дата', 'источник', 'пригласил', 'засчитан', 'VIP', 'друзей', 'опрос', 'заблокировал'])
+    w.writerow(['id', 'ник', 'имя', 'телефон', 'почта', 'дата', 'источник', 'пригласил', 'засчитан', 'VIP', 'друзей', 'опрос', 'заблокировал'])
     for r in q('SELECT * FROM users ORDER BY created').fetchall():
-        w.writerow([r['id'], r['username'], r['first_name'], r['phone'], datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m.%Y %H:%M'),
+        w.writerow([r['id'], r['username'], r['first_name'], r['phone'], r['email'], datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m.%Y %H:%M'),
                     r['source'], r['referrer'], r['credited'], r['vip'], friends_count(r['id']), r['survey'], r['blocked']])
     return ('\ufeff' + buf.getvalue()).encode('utf-8')
 
@@ -521,6 +549,8 @@ def cond_ok(u, only):
     if only == 'not_vip': return not u['vip']
     if only == 'vip': return bool(u['vip'])
     if only == 'no_survey': return not u['survey']
+    if only == 'no_contact': return not u['phone']
+    if only == 'no_email': return bool(u['phone']) and not u['email']
     return True
 
 async def scheduler():
