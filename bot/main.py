@@ -397,7 +397,9 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/export · выгрузка участников в CSV\n'
   '/backup · прислать бэкап базы (он же приходит каждую ночь)\n'
   '/restore · ответь на файл бэкапа, чтобы восстановить базу\n'
-  '/test · прислать себе приветствие')
+  '/test · прислать себе приветствие\n'
+  '/reset_me · забыть тебя, чтобы пройти регистрацию заново\n'
+  '/chain · показать все сообщения цепочки по порядку')
 
 def admin_only(fn):
     names = set(inspect.signature(fn).parameters)
@@ -485,6 +487,46 @@ async def bc_go(c: CallbackQuery):
 @admin_only
 async def export(m: Message):
     await m.answer_document(BufferedInputFile(export_csv(), filename='uchastniki.csv'))
+
+
+@router.message(Command('reset_me'))
+@admin_only
+async def reset_me(m: Message):
+    uid = m.from_user.id
+    q('DELETE FROM sent WHERE user_id=?', uid)
+    q('DELETE FROM settings WHERE k=?', f'sv_{uid}')
+    q('DELETE FROM users WHERE id=?', uid)
+    await m.answer('🧹 Готово, я тебя забыла. Нажми /start и пройди регистрацию как новый участник. Админом ты остаёшься.', reply_markup=ReplyKeyboardRemove())
+
+def when_text(step):
+    if 'after' in step:
+        mins = step['after']
+        human = f'{mins} мин' if mins < 60 else (f'{mins // 60} ч' if mins % 60 == 0 else f'{mins // 60} ч {mins % 60} мин')
+        return f'через {human} после регистрации'
+    return step['at'].strftime('%d.%m в %H:%M МСК')
+
+COND = {'not_vip': 'тем, у кого нет VIP', 'no_survey': 'тем, кто не прошёл опрос', 'no_contact': 'тем, кто не оставил номер',
+        'no_email': 'тем, кто оставил номер, но не почту', 'vip': 'только VIP'}
+
+@router.message(Command('chain'))
+@admin_only
+async def chain_preview(m: Message):
+    uid = m.from_user.id
+    if not user(uid):
+        return await m.answer('Сначала нажми /start, чтобы бот знал твоё имя.')
+    steps = [('Цепочка после регистрации', T.CHAIN), ('Рассылки по расписанию', T.SCHEDULE)]
+    total = sum(len(x) for _, x in steps)
+    await m.answer(f'▶️ Показываю всю цепочку: {total} сообщений. Над каждым серая подпись, когда и кому оно уходит.')
+    i = 0
+    for title, lst in steps:
+        await m.answer(f'<b>━━ {title} ━━</b>')
+        for st in lst:
+            i += 1
+            who = COND.get(st.get('only'), 'всем участникам')
+            await m.answer(f'<i>#{i} · {when_text(st)} · {who}</i>')
+            await send(uid, st['text'], st.get('btns'), st.get('photo'))
+            await asyncio.sleep(0.4)
+    await m.answer('✅ Это вся цепочка. Пришли правки к любому номеру, например «#5 поменять текст на…»')
 
 @router.message(Command('test'))
 @admin_only
