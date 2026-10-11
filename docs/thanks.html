@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Место за тобой · Собери ИИ-команду за выходные</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1009F6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231009F6'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FFBA09'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--white:#FFFFFF;--cream:#F3F3EF;--sky:#DCE8F7;--blue:#1009F6;--yellow:#FFBA09;--ink:#141414;--ink-2:#4B4B52;--line:#DADAD3;--font:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;--ease:cubic-bezier(.16,1,.3,1);color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--cream);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;display:grid;place-items:center;padding:28px 16px}
+h1,p{margin:0}
+a{color:inherit}
+.shape{position:fixed;pointer-events:none;z-index:0}
+.shape.a{width:min(520px,60vw);aspect-ratio:1;left:-16vw;top:-80px;background:var(--blue);clip-path:polygon(0 25%,72% 0,100% 62%,28% 100%);animation:drift 14s ease-in-out infinite alternate}
+.shape.b{width:min(380px,44vw);aspect-ratio:1;right:-12vw;bottom:-60px;background:var(--sky);clip-path:polygon(18% 0,100% 18%,82% 100%,0 72%);animation:drift 18s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(30px,24px) rotate(6deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);filter:blur(6px)}}
+.card{position:relative;z-index:1;width:min(720px,100%);background:var(--white);border-radius:40px;padding:clamp(28px,5vw,56px);text-align:center;display:grid;justify-items:center;gap:18px;animation:fadeUp 1s var(--ease) both}
+.check{width:84px;height:84px}
+.check circle{fill:var(--yellow);stroke:var(--ink);stroke-width:2;stroke-dasharray:240;stroke-dashoffset:240;animation:draw 1s var(--ease) .2s forwards}
+.check path{fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .7s var(--ease) .8s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.chip{display:inline-flex;align-items:center;min-height:30px;padding:5px 14px;border-radius:999px;background:var(--cream);font-size:13px;font-weight:700}
+h1{font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.05;letter-spacing:-.035em}
+h1 .hl{color:var(--blue)}
+.lead{color:var(--ink-2);max-width:44ch;font-size:clamp(16px,1.6vw,19px)}
+.lead b{color:var(--ink)}
+.steps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:4px}
+.steps span{padding:6px 12px;border-radius:999px;background:var(--cream);font-size:13px;font-weight:600}
+.steps span.on{background:var(--blue);color:var(--white)}
+.choose{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+@media (max-width:560px){.choose{grid-template-columns:minmax(0,1fr)}}
+.ch{display:grid;gap:10px;justify-items:start;text-align:left;padding:22px;border-radius:24px;text-decoration:none;border:1.5px solid var(--ink);transition:transform .4s var(--ease),background .3s}
+.ch:hover{transform:translateY(-4px)}
+.ch.tg{background:var(--blue);color:var(--white);border-color:var(--blue)}
+.ch.mx{background:var(--yellow);color:var(--ink)}
+.ch .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--white)}
+.ch .ic svg{width:28px;height:28px}
+.ch b{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.ch small{font-size:14px;opacity:.85}
+.ch .go{font-weight:700;font-size:15px;display:inline-flex;gap:8px;align-items:center}
+.ch .go i{font-style:normal;transition:transform .4s var(--ease)}
+.ch:hover .go i{transform:translateX(5px)}
+.note{font-size:14px;color:var(--ink-2)}
+.note a{color:var(--blue)}
+.foot{position:relative;z-index:1;margin-top:22px;font-size:13px;color:var(--ink-2);text-align:center}
+.foot a{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.check circle,.check path{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span>
+<div>
+  <main class="card">
+    <svg class="check" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36"/><path d="M25 41l10 10 20-22"/></svg>
+    <span class="chip" id="chip">Регистрация прошла</span>
+    <h1 id="title">Место за тобой! <span class="hl">Остался один шаг</span></h1>
+    <p class="lead" id="lead">Вступи в канал двухдневника. Там ссылка на эфир, <b>3 подарка</b> и напоминания перед стартом. Выбери, где тебе удобнее 👇</p>
+    <div class="steps" aria-hidden="true"><span>1. Регистрация ✓</span><span class="on">2. Канал</span><span>3. Эфир Сб и Вс в 14:00</span></div>
+    <div class="choose">
+      <a class="ch tg" href="https://t.me/+cjxoa6weO0czOWRi" target="_blank" rel="noopener">
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1009F6" d="M21.9 4.3 18.8 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L7 13.1 2.4 11.7c-1-.3-1-1 .2-1.5L20.5 3.3c.8-.3 1.6.2 1.4 1Z"/></svg></span>
+        <b>Telegram</b><small>Канал двухдневника в Telegram</small>
+        <span class="go">Вступить <i>→</i></span>
+      </a>
+      <a class="ch mx" href="https://max.ru/join/PzpWaFYZ8q-BaFvU1pUAVlj1jycdgZgt9afSZqP9sQA" target="_blank" rel="noopener">
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#141414" d="M12 2.5c5.3 0 9.5 4 9.5 9.2S17.3 21 12 21c-1.5 0-2.9-.3-4.2-.9L3 21.4l1.4-4.3A8.9 8.9 0 0 1 2.5 11.7C2.5 6.5 6.7 2.5 12 2.5Zm-3.6 6.2v6.6h1.6v-4.1l1.8 2.6h.4l1.8-2.6v4.1h1.6V8.7h-1.5L12 11.9 9.9 8.7H8.4Z"/></svg></span>
+        <b>MAX</b><small>Тот же канал в мессенджере MAX</small>
+        <span class="go">Вступить <i>→</i></span>
+      </a>
+    </div>
+    <p class="note">Не открывается ссылка? Напиши менеджеру: <a href="https://t.me/puzanovateam" target="_blank" rel="noopener">@puzanovateam</a></p>
+  </main>
+  <p class="foot">© 2026 Собери ИИ-команду за выходные · ИП Пузанова Ольга Валерьевна · <a href="https://olgapuzanovva.ru/politic" target="_blank" rel="noopener">Политика конфиденциальности</a></p>
+</div>
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  var name = (q.get('name') || '').trim().slice(0, 40);
+  var paid = q.has('paid') || q.has('vip');
+  function esc(t){ return t.replace(/[<>&"]/g, ''); }
+  if (paid){
+    document.getElementById('chip').textContent = 'Оплата прошла · VIP';
+    document.getElementById('title').innerHTML = (name ? esc(name) + ', ' : '') + 'VIP твой! <span class="hl">Остался один шаг</span>';
+    document.getElementById('lead').innerHTML = 'Вступи в канал двухдневника. Там ссылка на эфир, <b>3 подарка</b> и всё по VIP: записи, файл с промптами и запись на разбор 1:1. Выбери, где тебе удобнее 👇';
+  } else if (name){
+    document.getElementById('title').innerHTML = esc(name) + ', место за тобой! <span class="hl">Остался один шаг</span>';
+  }
+})();
+</script>
+</body>
+</html>
