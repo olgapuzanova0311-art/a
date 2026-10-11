@@ -465,7 +465,7 @@ async def broadcast(m: Message):
         return await m.answer('Ответь командой /broadcast на сообщение, которое нужно разослать.')
     set_setting('bc_msg', f'{m.chat.id}:{m.reply_to_message.message_id}')
     total = q('SELECT COUNT(*) FROM users WHERE blocked=0').fetchone()[0]
-    await m.answer(f'Разослать это сообщение {total} участникам?', reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='✅ Да, отправить', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
+    await m.answer(f'Разослать это сообщение {total} участникам?', reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🧪 Сначала себе', callback_data='bc:me')], [InlineKeyboardButton(text='✅ Да, отправить всем', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
 
 @router.callback_query(F.data.startswith('bc:'))
 async def bc_go(c: CallbackQuery):
@@ -473,6 +473,9 @@ async def bc_go(c: CallbackQuery):
     await c.answer()
     if c.data == 'bc:no': return await c.message.edit_text('Отменено.')
     chat, mid = setting('bc_msg').split(':')
+    if c.data == 'bc:me':
+        await bot.copy_message(c.from_user.id, int(chat), int(mid))
+        return await bot.send_message(c.from_user.id, '☝️ Так увидят участники. Отправляем всем?', reply_markup=c.message.reply_markup)
     await c.message.edit_text('🚀 Рассылка пошла…')
     ok = 0
     for r in q('SELECT id FROM users WHERE blocked=0').fetchall():
