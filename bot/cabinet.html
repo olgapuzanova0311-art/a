@@ -65,7 +65,7 @@ h2{margin:0 0 10px;font-size:19px;font-weight:800;letter-spacing:-.01em}
 var tg = window.Telegram && Telegram.WebApp;
 if (tg){ tg.ready(); tg.expand(); try{ tg.setHeaderColor('#1009F6'); tg.setBackgroundColor('#F3F3EF'); }catch(e){} }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); }
-function open(u){ if(!u) return; if (tg && /t\.me\//.test(u)) tg.openTelegramLink(u); else if (tg) tg.openLink(u); else window.open(u,'_blank'); }
+function go(u){ if(!u) return; if (tg && /t\.me\//.test(u)) tg.openTelegramLink(u); else if (tg) tg.openLink(u); else window.open(u,"_blank"); }
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData: tg ? tg.initData : ''})})
 .then(function(r){ if(!r.ok) throw r.status; return r.json(); })
 .then(render).catch(function(e){
@@ -100,8 +100,8 @@ function render(d){
   h += '<p class="muted" style="text-align:center">Нужна помощь? Напиши <a data-u="https://t.me/puzanovateam" style="color:#1009F6">@puzanovateam</a></p>';
   var app = document.getElementById('app'); app.innerHTML = h;
   setTimeout(function(){ document.getElementById('liq').style.height = pct + '%'; }, 150);
-  app.querySelectorAll('[data-u]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); open(a.getAttribute('data-u')); }); });
-  document.getElementById('share').onclick = function(){ open(d.share); };
+  app.querySelectorAll('[data-u]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); go(a.getAttribute("data-u")); }); });
+  document.getElementById('share').onclick = function(){ go(d.share); };
   document.getElementById('copy').onclick = function(){
     var i = document.getElementById('ref'), b = this;
     (navigator.clipboard ? navigator.clipboard.writeText(d.ref) : Promise.reject()).then(function(){ b.textContent='Готово ✓'; }).catch(function(){ i.select(); document.execCommand && document.execCommand('copy'); b.textContent='Готово ✓'; });
