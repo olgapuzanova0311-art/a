@@ -43,6 +43,7 @@ DEFAULT_LINKS = {
 os.makedirs(os.path.dirname(DB_PATH) or '.', exist_ok=True)
 db = sqlite3.connect(DB_PATH, check_same_thread=False)
 db.row_factory = sqlite3.Row
+db.execute('PRAGMA journal_mode=WAL'); db.execute('PRAGMA synchronous=FULL')
 db.executescript('''
 CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, phone TEXT,
@@ -367,6 +368,8 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/circle · ответь этой командой на кружок, и он станет приветствием\n'
   '/broadcast · ответь этой командой на любое сообщение, бот разошлёт его всем\n'
   '/export · выгрузка участников в CSV\n'
+  '/backup · прислать бэкап базы (он же приходит каждую ночь)\n'
+  '/restore · ответь на файл бэкапа, чтобы восстановить базу\n'
   '/test · прислать себе приветствие')
 
 def admin_only(fn):
@@ -453,17 +456,65 @@ async def bc_go(c: CallbackQuery):
 @router.message(Command('export'))
 @admin_only
 async def export(m: Message):
-    buf = io.StringIO(); w = csv.writer(buf, delimiter=';')
-    w.writerow(['id', 'ник', 'имя', 'телефон', 'дата', 'источник', 'пригласил', 'засчитан', 'VIP', 'друзей', 'опрос', 'заблокировал'])
-    for r in q('SELECT * FROM users ORDER BY created').fetchall():
-        w.writerow([r['id'], r['username'], r['first_name'], r['phone'], datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m.%Y %H:%M'),
-                    r['source'], r['referrer'], r['credited'], r['vip'], friends_count(r['id']), r['survey'], r['blocked']])
-    await m.answer_document(BufferedInputFile(('﻿' + buf.getvalue()).encode('utf-8'), filename='uchastniki.csv'))
+    await m.answer_document(BufferedInputFile(export_csv(), filename='uchastniki.csv'))
 
 @router.message(Command('test'))
 @admin_only
 async def test(m: Message):
     await send(m.from_user.id, T.WELCOME, T.WELCOME_BTNS, photo='i_hero.jpg')
+
+
+# ---------------- бэкап ----------------
+def export_csv():
+    buf = io.StringIO(); w = csv.writer(buf, delimiter=';')
+    w.writerow(['id', 'ник', 'имя', 'телефон', 'дата', 'источник', 'пригласил', 'засчитан', 'VIP', 'друзей', 'опрос', 'заблокировал'])
+    for r in q('SELECT * FROM users ORDER BY created').fetchall():
+        w.writerow([r['id'], r['username'], r['first_name'], r['phone'], datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m.%Y %H:%M'),
+                    r['source'], r['referrer'], r['credited'], r['vip'], friends_count(r['id']), r['survey'], r['blocked']])
+    return ('\ufeff' + buf.getvalue()).encode('utf-8')
+
+def db_bytes():
+    path = DB_PATH + '.bak'
+    dst = sqlite3.connect(path); db.backup(dst); dst.close()
+    with open(path, 'rb') as f: return f.read()
+
+async def send_backup(chat_ids=None):
+    ids = chat_ids or [r['id'] for r in q('SELECT id FROM admins').fetchall()]
+    if not ids: return
+    stamp = datetime.now(T.MSK).strftime('%d.%m_%H-%M')
+    n = q('SELECT COUNT(*) FROM users').fetchone()[0]
+    data, table = db_bytes(), export_csv()
+    for cid in ids:
+        try:
+            await bot.send_document(cid, BufferedInputFile(data, filename=f'bot_backup_{stamp}.db'),
+                                    caption=f'💾 Бэкап базы бота: {n} участников. Сохрани. Если база пропадёт, ответь на этот файл командой /restore.')
+            await bot.send_document(cid, BufferedInputFile(table, filename=f'uchastniki_{stamp}.csv'))
+        except Exception as e:
+            log.warning('backup to %s: %s', cid, e)
+
+@router.message(Command('backup'))
+@admin_only
+async def backup_cmd(m: Message):
+    await send_backup([m.from_user.id])
+
+@router.message(Command('restore'))
+@admin_only
+async def restore_cmd(m: Message):
+    d = m.reply_to_message.document if m.reply_to_message else None
+    if not d or not d.file_name.endswith('.db'):
+        return await m.answer('Ответь командой /restore на файл бэкапа bot_backup_….db')
+    f = await bot.download(d)
+    src_path = DB_PATH + '.restore'
+    with open(src_path, 'wb') as out: out.write(f.read())
+    src = sqlite3.connect(src_path)
+    try:
+        n = src.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+    except Exception:
+        src.close(); return await m.answer('Это не похоже на бэкап бота.')
+    me = m.from_user.id
+    src.backup(db); src.close()
+    q('INSERT OR IGNORE INTO admins(id) VALUES(?)', me)
+    await m.answer(f'✅ База восстановлена: {n} участников. Рассылки продолжат работать по ней.')
 
 # ---------------- планировщик ----------------
 def cond_ok(u, only):
@@ -490,6 +541,10 @@ async def scheduler():
                     for u in rows:
                         if cond_ok(u, msg.get('only')) and mark(u['id'], msg['key']):
                             await send(u['id'], msg['text'], msg.get('btns'), msg.get('photo')); await asyncio.sleep(0.05)
+            # ежедневный бэкап в 03:00 МСК
+            day_key = now.strftime('%Y%m%d')
+            if now.hour == 3 and setting('last_backup') != day_key:
+                set_setting('last_backup', day_key); await send_backup()
             # повторная проверка подписки у друзей
             if setting('channel_id') and int(time.time()) % 3600 < 60:
                 for u in q('SELECT * FROM users WHERE referrer IS NOT NULL AND credited=0 AND phone IS NOT NULL').fetchall():
