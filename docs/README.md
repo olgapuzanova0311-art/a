@@ -5,4 +5,4 @@
 - `index.html`: лендинг с формой (имя, телефон, почта, тариф, согласия).
 - `thanks.html`: выбор канала (Telegram или MAX). После оплаты VIP ведите сюда с `?paid=1`.
 - `apps-script.gs`: приём заявок в Google Таблицу. Инструкция внутри файла.
-- `CNAME`: домен komanda.olgapuzanovva.ru.
+- `CNAME`: домен agent.olgapuzanovva.ru.
