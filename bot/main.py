@@ -94,7 +94,7 @@ def links(u=None):
     d = dict(DEFAULT_LINKS)
     d['STREAM1'] = setting('stream1') or d['TG']
     d['STREAM2'] = setting('stream2') or d['TG']
-    d['ANKETA'] = setting('anketa') or 'https://t.me/puzanovateam'
+    d['ANKETA'] = setting('anketa') or 'https://t.me/puzanovateam?text=' + quote('Хочу на курс')
     if u:
         ref = ref_link(u)
         d['REF'] = ref
