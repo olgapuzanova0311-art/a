@@ -5,12 +5,13 @@
  * Как подключить (один раз):
  * 1. Откройте таблицу «Регистрации — Собери ИИ-команду за выходные».
  * 2. Расширения → Apps Script. Удалите всё в редакторе и вставьте этот код.
- * 3. Впишите BOT_TOKEN и CHAT_ID ниже (токен не публикуйте на сайте и в GitHub). Сохраните.
+ * 3. Впишите BOT_TOKEN ниже (токен не публикуйте на сайте и в GitHub). Нажмите «Старт» в своём боте. Сохраните.
  * 4. Начать развёртывание → Управление развёртываниями → карандаш → Версия: «Новая версия» → Развернуть.
  *    Первый раз: Новое развёртывание → «Веб-приложение», выполнять как «Я», доступ «Все».
  */
 var BOT_TOKEN = 'ВСТАВЬТЕ_ТОКЕН_БОТА';
-var CHAT_ID = 'ВСТАВЬТЕ_CHAT_ID';
+// CHAT_ID можно не заполнять: напишите боту «Старт», и скрипт сам запомнит ваш чат при первой заявке
+var CHAT_ID = '';
 
 var HEADERS = ['Дата и время', 'Имя', 'Телефон', 'Почта', 'Тариф', 'Согласие ПД', 'Согласие на рассылку', 'Событие', 'Страница'];
 
@@ -45,7 +46,9 @@ function doPost(e) {
 }
 
 function notify(d, saved, error) {
-  if (BOT_TOKEN.indexOf('ВСТАВЬТЕ') === 0 || CHAT_ID.indexOf('ВСТАВЬТЕ') === 0) return;
+  if (BOT_TOKEN.indexOf('ВСТАВЬТЕ') === 0) return;
+  var chatId = getChatId();
+  if (!chatId) return;
   var vip = String(d.tariff || '').indexOf('VIP') === 0;
   var lines = [
     (vip ? '💛 Новая заявка · VIP' : '💙 Новая заявка · бесплатно'),
@@ -62,10 +65,30 @@ function notify(d, saved, error) {
     UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify({chat_id: CHAT_ID, text: lines.join('\n'), disable_web_page_preview: true}),
+      payload: JSON.stringify({chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true}),
       muteHttpExceptions: true
     });
   } catch (err) {}
+}
+
+// Находит чат владельца: из CHAT_ID, из сохранённых свойств или из последнего «Старт» в боте
+function getChatId() {
+  if (CHAT_ID) return CHAT_ID;
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('CHAT_ID');
+  if (saved) return saved;
+  try {
+    var r = JSON.parse(UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/getUpdates', {muteHttpExceptions: true}).getContentText());
+    var res = (r && r.result) || [];
+    for (var i = res.length - 1; i >= 0; i--) {
+      var m = res[i].message;
+      if (m && m.chat && m.chat.type === 'private') {
+        props.setProperty('CHAT_ID', String(m.chat.id));
+        return String(m.chat.id);
+      }
+    }
+  } catch (err) {}
+  return '';
 }
 
 function doGet() {
