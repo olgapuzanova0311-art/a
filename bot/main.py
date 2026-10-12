@@ -396,7 +396,8 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/anketa ссылка · анкета предзаписи (сообщение про грант)\n'
   '/vip @ник или телефон или id · отметить оплату VIP\n'
   '/circle · ответь этой командой на кружок, и он станет приветствием\n'
-  '/broadcast · ответь этой командой на любое сообщение, бот разошлёт его всем\n'
+  '/broadcast · ответь этой командой на любое сообщение и выбери, кому разослать\n'
+  '/segments · кто «внедряю», кто «зарабатываю», выгрузка по сегментам\n'
   '/users · список всех участников (листается кнопками)\n'
   '/find имя, ник, телефон или почта · найти участника\n'
   '/export · выгрузка участников в файл для Excel\n'
@@ -464,6 +465,21 @@ async def circle(m: Message):
     else:
         await m.answer('Запиши кружок в этот чат, потом ответь на него командой /circle.')
 
+# Сегменты по опросу «Зачем идёшь на двухдневник?». Кто выбрал «И то, и другое», попадает в оба.
+SEGMENTS = {
+    'all': ('Всем', '1=1'),
+    'in': ('Внедряю к себе', "(survey LIKE '%Внедрить%' OR survey LIKE '%И то, и другое%')"),
+    'earn': ('Зарабатываю', "(survey LIKE '%Зарабатывать%' OR survey LIKE '%И то, и другое%')"),
+    'none': ('Не прошли опрос', "survey IS NULL"),
+}
+
+def seg_count(seg):
+    return q(f"SELECT COUNT(*) FROM users WHERE blocked=0 AND {SEGMENTS[seg][1]}").fetchone()[0]
+
+def seg_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{v[0]} · {seg_count(k)}', callback_data=f'bc:seg:{k}')] for k, v in SEGMENTS.items()]
+                                + [[InlineKeyboardButton(text='Отмена', callback_data='bc:no')]])
+
 @router.message(Command('broadcast'))
 @admin_only
 async def broadcast(m: Message):
@@ -471,21 +487,29 @@ async def broadcast(m: Message):
         return await m.answer('Ответь командой /broadcast на сообщение, которое нужно разослать.')
     set_setting('bc_msg', f'{m.chat.id}:{m.reply_to_message.message_id}')
     set_setting('bc_text', m.reply_to_message.html_text or '')
-    total = q('SELECT COUNT(*) FROM users WHERE blocked=0').fetchone()[0]
-    await m.answer(f'Разослать это сообщение {total} участникам?', reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🧪 Сначала себе', callback_data='bc:me')], [InlineKeyboardButton(text='✅ Да, отправить всем', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
+    await m.answer('Кому отправить? Числа рядом: сколько человек в Telegram.', reply_markup=seg_kb())
 
 @router.callback_query(F.data.startswith('bc:'))
 async def bc_go(c: CallbackQuery):
     if not is_admin(c.from_user.id): return await c.answer()
     await c.answer()
     if c.data == 'bc:no': return await c.message.edit_text('Отменено.')
+    if c.data.startswith('bc:seg:'):
+        seg = c.data[7:]
+        set_setting('bc_seg', seg)
+        mx = f' + в MAX {MX.seg_count(SEGMENTS[seg][1])}' if MX else ''
+        return await c.message.edit_text(f'Аудитория: <b>{SEGMENTS[seg][0]}</b>. В Telegram {seg_count(seg)}{mx}. Отправляем?',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🧪 Сначала себе', callback_data='bc:me')],
+                [InlineKeyboardButton(text='✅ Да, отправить', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
     chat, mid = setting('bc_msg').split(':')
     if c.data == 'bc:me':
         await bot.copy_message(c.from_user.id, int(chat), int(mid))
-        return await bot.send_message(c.from_user.id, '☝️ Так увидят участники. Отправляем всем?', reply_markup=c.message.reply_markup)
-    await c.message.edit_text('🚀 Рассылка пошла…')
+        return await bot.send_message(c.from_user.id, '☝️ Так увидят участники. Отправляем?', reply_markup=c.message.reply_markup)
+    seg = setting('bc_seg') or 'all'
+    where = SEGMENTS.get(seg, SEGMENTS['all'])[1]
+    await c.message.edit_text(f'🚀 Рассылка пошла: {SEGMENTS.get(seg, SEGMENTS["all"])[0]}…')
     ok = 0
-    for r in q('SELECT id FROM users WHERE blocked=0').fetchall():
+    for r in q(f'SELECT id FROM users WHERE blocked=0 AND {where}').fetchall():
         try:
             await bot.copy_message(r['id'], int(chat), int(mid)); ok += 1
         except Exception as e:
@@ -494,10 +518,33 @@ async def bc_go(c: CallbackQuery):
     await bot.send_message(c.from_user.id, f'✅ Доставлено в Telegram: {ok}')
     if MX and c.data == 'bc:go':
         if setting('bc_text'):
-            n = await MX.broadcast(setting('bc_text'))
+            n = await MX.broadcast(setting('bc_text'), where)
             await bot.send_message(c.from_user.id, f'✅ Доставлено в MAX: {n}')
         else:
             await bot.send_message(c.from_user.id, 'В MAX рассылаю только текст: в этом сообщении его нет, поэтому в MAX не отправила.')
+
+@router.message(Command('segments'))
+@admin_only
+async def segments_cmd(m: Message):
+    c = lambda sql: q(sql).fetchone()[0]
+    both = c("SELECT COUNT(*) FROM users WHERE survey LIKE '%И то, и другое%'")
+    only_in = c("SELECT COUNT(*) FROM users WHERE survey LIKE '%Внедрить%'")
+    only_earn = c("SELECT COUNT(*) FROM users WHERE survey LIKE '%Зарабатывать%'")
+    none = c("SELECT COUNT(*) FROM users WHERE survey IS NULL")
+    text = ('🧭 <b>Сегменты (Telegram)</b>\n\n'
+            f'🏢 Внедряю к себе: <b>{only_in}</b>\n💸 Зарабатываю: <b>{only_earn}</b>\n🔀 И то, и другое: <b>{both}</b>\n🤷 Не прошли опрос: <b>{none}</b>\n')
+    if MX:
+        text += ('\n<b>MAX</b>: внедряю ' + str(MX.seg_count("survey LIKE '%Внедрить%'")) + ', зарабатываю ' + str(MX.seg_count("survey LIKE '%Зарабатывать%'"))
+                 + ', оба ' + str(MX.seg_count("survey LIKE '%И то, и другое%'")) + ', без опроса ' + str(MX.seg_count('survey IS NULL')) + '\n')
+    text += '\nВыгрузка сегмента в файл для Excel 👇\nРассылка по сегменту: ответь /broadcast на сообщение и выбери аудиторию.'
+    await m.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='📥 ' + v[0], callback_data=f'sx:{k}')] for k, v in SEGMENTS.items() if k != 'all']))
+
+@router.callback_query(F.data.startswith('sx:'))
+async def seg_export(c: CallbackQuery):
+    if not is_admin(c.from_user.id): return await c.answer()
+    await c.answer()
+    seg = c.data[3:]
+    await bot.send_document(c.from_user.id, BufferedInputFile(export_csv(SEGMENTS[seg][1]), filename=f'segment_{seg}.csv'), caption=SEGMENTS[seg][0])
 
 PAGE = 15
 
@@ -603,10 +650,10 @@ async def test(m: Message):
 
 
 # ---------------- бэкап ----------------
-def export_csv():
+def export_csv(where='1=1'):
     buf = io.StringIO(); w = csv.writer(buf, delimiter=';')
     w.writerow(['id', 'ник', 'имя', 'телефон', 'почта', 'дата', 'источник', 'пригласил', 'засчитан', 'VIP', 'друзей', 'опрос', 'заблокировал'])
-    for r in q('SELECT * FROM users ORDER BY created').fetchall():
+    for r in q(f'SELECT * FROM users WHERE {where} ORDER BY created').fetchall():
         w.writerow([r['id'], r['username'], r['first_name'], r['phone'], r['email'], datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m.%Y %H:%M'),
                     r['source'], r['referrer'], r['credited'], r['vip'], friends_count(r['id']), r['survey'], r['blocked']])
     return ('\ufeff' + buf.getvalue()).encode('utf-8')

@@ -285,9 +285,12 @@ class MaxBot:
                 log.exception('max scheduler')
             await asyncio.sleep(30)
 
-    async def broadcast(self, text):
+    def seg_count(self, where):
+        return self.q(f'SELECT COUNT(*) FROM max_users WHERE blocked=0 AND {where}').fetchone()[0]
+
+    async def broadcast(self, text, where='1=1'):
         ok = 0
-        for r in self.q('SELECT id FROM max_users WHERE blocked=0').fetchall():
+        for r in self.q(f'SELECT id FROM max_users WHERE blocked=0 AND {where}').fetchall():
             try:
                 await self.call('POST', '/messages', {'user_id': r['id']}, {'text': text[:4000], 'format': 'html'})
                 ok += 1
