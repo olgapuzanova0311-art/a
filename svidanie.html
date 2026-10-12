@@ -77,7 +77,8 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
 .btn-yes:hover{ filter:brightness(1.05); }
 .btn-yes:active{ transform:scale(.96); }
 .btn-no{ background:var(--soft); color:var(--ink); }
-.btn-no.runaway{ position:fixed; z-index:50; transition:left .25s cubic-bezier(.3,1.5,.5,1), top .25s cubic-bezier(.3,1.5,.5,1), transform .2s; }
+.btn-no.runaway{ position:absolute; z-index:5; }
+.btn-no.runaway.jump{ transition:left .3s cubic-bezier(.3,1.5,.5,1), top .3s cubic-bezier(.3,1.5,.5,1), transform .2s; }
 .btn-ghost{ background:transparent; color:var(--muted); font-weight:600; font-size:14px; padding:10px 16px; }
 .btn-wide{ width:100%; }
 .btn:focus-visible,.opt:focus-visible,.chip:focus-visible{ outline:3px solid var(--accent); outline-offset:3px; }
@@ -255,51 +256,96 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
   const yes = $('#yes'), no = $('#no'), hint = $('#hint');
   const noTexts = ['Нет','Точно?','Подумай ещё','Ну пожалуйста 🥺','Не-а, не выйдет','Я обижусь 😢','Кнопка сломалась','Ты серьёзно?','Последний шанс!','Жми «Да» 👉'];
   const hints = ['','Хм, кнопка «Нет» какая-то пугливая…','Она тебя боится 😅','Может, всё-таки «Да»?','Кнопка «Да» растёт не просто так 👀','Сопротивление бесполезно 💘'];
-  let tries = 0;
+  const card = $('.card');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let tries = 0, scale = 1, pos = null, vel = null, jumping = false, startTimer = null;
+
+  // всё считаем в координатах карточки: кнопка плавает внутри неё и всегда на виду
+  function yesBox(sc){
+    const c = card.getBoundingClientRect(), b = yes.getBoundingClientRect();
+    const cx = b.left + b.width / 2 - c.left, cy = b.top + b.height / 2 - c.top;
+    const hw = yes.offsetWidth * sc / 2 + 12, hh = yes.offsetHeight * sc / 2 + 12;
+    return { l:cx - hw, r:cx + hw, t:cy - hh, b:cy + hh };
+  }
+  const overlaps = (x, y, w, h, Y) => x < Y.r && x + w > Y.l && y < Y.b && y + h > Y.t;
+  const maxX = () => card.clientWidth - no.offsetWidth - 8;
+  const maxY = () => card.clientHeight - no.offsetHeight - 8;
+  const place = () => { no.style.left = pos.x + 'px'; no.style.top = pos.y + 'px'; };
+  const randomDir = () => { const a = Math.random() * Math.PI * 2; return { x:Math.cos(a), y:Math.sin(a) }; };
+
+  function detach(){
+    if (no.classList.contains('runaway')) return;
+    const c = card.getBoundingClientRect(), r = no.getBoundingClientRect();
+    pos = { x:r.left - c.left, y:r.top - c.top };
+    no.classList.add('runaway'); place();
+    vel = randomDir();
+  }
+
+  function drift(){
+    requestAnimationFrame(drift);
+    if (!pos || jumping || !$('#s-ask').classList.contains('active')) return;
+    const sp = 0.9 + tries * 0.3, w = no.offsetWidth, h = no.offsetHeight;
+    let nx = pos.x + vel.x * sp, ny = pos.y + vel.y * sp;
+    if (nx < 8 || nx > maxX()) { vel.x *= -1; nx = Math.min(Math.max(nx, 8), maxX()); }
+    if (ny < 8 || ny > maxY()) { vel.y *= -1; ny = Math.min(Math.max(ny, 8), maxY()); }
+    const Y = yesBox(scale);
+    if (overlaps(nx, ny, w, h, Y)) {
+      const dx = nx + w / 2 - (Y.l + Y.r) / 2, dy = ny + h / 2 - (Y.t + Y.b) / 2, d = Math.hypot(dx, dy) || 1;
+      vel = { x:dx / d, y:dy / d };
+      nx = pos.x + vel.x * sp * 2; ny = pos.y + vel.y * sp * 2;
+    }
+    pos = { x:nx, y:ny }; place();
+  }
 
   function dodge(e){
     if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (jumping) return;
+    detach();
     tries++;
-    const r = no.getBoundingClientRect();
-    if (!no.classList.contains('runaway')){
-      no.style.left = r.left + 'px'; no.style.top = r.top + 'px';
-      no.classList.add('runaway');
-    }
+    scale = Math.min(1 + tries * 0.12, 2.2);
     no.textContent = noTexts[Math.min(tries, noTexts.length - 1)];
-    const pad = 16;
-    const w = no.offsetWidth, h = no.offsetHeight;
-    // «Да» сейчас увеличится — считаем её будущий размер, чтобы «Нет» на неё не прыгала
-    const scale = Math.min(1 + tries * 0.12, 2.2);
-    const yb = yes.getBoundingClientRect();
-    const cx = yb.left + yb.width / 2, cy = yb.top + yb.height / 2;
-    const yw = yes.offsetWidth * scale / 2 + 24, yh = yes.offsetHeight * scale / 2 + 24;
-    const yr = { left:cx - yw, right:cx + yw, top:cy - yh, bottom:cy + yh };
+    yes.style.transform = `scale(${scale})`;
+    const Y = yesBox(scale), w = no.offsetWidth, h = no.offsetHeight;
     let x, y, guard = 0;
     do {
-      x = pad + Math.random() * (innerWidth - w - pad * 2);
-      y = pad + Math.random() * (innerHeight - h - pad * 2);
+      x = 8 + Math.random() * Math.max(0, maxX() - 8);
+      y = 8 + Math.random() * Math.max(0, maxY() - 8);
       guard++;
-    } while (guard < 80 && (
-      Math.hypot(x - r.left, y - r.top) < 120 ||
-      (x < yr.right && x + w > yr.left && y < yr.bottom && y + h > yr.top)
-    ));
-    no.style.left = x + 'px'; no.style.top = y + 'px';
-    no.style.transform = `rotate(${(Math.random() * 30 - 15).toFixed(1)}deg) scale(${Math.max(.6, 1 - tries * .04)})`;
-
-    yes.style.transform = `scale(${scale})`;
+    } while (guard < 100 && (overlaps(x, y, w, h, Y) || Math.hypot(x - pos.x, y - pos.y) < 90));
+    jumping = true; no.classList.add('jump');
+    pos = { x, y }; place(); vel = randomDir();
+    no.style.transform = `rotate(${(Math.random() * 30 - 15).toFixed(1)}deg) scale(${Math.max(.7, 1 - tries * .03)})`;
+    setTimeout(() => { jumping = false; no.classList.remove('jump'); }, 320);
     hint.textContent = hints[Math.min(tries, hints.length - 1)];
     if (tries === 6) $('#askEmoji').textContent = '🥺';
   }
+
+  // кнопка начинает плавать сама, как только карточка появилась
+  function startFloating(){
+    clearTimeout(startTimer);
+    if (reduceMotion) return;
+    startTimer = setTimeout(detach, 700);
+  }
   function resetNo(){
-    tries = 0;
-    no.classList.remove('runaway');
+    clearTimeout(startTimer);
+    tries = 0; scale = 1; pos = null; jumping = false;
+    no.classList.remove('runaway', 'jump');
     no.removeAttribute('style'); yes.removeAttribute('style');
     no.textContent = 'Нет'; hint.textContent = ''; $('#askEmoji').textContent = '💌';
   }
-  no.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') dodge(); });
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(startFloating);
+  requestAnimationFrame(drift);
+
+  no.addEventListener('touchstart', dodge, { passive:false });
   no.addEventListener('pointerdown', dodge);
   no.addEventListener('click', dodge);
   no.addEventListener('focus', () => { if (tries > 0) dodge(); });
+  // на компьютере убегает, когда курсор подбирается близко
+  document.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' || !$('#s-ask').classList.contains('active')) return;
+    const r = no.getBoundingClientRect();
+    if (Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) < Math.max(r.width, r.height) * 0.8) dodge();
+  });
 
   yes.addEventListener('click', () => { confetti(); go('s-yay'); });
 
@@ -368,6 +414,7 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
     $('#send').href = 'https://t.me/share/url?url=' + encodeURIComponent(' ') + '&text=' + encodeURIComponent(message());
   });
   $('#restart').addEventListener('click', () => {
+    setTimeout(startFloating, 0);
     Object.assign(state, { what:null, date:null, time:null, mood:null, note:'' });
     document.querySelectorAll('.selected').forEach(x => x.classList.remove('selected'));
     ['#whatNext','#whenNext','#moodNext'].forEach(s => $(s).disabled = true);
