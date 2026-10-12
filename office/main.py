@@ -13,6 +13,7 @@ import asyncio, hashlib, hmac, json, logging, os, re, sqlite3, time
 from pathlib import Path
 
 import aiohttp
+import anthropic
 from aiohttp import web
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -23,6 +24,10 @@ PASSWORD = os.environ.get('OFFICE_PASSWORD', '')
 MODEL = os.environ.get('MODEL', 'anthropic/claude-sonnet-4.5')
 DB_PATH = os.environ.get('DB_PATH', '/data/office.db')
 PORT = int(os.environ.get('PORT', '8080'))
+CLAUDE_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-opus-5-5')
+CLAUDE_EFFORT = os.environ.get('CLAUDE_EFFORT', 'medium')
+claude = anthropic.AsyncAnthropic(api_key=CLAUDE_KEY, timeout=300.0) if CLAUDE_KEY else None
 HERE = Path(__file__).parent
 COOKIE = 'office_s'
 TOKEN = hmac.new(b'ii-office', PASSWORD.encode(), hashlib.sha256).hexdigest()
@@ -143,9 +148,11 @@ SEM = asyncio.Semaphore(3)
 
 
 async def llm(messages, model=None):
+    if CLAUDE_KEY:
+        return await llm_claude(messages, model)
     if not API_KEY:
         await asyncio.sleep(1.5)
-        return ('🔌 Мозги ещё не подключены. Добавь ключ OPENROUTER_API_KEY в настройках Railway, '
+        return ('🔌 Мозги ещё не подключены. Добавь ключ ANTHROPIC_API_KEY или OPENROUTER_API_KEY в настройках Railway, '
                 'и я начну отвечать по-настоящему.')
     async with SEM:
         try:
@@ -163,6 +170,31 @@ async def llm(messages, model=None):
         except Exception as e:
             log.exception('llm')
             return f'⚠️ Не получилось связаться с нейросетью: {e}'
+
+
+async def llm_claude(messages, model=None):
+    """Claude напрямую через Anthropic API. При отказе модели сервер сам повторяет запрос на запасной модели."""
+    system = '\n\n'.join(m['content'] for m in messages if m['role'] == 'system')
+    convo = [m for m in messages if m['role'] != 'system'] or [{'role': 'user', 'content': 'Начни.'}]
+    use_model = model if (model or '').startswith('claude-') else CLAUDE_MODEL
+    async with SEM:
+        try:
+            resp = await claude.beta.messages.create(
+                model=use_model, max_tokens=16000, system=system, messages=convo,
+                output_config={'effort': CLAUDE_EFFORT},
+                betas=['server-side-fallback-2026-07-01'], fallbacks='default',
+            )
+        except anthropic.RateLimitError:
+            return '⚠️ Слишком много запросов к Claude. Повтори через минуту.'
+        except anthropic.APIStatusError as e:
+            log.warning('claude %s: %s', e.status_code, e)
+            return f'⚠️ Claude не ответил (ошибка {e.status_code}). Проверь ключ и баланс в консоли Anthropic.'
+        except anthropic.APIConnectionError as e:
+            return f'⚠️ Не получилось связаться с Claude: {e}'
+    if resp.stop_reason == 'refusal':
+        return '⚠️ Claude отказался выполнять эту задачу. Переформулируй запрос.'
+    text = '\n'.join(b.text for b in resp.content if b.type == 'text').strip()
+    return text or '…'
 
 
 def team_context(main):
@@ -273,7 +305,7 @@ async def state(req):
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
     return web.json_response({'agents': agents, 'tasks': tasks, 'events': events if since else [], 'last': last,
-                              'brain': bool(API_KEY), 'model': MODEL})
+                              'brain': bool(CLAUDE_KEY or API_KEY), 'model': CLAUDE_MODEL if CLAUDE_KEY else MODEL})
 
 
 async def messages(req):
@@ -344,5 +376,5 @@ def make_app():
 
 
 if __name__ == '__main__':
-    log.info('office on :%s, brain=%s, model=%s', PORT, bool(API_KEY), MODEL)
+    log.info('office on :%s, claude=%s, openrouter=%s', PORT, bool(CLAUDE_KEY), bool(API_KEY))
     web.run_app(make_app(), port=PORT)
