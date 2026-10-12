@@ -26,12 +26,14 @@
     --bg:#1a1115; --bg-2:#2a1820; --card:#24171c; --ink:#fbeef0; --muted:#c3a3aa;
     --accent:#ff6b85; --soft:#4a2530; --line:#3a2329;
     --shadow:0 20px 60px -20px rgba(255,107,133,.35);
+    color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1a1115; --bg-2:#2a1820; --card:#24171c; --ink:#fbeef0; --muted:#c3a3aa;
   --accent:#ff6b85; --soft:#4a2530; --line:#3a2329;
   --shadow:0 20px 60px -20px rgba(255,107,133,.35);
+  color-scheme:dark;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body{ height:100%; }
@@ -78,6 +80,7 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
 .btn-no.runaway{ position:fixed; z-index:50; transition:left .25s cubic-bezier(.3,1.5,.5,1), top .25s cubic-bezier(.3,1.5,.5,1), transform .2s; }
 .btn-ghost{ background:transparent; color:var(--muted); font-weight:600; font-size:14px; padding:10px 16px; }
 .btn-wide{ width:100%; }
+.btn:focus-visible,.opt:focus-visible,.chip:focus-visible{ outline:3px solid var(--accent); outline-offset:3px; }
 .btn:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
 
 .hint{ margin-top:18px; font-size:13px; color:var(--muted); min-height:18px; }
@@ -220,7 +223,7 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
       <p class="sub">Отправь мне этот «билетик», чтобы я точно ничего не перепутал(а)</p>
       <div class="ticket" id="ticket"></div>
       <div class="row">
-        <button class="btn btn-yes" id="send">Отправить</button>
+        <a class="btn btn-yes" id="send" href="#" target="_blank" rel="noopener" style="text-decoration:none">В Telegram</a>
         <button class="btn btn-no" id="copy">Скопировать</button>
       </div>
       <button class="btn btn-ghost" id="restart" style="margin-top:10px">Начать заново</button>
@@ -354,14 +357,15 @@ p.sub{ color:var(--muted); font-size:15px; line-height:1.45; margin-bottom:24px;
   }
   async function copy(){
     try { await navigator.clipboard.writeText(message()); toast('Скопировано 💌'); }
-    catch { toast('Не получилось скопировать'); }
+    catch {
+      const sel = getSelection(), range = document.createRange();
+      range.selectNodeContents($('#ticket')); sel.removeAllRanges(); sel.addRange(range);
+      toast('Текст выделен — скопируй его');
+    }
   }
   $('#copy').addEventListener('click', copy);
-  $('#send').addEventListener('click', async () => {
-    if (navigator.share) {
-      try { await navigator.share({ text: message() }); return; } catch (e) { if (e.name === 'AbortError') return; }
-    }
-    copy();
+  $('#send').addEventListener('click', () => {
+    $('#send').href = 'https://t.me/share/url?url=' + encodeURIComponent(' ') + '&text=' + encodeURIComponent(message());
   });
   $('#restart').addEventListener('click', () => {
     Object.assign(state, { what:null, date:null, time:null, mood:null, note:'' });
