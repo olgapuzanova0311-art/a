@@ -297,8 +297,10 @@ section{position:relative;padding-block:clamp(56px,6.5vw,96px)}
 .tar input:checked+.tb{border-color:var(--blue);background:#F1F0FF}
 .tar input:checked+.tb::before{background:var(--blue);box-shadow:inset 0 0 0 4px var(--white)}
 .tar input:focus-visible+.tb{outline:2px solid var(--blue);outline-offset:2px}
-.tar input[value=vip]:checked+.tb{border-color:var(--ink);background:#FFF6DC}
-.tar input[value=vip]:checked+.tb::before{background:var(--yellow)}
+.tar input[value=vip]+.tb{background:var(--yellow);border-color:var(--ink)}
+.tar input[value=vip]+.tb small{color:var(--ink)}
+.tar input[value=vip]:checked+.tb{border-color:var(--ink);background:var(--yellow);box-shadow:0 0 0 3px rgba(20,20,20,.12)}
+.tar input[value=vip]:checked+.tb::before{background:var(--ink);box-shadow:inset 0 0 0 4px var(--yellow)}
 .photo img{width:100%;height:100%;object-fit:cover;display:block;position:relative}
 .foot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 @media (max-width:760px){.foot{grid-template-columns:minmax(0,1fr)}}
@@ -476,6 +478,10 @@ footer a{color:#BDBDC2;text-decoration:none}
 @media (max-width:640px){.cmap{height:440px}}
 .ctip{position:absolute;left:12px;top:12px;z-index:2;background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:700}
 section,.hero{overflow-x:clip}
+.help{position:fixed;right:18px;bottom:18px;z-index:70;display:flex;align-items:center;gap:8px;height:52px;padding:0 18px 0 14px;border-radius:999px;background:var(--blue);color:#fff;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--yellow);font-weight:700;font-size:15px;text-decoration:none;transition:transform .3s var(--ease)}
+.help:hover{transform:translateY(-2px)}
+.help svg{width:22px;height:22px;fill:var(--yellow);stroke:var(--ink);stroke-width:1.5}
+@media (max-width:760px){.help{bottom:calc(84px + env(safe-area-inset-bottom,0px));right:12px;height:46px;width:46px;padding:0;justify-content:center}.help span{display:none}}
 </style>
 </head>
 <body>
@@ -489,6 +495,7 @@ section,.hero{overflow-x:clip}
       <a href="#price">Участие</a>
       <a href="#host">Спикер</a>
       <a href="#reg">Вопросы</a>
+      <a href="https://t.me/puzanovateam" target="_blank" rel="noopener">Поддержка</a>
     </nav>
     <a class="btn btn-y btn-sm mag" href="#top" data-to-form>Участвовать</a>
   </div>
@@ -517,7 +524,7 @@ section,.hero{overflow-x:clip}
                 </div>
                 <fieldset class="tars" aria-label="Тариф">
                   <label class="tar"><input type="radio" name="tariff" id="h-free" value="free" checked><span class="tb"><b>Бесплатно · 0 ₽</b><small>эфиры обоих дней и 3 подарка</small></span></label>
-                  <label class="tar"><input type="radio" name="tariff" id="h-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи и конспекты, консультация, материалы</small></span></label>
+                  <label class="tar"><input type="radio" name="tariff" id="h-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи, консультация, менеджер, VIP-день с Ольгой</small></span></label>
                 </fieldset>
                 <label class="cb" for="h-agree"><input type="checkbox" id="h-agree" name="consent_data" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Даю согласие на <a href="https://olgapuzanovva.ru/personinfo" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с <a href="https://olgapuzanovva.ru/politic" target="_blank" rel="noopener">Политикой конфиденциальности</a> *</span></label>
                 <label class="cb" for="h-news"><input type="checkbox" id="h-news" name="consent_mailing" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Согласен(на) получать информационные рассылки от Ольги Пузановой по e-mail и в Telegram (<a href="https://olgapuzanovva.ru/soglasie" target="_blank" rel="noopener">текст согласия</a>) *</span></label>
@@ -566,7 +573,7 @@ section,.hero{overflow-x:clip}
       <div class="dhead rv"><span class="dn">1</span><div><small>Суббота · 14:00–16:45</small><h3>Автономные ИИ-агенты</h3></div></div>
       <div class="dpanel" id="p1">
         <aside class="dside">
-          <div class="art"><img src="img/i_d1.jpg" alt="Роботы-помощники работают в ночную смену: отвечают в чате, строят график, разбирают резюме"></div>
+          <div class="art"><img src="img/d1_office.jpg" alt="ИИ-офис: команда агентов за работой, AI-ассистент, операционный директор, тайм-менеджер, трендхантер и контент-продюсер"></div>
           <div class="result">
             <span class="rl">К вечеру субботы у тебя</span>
             <ul>
@@ -595,7 +602,7 @@ section,.hero{overflow-x:clip}
       <div class="dhead rv"><span class="dn y">2</span><div><small>Воскресенье · 14:00–17:40</small><h3>Контент-завод и ИИ-ролики</h3></div></div>
       <div class="dpanel" id="p2">
         <aside class="dside">
-          <div class="art"><img src="img/i_d2.jpg" alt="Контент-завод: роботы на конвейере выпускают ролики, посты и рассылки"></div>
+          <div class="art"><img src="img/d2_claude.jpg" alt="Ролик, смонтированный с Claude: обрезка, переходы и ИИ-улучшение" style="object-fit:contain;background:#EEF3FB"></div>
           <div class="result">
             <span class="rl">К вечеру воскресенья у тебя</span>
             <ul>
@@ -634,7 +641,7 @@ section,.hero{overflow-x:clip}
         </svg>
         <span class="chip">Участие</span>
         <h2 class="h2" style="margin-top:16px;max-width:15ch">Приходи бесплатно или <span class="hl">забирай VIP</span></h2>
-        <p class="lead" style="margin-top:14px">Эфиры можно смотреть бесплатно. В VIP добавляются записи с конспектами, личная консультация и все материалы одним файлом.</p>
+        <p class="lead" style="margin-top:14px">Эфиры можно смотреть бесплатно. В VIP добавляются записи с конспектами, личная консультация, персональный менеджер, VIP-день с Ольгой и все материалы одним файлом.</p>
         <div class="plans">
           <article class="plan free">
             <div class="pt"><span>Бесплатно</span><span class="chip" style="background:#fff">для всех</span></div>
@@ -654,6 +661,8 @@ section,.hero{overflow-x:clip}
               <li class="hot"><span>Личная консультация с экспертом <span class="tg">20 минут</span><small>Разберём твою задачу и скажем, с какого агента начать</small></span></li>
               <li><span>Все промпты и шаблоны из эфиров и 10 готовых агентов <span class="tg">1 файл</span><small>Бери и запускай, даже если пропустил часть эфира</small></span></li>
               <li><span>Именной сертификат участника</span></li>
+              <li><span>Персональный менеджер <small>Поможет с доступами, записями и любыми вопросами по интенсиву</small></span></li>
+              <li><span>VIP-день с Ольгой <span class="tg">только VIP</span><small>Отдельная встреча для VIP-участников: разбор ваших задач и ответы на вопросы</small></span></li>
               <li><span>Грант на 10 000 ₽ на флагманское обучение <span class="tg">только VIP</span></span></li>
             </ul>
             <a class="btn btn-y mag" href="#reg" data-to-form data-plan="vip">Забрать VIP за 490 ₽ <span class="ar">→</span></a>
@@ -713,7 +722,7 @@ section,.hero{overflow-x:clip}
             </div>
                 <fieldset class="tars" aria-label="Тариф">
                   <label class="tar"><input type="radio" name="tariff" id="r-free" value="free" checked><span class="tb"><b>Бесплатно · 0 ₽</b><small>эфиры обоих дней и 3 подарка</small></span></label>
-                  <label class="tar"><input type="radio" name="tariff" id="r-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи и конспекты, консультация, материалы</small></span></label>
+                  <label class="tar"><input type="radio" name="tariff" id="r-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи, консультация, менеджер, VIP-день с Ольгой</small></span></label>
                 </fieldset>
                 <label class="cb" for="r-agree"><input type="checkbox" id="r-agree" name="consent_data" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Даю согласие на <a href="https://olgapuzanovva.ru/personinfo" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с <a href="https://olgapuzanovva.ru/politic" target="_blank" rel="noopener">Политикой конфиденциальности</a> *</span></label>
                 <label class="cb" for="r-news"><input type="checkbox" id="r-news" name="consent_mailing" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Согласен(на) получать информационные рассылки от Ольги Пузановой по e-mail и в Telegram (<a href="https://olgapuzanovva.ru/soglasie" target="_blank" rel="noopener">текст согласия</a>) *</span></label>
@@ -757,6 +766,7 @@ section,.hero{overflow-x:clip}
   </div>
 </footer>
 
+<a class="help" href="https://t.me/puzanovateam" target="_blank" rel="noopener" aria-label="Связаться с поддержкой в Telegram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg><span>Поддержка</span></a>
 <div class="dock away" id="dock"><div><span data-dates-short>17–18 октября · 14:00</span><a class="btn btn-y" href="#top" data-to-form>Участвовать</a></div></div>
 
 <script>
