@@ -92,8 +92,8 @@ BOT_USERNAME = ''
 
 def links(u=None):
     d = dict(DEFAULT_LINKS)
-    d['STREAM1'] = setting('stream1') or d['TG']
-    d['STREAM2'] = setting('stream2') or d['TG']
+    d['STREAM1'] = setting('stream1') or T.STREAM1 or d['TG']
+    d['STREAM2'] = setting('stream2') or T.STREAM2 or d['TG']
     d['ANKETA'] = setting('anketa') or 'https://t.me/puzanovateam?text=' + quote('Хочу на курс')
     if u:
         ref = ref_link(u)
@@ -498,7 +498,8 @@ def user_line(r):
     return (f"<b>{escape(r['first_name'] or 'без имени')}</b> {nick}\n"
             f"📞 {escape(r['phone'] or '—')} · ✉️ {escape(r['email'] or '—')}\n"
             f"{marks}🕒 {datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m %H:%M')}"
-            + (f' · 👥 друзей: {fr}' if fr else '') + (f" · {escape(r['source'])}" if r['source'] else ''))
+            + (f' · 👥 друзей: {fr}' if fr else '') + (f" · {escape(r['source'])}" if r['source'] else '')
+            + (f"\n📝 {escape(r['survey'])}" if r['survey'] else ''))
 
 def users_page(page):
     total = q('SELECT COUNT(*) FROM users').fetchone()[0]
@@ -712,7 +713,7 @@ async def api_me(req):
     if u['survey']: gifts.append(dict(title=T.GIFT[T.SURVEY_GIFT][0], url=T.GIFT[T.SURVEY_GIFT][1]))
     return web.json_response(dict(
         name=u['first_name'], vip=bool(u['vip']), phone=bool(u['phone']), friends=n, tickets=tickets(u), prize=T.MAIN_PRIZE,
-        ref=L['REF'], share=L['SHARE'], tg=L['TG'], max=L['MAX'], pay=L['PAY'], stream1=setting('stream1'), stream2=setting('stream2'),
+        ref=L['REF'], share=L['SHARE'], tg=L['TG'], max=L['MAX'], pay=L['PAY'], stream1=setting('stream1') or T.STREAM1, stream2=setting('stream2') or T.STREAM2,
         gifts=gifts, levels=lv, survey=bool(u['survey'])))
 
 async def app_page(req):

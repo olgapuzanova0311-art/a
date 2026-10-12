@@ -363,6 +363,10 @@ section{position:relative;padding-block:clamp(56px,6.5vw,96px)}
 .plan li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:16px;line-height:1.4}
 .plan li::before{content:"✓";font-weight:800;color:var(--blue)}
 .plan.vip li::before{color:var(--yellow)}
+.plan li.hot{background:var(--yellow);color:var(--ink);border-radius:16px;padding:12px 14px;margin:2px -14px;box-shadow:0 0 0 3px rgba(255,186,9,.25)}
+.plan.vip li.hot::before{color:var(--ink)}
+.plan li.hot .tg{background:var(--ink);color:var(--yellow)}
+.plan li.hot small{opacity:.85}
 .plan li small{display:block;font-size:14px;opacity:.75}
 .plan .tg{display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:999px;background:rgba(255,255,255,.18);font-size:11.5px;font-weight:700;margin-left:6px;vertical-align:1px;white-space:nowrap}
 .plan .btn{width:100%}
@@ -436,6 +440,41 @@ footer a{color:#BDBDC2;text-decoration:none}
 @media (max-width:760px){.dock{display:block}}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}.u svg path,.squig path{stroke-dashoffset:0}}
+
+/* hero: спикер, регалии */
+.frame.spk{aspect-ratio:4/5;background:var(--sky);position:relative}
+.frame.spk img{object-position:50% 12%}
+.frame .who{position:absolute;left:16px;bottom:16px;background:var(--white);border:1.5px solid var(--ink);border-radius:16px;padding:10px 14px;font-size:13px;color:var(--ink-2);line-height:1.3}
+.frame .who b{display:block;color:var(--ink);font-size:16px}
+.regal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+.regal div{background:var(--white);border:1.5px solid var(--ink);border-radius:18px;padding:12px 14px;display:grid;gap:2px}
+.regal b{font-size:clamp(22px,2.6vw,30px);font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--blue)}
+.regal span{font-size:12.5px;line-height:1.3;color:var(--ink-2)}
+@media (max-width:480px){.regal{grid-template-columns:1fr 1fr}.regal div:last-child{grid-column:span 2}}
+/* бегущая строка */
+.marq{background:var(--blue);color:var(--white);overflow:hidden;border-block:1.5px solid var(--ink);padding:16px 0;transform:rotate(-1.2deg);margin:28px -8px}
+.marq .tr{display:flex;width:max-content;animation:marq 32s linear infinite}
+.marq span{display:inline-flex;align-items:center;gap:22px;padding-right:22px;font-weight:800;font-size:clamp(18px,2.4vw,28px);letter-spacing:-.01em;white-space:nowrap;text-transform:uppercase}
+.marq i{font-style:normal;color:var(--yellow)}
+@keyframes marq{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.marq .tr{animation:none}}
+/* карта кейсов */
+.cases{position:relative;z-index:1;margin-top:clamp(48px,6vw,80px)}
+.cases-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:14px;margin-bottom:18px}
+.cases-h h3{margin:0;font-size:clamp(28px,3.6vw,44px);line-height:1.02;letter-spacing:-.03em;font-weight:800}
+.cases-h h3 .y{color:var(--yellow)}
+.cases-h p{margin:8px 0 0;color:var(--on-blue-2);max-width:46ch}
+.cmap{position:relative;border-radius:28px;overflow:hidden;border:2px solid var(--ink);background:#0E0E0E;height:min(72vh,640px);box-shadow:8px 8px 0 var(--yellow)}
+#osd{position:absolute;inset:0}
+.cbar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;z-index:2}
+.cbar .rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;min-width:0;padding:2px}
+.cbar .rail::-webkit-scrollbar{display:none}
+.cbar button{font:700 13px var(--font);color:var(--ink);background:var(--white);border:1.5px solid var(--ink);border-radius:999px;padding:9px 14px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.cbar button .n{font-size:11px;font-weight:800;color:var(--blue)}
+.cbar button.all{background:var(--yellow)}
+.cbar .sq{width:38px;height:38px;padding:0;justify-content:center;font-size:18px;flex:none}
+@media (max-width:640px){.cmap{height:440px}}
+.ctip{position:absolute;left:12px;top:12px;z-index:2;background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:700}
 </style>
 </head>
 <body>
@@ -464,8 +503,9 @@ footer a{color:#BDBDC2;text-decoration:none}
           <div>
             <span class="chip fu"><span class="dot"></span>Онлайн-двухдневник · <span data-dates>Сб 17 и Вс 18 октября</span></span>
             <h1 class="fu d1">Собери <span class="hl">ИИ&#8209;команду</span> <span class="u">за выходные<svg viewBox="0 0 300 30" preserveAspectRatio="none" aria-hidden="true"><path d="M4 20 C 60 6, 120 26, 180 14 S 270 8, 296 18"/></svg></span></h1>
-            <p class="lead fu d2">Агенты и контент-завод от и до с Claude. 2 дня: агенты, которые работают без тебя, и контент на месяц вперёд.</p>
+            <p class="lead fu d2">2 дня практики в Claude: соберёшь агентов, которые работают без тебя, и контент-завод, который готовит посты и ролики на месяц вперёд.</p>
             <div class="meta fu d2"><span class="chip">14:00 МСК</span><span class="chip">бесплатно</span><span class="chip">без программирования</span></div>
+            <div class="regal fu d2"><div><b>13 000+</b><span>участников программ</span></div><div><b>500+</b><span>студентов прошли обучение</span></div><div><b>572</b><span>кейса и отзыва учеников</span></div></div>
 
             <div id="formTop" class="fu d3">
               <form class="regf" novalidate>
@@ -476,7 +516,7 @@ footer a{color:#BDBDC2;text-decoration:none}
                 </div>
                 <fieldset class="tars" aria-label="Тариф">
                   <label class="tar"><input type="radio" name="tariff" id="h-free" value="free" checked><span class="tb"><b>Бесплатно · 0 ₽</b><small>эфиры обоих дней и 3 подарка</small></span></label>
-                  <label class="tar"><input type="radio" name="tariff" id="h-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи, консультация, все материалы</small></span></label>
+                  <label class="tar"><input type="radio" name="tariff" id="h-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи и конспекты, консультация, материалы</small></span></label>
                 </fieldset>
                 <label class="cb" for="h-agree"><input type="checkbox" id="h-agree" name="consent_data" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Даю согласие на <a href="https://olgapuzanovva.ru/personinfo" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с <a href="https://olgapuzanovva.ru/politic" target="_blank" rel="noopener">Политикой конфиденциальности</a> *</span></label>
                 <label class="cb" for="h-news"><input type="checkbox" id="h-news" name="consent_mailing" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Согласен(на) получать информационные рассылки от Ольги Пузановой по e-mail и в Telegram (<a href="https://olgapuzanovva.ru/soglasie" target="_blank" rel="noopener">текст согласия</a>) *</span></label>
@@ -486,7 +526,7 @@ footer a{color:#BDBDC2;text-decoration:none}
           </div>
 
           <div class="visual fu d2">
-            <div class="frame"><img src="img/i_hero.jpg" alt="Женщина с ноутбуком и кофе, вокруг роботы-помощники с чатами, графиками и камерой"></div>
+            <div class="frame spk"><img src="img/olga.jpg" alt="Ольга Пузанова, спикер интенсива, эксперт по нейросетям и ИИ-агентам"></div>
             <div class="float f1"><span class="ic">💬</span><span>Агент ответил 14 клиентам<small>пока ты спишь</small></span></div>
             <div class="float f2"><span class="ic">📊</span><span>Сводка к 9:00<small>3 вывода и 1 действие</small></span></div>
             <div class="float f3"><span class="ic">🎬</span><span>7 сценариев роликов<small>в твоём голосе</small></span></div>
@@ -505,11 +545,13 @@ footer a{color:#BDBDC2;text-decoration:none}
       </div>
       <div class="bonuses">
         <article class="bonus b"><svg class="gift" viewBox="0 0 120 120" aria-hidden="true"><g class="lid-g"><path class="bow" d="M60 30 C 44 8, 22 18, 34 30 C 40 36, 52 33, 60 30 Z"/><path class="bow" d="M60 30 C 76 8, 98 18, 86 30 C 80 36, 68 33, 60 30 Z"/><rect class="box" x="18" y="30" width="84" height="20" rx="5"/><rect class="rib" x="53" y="30" width="14" height="20"/></g><rect class="box" x="24" y="50" width="72" height="56" rx="6"/><rect class="rib" x="53" y="50" width="14" height="56"/><path class="spark" d="M106 12 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path class="spark s2" d="M14 64 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></svg><span class="n">1</span><span class="tag">Пошаговая инструкция</span><h3>Как оплатить и настроить Claude за 15 минут</h3><p>Со скриншотами. Придёшь на эфир с готовым Claude и сразу начнёшь практику.</p></article>
-        <article class="bonus y"><svg class="gift" viewBox="0 0 120 120" aria-hidden="true"><g class="lid-g"><path class="bow" d="M60 30 C 44 8, 22 18, 34 30 C 40 36, 52 33, 60 30 Z"/><path class="bow" d="M60 30 C 76 8, 98 18, 86 30 C 80 36, 68 33, 60 30 Z"/><rect class="box" x="18" y="30" width="84" height="20" rx="5"/><rect class="rib" x="53" y="30" width="14" height="20"/></g><rect class="box" x="24" y="50" width="72" height="56" rx="6"/><rect class="rib" x="53" y="50" width="14" height="56"/><path class="spark" d="M106 12 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path class="spark s2" d="M14 64 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></svg><span class="n">2</span><span class="tag">Карта задач</span><h3>Что отдать агентам первым</h3><p>Таблица: какие задачи из твоего дела отдать агентам в первую очередь и сколько часов и денег это освободит.</p></article>
+        <article class="bonus y"><svg class="gift" viewBox="0 0 120 120" aria-hidden="true"><g class="lid-g"><path class="bow" d="M60 30 C 44 8, 22 18, 34 30 C 40 36, 52 33, 60 30 Z"/><path class="bow" d="M60 30 C 76 8, 98 18, 86 30 C 80 36, 68 33, 60 30 Z"/><rect class="box" x="18" y="30" width="84" height="20" rx="5"/><rect class="rib" x="53" y="30" width="14" height="20"/></g><rect class="box" x="24" y="50" width="72" height="56" rx="6"/><rect class="rib" x="53" y="50" width="14" height="56"/><path class="spark" d="M106 12 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path class="spark s2" d="M14 64 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></svg><span class="n">2</span><span class="tag">Карта задач</span><h3>Что отдать агентам первым</h3><p>Таблица: какие задачи из рабочей рутины отдать агентам в первую очередь и сколько часов и денег это освободит.</p></article>
         <article class="bonus s"><svg class="gift" viewBox="0 0 120 120" aria-hidden="true"><g class="lid-g"><path class="bow" d="M60 30 C 44 8, 22 18, 34 30 C 40 36, 52 33, 60 30 Z"/><path class="bow" d="M60 30 C 76 8, 98 18, 86 30 C 80 36, 68 33, 60 30 Z"/><rect class="box" x="18" y="30" width="84" height="20" rx="5"/><rect class="rib" x="53" y="30" width="14" height="20"/></g><rect class="box" x="24" y="50" width="72" height="56" rx="6"/><rect class="rib" x="53" y="50" width="14" height="56"/><path class="spark" d="M106 12 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path class="spark s2" d="M14 64 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></svg><span class="n">3</span><span class="tag">Стартовые промпты</span><h3>15 промптов для агентов и контента</h3><p>Готовые запросы для Claude: вставляешь свои данные и сразу получаешь результат.</p></article>
       </div>
     </div>
   </section>
+
+  <div class="marq" aria-label="Бесплатный онлайн-интенсив, 21 поток"><div class="tr" aria-hidden="true"><span>Бесплатный онлайн-интенсив <i>★</i> 21 поток <i>★</i> Собери ИИ-команду за выходные <i>★</i> 17–18 октября <i>★</i></span><span>Бесплатный онлайн-интенсив <i>★</i> 21 поток <i>★</i> Собери ИИ-команду за выходные <i>★</i> 17–18 октября <i>★</i></span><span>Бесплатный онлайн-интенсив <i>★</i> 21 поток <i>★</i> Собери ИИ-команду за выходные <i>★</i> 17–18 октября <i>★</i></span><span>Бесплатный онлайн-интенсив <i>★</i> 21 поток <i>★</i> Собери ИИ-команду за выходные <i>★</i> 17–18 октября <i>★</i></span></div></div>
 
   <!-- 2. PROGRAM -->
   <section id="program">
@@ -535,16 +577,16 @@ footer a{color:#BDBDC2;text-decoration:none}
         </aside>
         <div class="tlw"><span class="fill" aria-hidden="true"></span><ol class="tl">
           <li class="st open"><div class="sh"><time>14:00</time><span class="sn">Разберёшься, что такое ИИ-агент и что он может делать за тебя</span></div>
-            <div class="sb"><div><p>Простыми словами, без технических терминов: чем агент отличается от обычного чата, какие задачи можно отдать ему целиком, а где нужна твоя проверка. Покажу агентов, которые уже работают у меня и у учеников, с цифрами: сколько часов и денег они экономят.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>список задач из своего дела, которые можно отдать агенту</span><span class="pp"><i class="pe">Зарабатываю</i>понимание, какие агенты нужны бизнесу и за что платят</span></p></div></div></li>
+            <div class="sb"><div><p>Простыми словами, без технических терминов: чем агент отличается от обычного чата, какие задачи можно отдать ему целиком, а где нужна твоя проверка. Покажу агентов, которые уже работают у меня и у учеников, с цифрами: сколько часов и денег они экономят.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>список задач из рабочей рутины, которые можно отдать агенту</span><span class="pp"><i class="pe">Зарабатываю</i>понимание, какие агенты нужны бизнесу и за что платят</span></p></div></div></li>
           <li class="st open main"><div class="sh"><time>14:40</time><span class="sn">Соберёшь своего первого агента с нуля <span class="star">★ главное</span></span></div>
-            <div class="sb"><div><p>Сначала вместе в прямом эфире собираем агента-администратора: он отвечает клиентам по прайсу и записывает на услуги. Потом ты собираешь своего агента под свою задачу, а я разбираю работы участников.</p>
+            <div class="sb"><div><p>Сначала вместе в прямом эфире собираем агента-администратора: он отвечает клиентам по прайсу и записывает на услуги. Потом ты собираешь агента под свою задачу, а я разбираю работы участников.</p>
               <div class="flow"><span>роль</span><i>→</i><span>материалы</span><i>→</i><span>правила</span><i>→</i><span>тест</span><i>→</i><span>правки</span></div><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>рабочего агента под свою задачу</span><span class="pp"><i class="pe">Зарабатываю</i>навык собрать агента клиенту за один вечер</span></p></div></div></li>
           <li class="st open"><div class="sh"><time>15:30</time><span class="sn">Настроишь агента, который работает, пока ты спишь</span></div>
             <div class="sb"><div><p>Агент сам запускается по расписанию или когда приходит заявка. Разберём трёх таких агентов: сводка по продажам к 9:00, ответы на отзывы, отбор кандидатов на вакансию.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>агента, который каждый день делает задачу без тебя</span><span class="pp"><i class="pe">Зарабатываю</i>3 готовые услуги для салонов, клиник и селлеров</span></p></div></div></li>
           <li class="st open"><div class="sh"><time>16:05</time><span class="sn">Поймёшь, как и сколько на этом зарабатывать</span></div>
             <div class="sb"><div><p>Для тех, кто внедряет: карта задач с расчётом, сколько часов и денег освободят агенты. Для тех, кто зарабатывает: кому продавать агентов, сколько за это берут и где найти первого клиента.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>план: 3 задачи, которые отдашь агентам на этой неделе</span><span class="pp"><i class="pe">Зарабатываю</i>готовое предложение «Агент под ключ» с ценой</span></p></div></div></li>
           <li class="st open"><div class="sh"><time>16:30</time><span class="sn">Получишь задание и подарок</span></div>
-            <div class="sb"><div><p>Небольшое задание до воскресенья: доделать агента под свою задачу. За выполненное задание подарок и участие в розыгрыше призов.</p></div></div></li>
+            <div class="sb"><div><p>Небольшая домашка до воскресенья: доделать агента под свою задачу. За выполненную работу подарок и участие в розыгрыше призов.</p></div></div></li>
         </ol></div>
       </div>
 
@@ -568,7 +610,7 @@ footer a{color:#BDBDC2;text-decoration:none}
           <li class="st open"><div class="sh"><time>14:15</time><span class="sn">Поймёшь, как создавать контент-заводы только с одной нейронкой</span></div>
             <div class="sb"><div><p>Весь контент-завод собирается в одном Claude: темы, тексты, сценарии и проверка. Начинаем с главного: загружаешь 10 своих постов или сообщений, и Claude запоминает твои слова и интонацию. Тексты перестают звучать так, будто их написал робот.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>паспорт голоса для своего бренда</span><span class="pp"><i class="pe">Зарабатываю</i>первый этап услуги «контент под ключ»</span></p></div></div></li>
           <li class="st open"><div class="sh"><time>14:40</time><span class="sn">Получишь контент-план на месяц за 20 минут</span></div>
-            <div class="sb"><div><p>30 тем из реальных вопросов твоих клиентов, по 3 цепляющих начала на каждую, всё разложено по календарю. Из одной идеи делаем 5 форматов: рилс, пост, карусель, сторис и рассылку.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>контент на 30 дней для своего дела</span><span class="pp"><i class="pe">Зарабатываю</i>контент-план, который можно продавать клиентам</span></p></div></div></li>
+            <div class="sb"><div><p>30 тем из реальных вопросов твоих клиентов, по 3 цепляющих начала на каждую, всё разложено по календарю. Из одной идеи делаем 5 форматов: рилс, пост, карусель, сторис и рассылку.</p><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>контент на 30 дней вперёд</span><span class="pp"><i class="pe">Зарабатываю</i>контент-план, который можно продавать клиентам</span></p></div></div></li>
           <li class="st open main"><div class="sh"><time>15:10</time><span class="sn">Сделаешь свой первый ИИ-ролик <span class="star">★ главное</span></span></div>
             <div class="sb"><div><p>Сценарий, озвучка, видео с ИИ-аватаром, монтаж и обложка. Вживую за 30 минут, без съёмок и монтажёра.</p>
               <div class="flow"><span>сценарий</span><i>→</i><span>голос</span><i>→</i><span>аватар</span><i>→</i><span>монтаж</span><i>→</i><span>обложка</span></div><p class="you"><b>Забираешь:</b><span class="pp"><i class="pi">Внедряю</i>готовый ролик про свой продукт</span><span class="pp"><i class="pe">Зарабатываю</i>ролик в портфолио и понятный процесс для заказов</span></p></div></div></li>
@@ -591,7 +633,7 @@ footer a{color:#BDBDC2;text-decoration:none}
         </svg>
         <span class="chip">Участие</span>
         <h2 class="h2" style="margin-top:16px;max-width:15ch">Приходи бесплатно или <span class="hl">забирай VIP</span></h2>
-        <p class="lead" style="margin-top:14px">Смотреть эфиры можно бесплатно. В VIP добавляются записи, личная консультация и все материалы одним файлом.</p>
+        <p class="lead" style="margin-top:14px">Эфиры можно смотреть бесплатно. В VIP добавляются записи с конспектами, личная консультация и все материалы одним файлом.</p>
         <div class="plans">
           <article class="plan free">
             <div class="pt"><span>Бесплатно</span><span class="chip" style="background:#fff">для всех</span></div>
@@ -607,8 +649,8 @@ footer a{color:#BDBDC2;text-decoration:none}
             <div class="pt"><span>VIP</span><span class="chip y">всё включено</span></div>
             <div class="pr">490 ₽<s>5 000 ₽</s></div>
             <ul>
-              <li><span>Записи обоих дней <span class="tg">30 дней</span><small>Пересматривай и собирай вместе с записью</small></span></li>
-              <li><span>Личная консультация с экспертом <span class="tg">20 минут</span><small>Разберём твою задачу и скажем, с какого агента начать</small></span></li>
+              <li><span>Записи и конспекты обоих дней <span class="tg">30 дней</span><small>Пересматривай в своём темпе и повторяй шаги по конспекту</small></span></li>
+              <li class="hot"><span>Личная консультация с экспертом <span class="tg">20 минут</span><small>Разберём твою задачу и скажем, с какого агента начать</small></span></li>
               <li><span>Все промпты и шаблоны из эфиров и 10 готовых агентов <span class="tg">1 файл</span><small>Бери и запускай, даже если пропустил часть эфира</small></span></li>
               <li><span>Именной сертификат участника</span></li>
               <li><span>Грант на 10 000 ₽ на флагманское обучение <span class="tg">только VIP</span></span></li>
@@ -618,7 +660,7 @@ footer a{color:#BDBDC2;text-decoration:none}
           </article>
         </div>
       </div>
-      <p class="fine">Записи эфиров в открытом доступе не будет, она есть только у VIP.</p>
+      <p class="fine">Записей в открытом доступе не будет: они есть только у VIP.</p>
     </div>
   </section>
 
@@ -670,7 +712,7 @@ footer a{color:#BDBDC2;text-decoration:none}
             </div>
                 <fieldset class="tars" aria-label="Тариф">
                   <label class="tar"><input type="radio" name="tariff" id="r-free" value="free" checked><span class="tb"><b>Бесплатно · 0 ₽</b><small>эфиры обоих дней и 3 подарка</small></span></label>
-                  <label class="tar"><input type="radio" name="tariff" id="r-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи, консультация, все материалы</small></span></label>
+                  <label class="tar"><input type="radio" name="tariff" id="r-vip" value="vip"><span class="tb"><b>VIP · 490 ₽</b><small>записи и конспекты, консультация, материалы</small></span></label>
                 </fieldset>
                 <label class="cb" for="r-agree"><input type="checkbox" id="r-agree" name="consent_data" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Даю согласие на <a href="https://olgapuzanovva.ru/personinfo" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с <a href="https://olgapuzanovva.ru/politic" target="_blank" rel="noopener">Политикой конфиденциальности</a> *</span></label>
                 <label class="cb" for="r-news"><input type="checkbox" id="r-news" name="consent_mailing" checked><span class="bx"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span><span>Согласен(на) получать информационные рассылки от Ольги Пузановой по e-mail и в Telegram (<a href="https://olgapuzanovva.ru/soglasie" target="_blank" rel="noopener">текст согласия</a>) *</span></label>
@@ -679,13 +721,25 @@ footer a{color:#BDBDC2;text-decoration:none}
         </div>
       </div>
 
+
+      <div class="cases">
+        <div class="cases-h">
+          <div><span class="chip y">Результаты учеников</span><h3 style="margin-top:14px">572 кейса и отзыва <span class="y">на одной карте</span></h3><p>Деньги в кассе, рост продаж, ИИ-агенты, нейрофотосессии и живые отзывы учеников 2022–2026. Приближай и листай ветки.</p></div>
+        </div>
+        <div class="cmap">
+          <div id="osd" role="img" aria-label="Карта кейсов и отзывов учеников Ольги Пузановой"></div>
+          <span class="ctip">Колесо или два пальца: приблизить</span>
+          <div class="cbar"><button class="sq" id="czin" aria-label="Приблизить">+</button><button class="sq" id="czout" aria-label="Отдалить">−</button><div class="rail" id="crail"><button class="all" id="chome">Вся карта</button></div></div>
+        </div>
+      </div>
+
       <div class="faq">
-        <details><summary>Я никогда не программировал. Получится?</summary><p>Да. Программировать не нужно: агенту ты всё объясняешь обычными словами, как новому сотруднику. Повторяешь за мной шаг за шагом, и к концу дня у тебя рабочий агент.</p></details>
-        <details><summary>Мне не нужно зарабатывать на ИИ. Мне это зачем?</summary><p>Чтобы ИИ работал на тебя. Отдашь агентам рутину: ответы клиентам, отчёты, контент. И освободишь часы каждую неделю.</p></details>
-        <details><summary>Будет ли запись?</summary><p>Запись будет только у участников VIP, доступ на 30 дней. Без VIP смотреть можно только в прямом эфире.</p></details>
+        <details><summary>Я никогда не программировал. Получится?</summary><p>Да. Код писать не нужно: агенту ты всё объясняешь обычными словами, как новому сотруднику. Повторяешь за мной шаг за шагом, и к концу дня у тебя рабочий агент.</p></details>
+        <details><summary>Мне не нужно зарабатывать на ИИ. Зачем мне это?</summary><p>Чтобы ИИ работал на тебя. Отдашь агентам рутину: ответы клиентам, отчёты, контент. И освободишь часы каждую неделю.</p></details>
+        <details><summary>Будет ли запись?</summary><p>Только у участников VIP: записи и конспекты обоих дней, доступ на 30 дней. Без VIP интенсив можно посмотреть только в прямом эфире.</p></details>
         <details><summary>Как оплатить Claude из России?</summary><p>Сразу после регистрации пришлём пошаговую инструкцию со скриншотами: как оплатить и настроить Claude за 15 минут.</p></details>
-        <details><summary>Что если не смогу в прямом эфире?</summary><p>Возьми VIP: записи обоих дней будут доступны 30 дней, и все материалы придут одним файлом.</p></details>
-        <details><summary>Нужен ли мощный компьютер?</summary><p>Нет. Подойдёт обычный ноутбук или компьютер с интернетом. Смотреть можно и с телефона, но для практики удобнее компьютер.</p></details>
+        <details><summary>Что если не смогу в прямом эфире?</summary><p>Возьми VIP: пересмотришь эфиры в удобное время, повторишь шаги по конспекту, а все материалы придут одним файлом.</p></details>
+        <details><summary>Нужен ли мощный компьютер?</summary><p>Нет. Подойдёт обычный ноутбук с интернетом. Смотреть можно и с телефона, но повторять шаги удобнее за ноутбуком или ПК.</p></details>
       </div>
     </div>
   </section>
@@ -864,5 +918,26 @@ footer a{color:#BDBDC2;text-decoration:none}
 })();
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+<script>
+(function(){
+  var el = document.getElementById('osd'); if (!el) return;
+  var JUMPS=[{"t":"Деньги в кассе","n":75,"b":[0.3514,0.013,0.2764,0.2341]},{"t":"Рост продаж","n":48,"b":[0.5461,0.0514,0.2932,0.2165]},{"t":"ИИ-агенты и сайты","n":27,"b":[0.6021,0.1784,0.2997,0.1318]},{"t":"Сэкономили","n":15,"b":[0.6132,0.2925,0.3421,0.0514]},{"t":"Нейрофотосессии","n":118,"b":[0.5443,0.3361,0.4154,0.3034]},{"t":"Офлайн","n":27,"b":[0.4918,0.4087,0.1187,0.2259]},{"t":"Наставничество WB","n":89,"b":[0.1295,0.3697,0.3563,0.2683]},{"t":"Живые отзывы","n":103,"b":[0.0116,0.1643,0.383,0.322]},{"t":"Отзывы о курсе","n":70,"b":[0.1473,0.0282,0.2989,0.2549]}];
+  var started = false;
+  function start(){
+    if (started || !window.OpenSeadragon) return; started = true;
+    var v = OpenSeadragon({id:'osd',showNavigationControl:false,animationTime:1.1,springStiffness:7,maxZoomPixelRatio:1.6,
+      visibilityRatio:0.6,constrainDuringPan:true,gestureSettingsMouse:{clickToZoom:false,scrollToZoom:true},
+      tileSources:{width:28000,height:18200,tileSize:2048,tileOverlap:0,minLevel:11,maxLevel:15,getTileUrl:function(l,x,y){return 'cases/t/'+l+'/'+x+'_'+y+'.jpg';}}});
+    var rail = document.getElementById('crail');
+    JUMPS.forEach(function(j){ var b=document.createElement('button'); b.innerHTML=j.t+' <span class="n">'+j.n+'</span>';
+      b.onclick=function(){ v.viewport.fitBounds(new OpenSeadragon.Rect(j.b[0]-.01,j.b[1]-.01,j.b[2]+.02,j.b[3]+.02)); }; rail.appendChild(b); });
+    document.getElementById('chome').onclick=function(){ v.viewport.goHome(); };
+    document.getElementById('czin').onclick=function(){ v.viewport.zoomBy(1.6); };
+    document.getElementById('czout').onclick=function(){ v.viewport.zoomBy(1/1.6); };
+  }
+  if ('IntersectionObserver' in window) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ start(); io.disconnect(); } },{rootMargin:'400px'}); io.observe(el); } else start();
+})();
+</script>
 </body>
 </html>

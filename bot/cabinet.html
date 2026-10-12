@@ -20,14 +20,13 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--font);f
 .badge.vip{background:var(--yellow);color:var(--ink)}
 h2{margin:0 0 10px;font-size:19px;font-weight:800;letter-spacing:-.01em}
 .muted{color:var(--ink-2);font-size:14px}
-.flask{display:grid;grid-template-columns:86px 1fr;gap:16px;align-items:center}
-.tube{position:relative;width:70px;height:150px;margin:0 auto;border:3px solid var(--ink);border-radius:14px 14px 34px 34px;overflow:hidden;background:var(--cream)}
-.tube::before{content:"";position:absolute;left:-8px;right:-8px;top:-3px;height:10px;border-radius:6px;background:var(--ink)}
-.liquid{position:absolute;left:0;right:0;bottom:0;height:10%;background:linear-gradient(180deg,#FFD25C,var(--yellow));transition:height 1.2s cubic-bezier(.16,1,.3,1)}
-.liquid::before{content:"";position:absolute;left:-20%;right:-20%;top:-8px;height:16px;border-radius:50%;background:#FFD25C;animation:wave 2.4s ease-in-out infinite}
-@keyframes wave{50%{transform:translateX(8%) scaleY(.7)}}
-.bub{position:absolute;bottom:0;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.8);animation:up 3s ease-in infinite}
-@keyframes up{to{transform:translateY(-140px);opacity:0}}
+.flask{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center}
+.sky{position:relative;width:96px;height:170px;margin:0 auto;border-radius:18px;background:linear-gradient(180deg,var(--sky),var(--cream));overflow:hidden}
+.sky .cloud{position:absolute;height:12px;border-radius:999px;background:#fff;opacity:.9}
+.balloon{position:absolute;left:8px;width:80px;bottom:-10px;transition:bottom 1.4s cubic-bezier(.16,1,.3,1)}
+.balloon svg{display:block;width:80px;height:140px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(1.5deg)}}
+#fillr{transition:y 1.4s cubic-bezier(.16,1,.3,1),height 1.4s cubic-bezier(.16,1,.3,1)}
 .pct{font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em}
 .pct small{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-top:4px;letter-spacing:0}
 .stats{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -77,8 +76,8 @@ function render(d){
   var nxt = d.levels.filter(function(l){return !l.open})[0];
   var h = '';
   h += '<section class="hello"><span class="badge'+(d.vip?' vip':'')+'">'+(d.vip?'VIP-билет 💛':'Бесплатный билет')+'</span><h1>Привет, '+esc(d.name||'друг')+'!</h1><p>Двухдневник «Собери ИИ-команду за выходные» · 17 и 18 октября · 14:00 МСК</p></section>';
-  h += '<section class="card"><h2>Наполни колбу 🧪</h2><div class="flask"><div class="tube"><div class="liquid" id="liq"></div><i class="bub" style="left:14px"></i><i class="bub" style="left:38px;animation-delay:1s"></i><i class="bub" style="left:26px;animation-delay:2s"></i></div><div><div class="pct">'+pct+'%<small>'+d.friends+' из '+max+' друзей</small></div>'+
-       '<div class="stats"><span>🎟 Билетов: '+d.tickets+'</span><span>🏆 Приз: '+esc(d.prize)+'</span></div>'+
+  h += '<section class="card"><h2>Подними воздушный шар 🎈</h2><div class="flask"><div class="sky"><i class="cloud" style="width:34px;left:6px;top:22px"></i><i class="cloud" style="width:26px;right:6px;top:64px"></i><div class="balloon" id="bal"><svg viewBox="0 0 80 140" aria-hidden="true"><defs><clipPath id="env"><path d="M40 4C18 4 4 21 4 42c0 20 17 36 28 50h16c11-14 28-30 28-50C76 21 62 4 40 4z"/></clipPath></defs><path d="M40 4C18 4 4 21 4 42c0 20 17 36 28 50h16c11-14 28-30 28-50C76 21 62 4 40 4z" fill="#fff"/><rect id="fillr" clip-path="url(#env)" x="0" y="92" width="80" height="0" fill="#FFBA09"/><path d="M40 4c-12 0-18 20-18 38s10 36 14 50M40 4c12 0 18 20 18 38s-10 36-14 50" fill="none" stroke="#1009F6" stroke-width="2" opacity=".5" clip-path="url(#env)"/><path d="M40 4C18 4 4 21 4 42c0 20 17 36 28 50h16c11-14 28-30 28-50C76 21 62 4 40 4z" fill="none" stroke="#141414" stroke-width="3" stroke-linejoin="round"/><path d="M33 92l2 18M47 92l-2 18" stroke="#141414" stroke-width="2"/><rect x="31" y="110" width="18" height="15" rx="4" fill="#1009F6" stroke="#141414" stroke-width="2.5"/></svg></div></div><div><div class="pct">'+pct+'%<small>'+d.friends+' из '+max+' друзей</small></div>'+
+       '<div class="stats"><span>🎟 Билетов: '+d.tickets+'</span><span>🏆 Розыгрыш: '+esc(d.prize)+'</span></div>'+
        (nxt?'<p class="muted" style="margin:10px 0 0">До подарка «'+esc(nxt.title)+'»: ещё '+(nxt.friends-d.friends)+'</p>':'<p class="muted" style="margin:10px 0 0">Все уровни открыты 🏆</p>')+'</div></div>'+
        '<div class="ref"><input id="ref" readonly value="'+esc(d.ref)+'"><button class="btn small" id="copy">Копировать</button></div>'+
        '<div class="row"><a class="btn blue small" id="share">🔗 Позвать друга</a><a class="btn ghost small" href="#levels">Все подарки</a></div>'+
@@ -95,11 +94,11 @@ function render(d){
        '<div class="sch"><span class="d y">ВС<br>14:00</span><span><b>Контент-завод и ИИ-ролики</b><br><span class="muted">Контент-план на месяц и первый ИИ-ролик</span></span></div>'+
        '<div class="row">'+(d.stream1?'<a class="btn blue small" data-u="'+esc(d.stream1)+'">🔴 Эфир сб</a>':'')+(d.stream2?'<a class="btn blue small" data-u="'+esc(d.stream2)+'">🔴 Эфир вс</a>':'')+'</div>'+
        '<div class="row"><a class="btn small" data-u="'+esc(d.tg)+'">📢 Канал Telegram</a><a class="btn small ghost" data-u="'+esc(d.max)+'">💬 Канал MAX</a></div></section>';
-  if (!d.vip) h += '<section class="card vipc"><h2>💛 VIP-билет · 490 ₽</h2><ul><li>Записи обоих дней на 30 дней</li><li>Личная консультация с экспертом, 20 минут</li><li>Все промпты, шаблоны и 10 готовых агентов одним файлом</li><li>Именной сертификат</li><li>Грант на 10 000 ₽ на флагманское обучение</li></ul><a class="btn blue" data-u="'+esc(d.pay)+'">Забрать VIP за 490 ₽</a></section>';
+  if (!d.vip) h += '<section class="card vipc"><h2>💛 VIP-билет · 490 ₽</h2><ul><li>Записи и конспекты обоих дней на 30 дней</li><li>Личная консультация с экспертом, 20 минут</li><li>Все промпты, шаблоны и 10 готовых агентов одним файлом</li><li>Именной сертификат</li><li>Грант на 10 000 ₽ на флагманское обучение</li></ul><a class="btn blue" data-u="'+esc(d.pay)+'">Забрать VIP за 490 ₽</a></section>';
   else h += '<section class="card vipc"><h2>💛 Твой VIP</h2><p class="muted" style="color:#333">Записи, файл с материалами и запись на консультацию придут в бот после эфиров. Сертификат и грант тоже там.</p></section>';
   h += '<p class="muted" style="text-align:center">Нужна помощь? Напиши <a data-u="https://t.me/puzanovateam" style="color:#1009F6">@puzanovateam</a></p>';
   var app = document.getElementById('app'); app.innerHTML = h;
-  setTimeout(function(){ document.getElementById('liq').style.height = pct + '%'; }, 150);
+  setTimeout(function(){ var f = document.getElementById('fillr'), h = Math.round(88 * pct / 100); f.setAttribute('y', 92 - h); f.setAttribute('height', h); document.getElementById('bal').style.bottom = (-10 + Math.round(36 * Math.min(d.friends, max) / max)) + 'px'; }, 150);
   app.querySelectorAll('[data-u]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); go(a.getAttribute("data-u")); }); });
   document.getElementById('share').onclick = function(){ go(d.share); };
   document.getElementById('copy').onclick = function(){
