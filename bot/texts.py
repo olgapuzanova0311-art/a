@@ -1,6 +1,7 @@
 # Тексты бота «Собери ИИ-команду за выходные». Время везде московское.
 # {name} подставляется автоматически. Кнопки: ("url", текст, ссылка) | ("cb", текст, данные) | ("app", текст)
 # В ссылках можно писать {TG}, {MAX}, {PAY}, {STREAM1}, {STREAM2}, {ANKETA}, {SITE}.
+import os
 from datetime import datetime, timedelta, timezone
 
 MSK = timezone(timedelta(hours=3))
@@ -11,7 +12,7 @@ EVENT_TITLE = 'Собери ИИ-команду за выходные'
 DAY1 = msk(2026, 10, 17, 14)
 DAY2 = msk(2026, 10, 18, 14)
 EVENT_END = msk(2026, 10, 19, 23, 59)
-SITE = 'https://agent.olgapuzanovva.ru'
+SITE = os.environ.get('SITE_URL', 'https://agent.olgapuzanovva.ru').rstrip('/')
 GIFTS = SITE + '/gifts/'
 IMG = SITE + '/img/'
 
