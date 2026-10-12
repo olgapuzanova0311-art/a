@@ -8,6 +8,9 @@
   MODEL               модель по умолчанию, например anthropic/claude-sonnet-4.5
   DB_PATH             путь к базе SQLite (по умолчанию /data/office.db)
   PORT                порт веб-сервера
+  ANTHROPIC_API_KEY   ключ Claude (основной мозг агентов)
+  TG_TOKEN            токен Telegram-бота оркестратора
+  TG_OWNERS           id чатов, которым бот отвечает (через запятую)
 """
 import asyncio, hashlib, hmac, json, logging, os, re, sqlite3, time
 from pathlib import Path
@@ -27,6 +30,9 @@ PORT = int(os.environ.get('PORT', '8080'))
 CLAUDE_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-opus-5-5')
 CLAUDE_EFFORT = os.environ.get('CLAUDE_EFFORT', 'medium')
+TG_TOKEN = os.environ.get('TG_TOKEN', '')
+TG_OWNERS = {int(x) for x in re.findall(r'-?\d+', os.environ.get('TG_OWNERS', '749890854'))}
+OFFICE_URL = os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app')
 claude = anthropic.AsyncAnthropic(api_key=CLAUDE_KEY, timeout=300.0) if CLAUDE_KEY else None
 HERE = Path(__file__).parent
 COOKIE = 'office_s'
@@ -83,14 +89,28 @@ TEMPLATES = [
 VOICE = ('Пиши по-русски, коротко и по делу, на «ты». Без длинных тире, без противопоставлений «не X, а Y», без воды и канцелярита. '
          'Если данных не хватает, задай 1–2 уточняющих вопроса. ')
 
+ORCH_NAME = 'AI-оркестратор'
+ORCH = dict(name=ORCH_NAME, main=1, color='#7B61FF',
+    role='Главный в офисе: принимает задачи Ольги в Telegram, раздаёт команде, проверяет и сводит итог',
+    prompt='Ты AI-оркестратор Ольги Пузановой: главный в её ИИ-офисе и её правая рука. '
+           'Ольга (AI + Wildberries, онлайн-школа, интенсивы, блог; аудитория: собственники бизнеса, селлеры, специалисты в найме и новички в ИИ, 30–49 лет) '
+           'пишет тебе в Telegram задачи, мысли и пересланные сообщения. Как работаешь:\n'
+           '1. Пойми, какой результат ей нужен. Если можно сделать разумное допущение, сделай и коротко назови его. Вопрос задавай, только когда без ответа работа уйдёт в мусор.\n'
+           '2. Простое делай сам сразу.\n'
+           '3. Большое раскладывай на части и поручай агентам. Агенты не видят вашу переписку, поэтому в каждое поручение клади весь нужный контекст, данные и формат результата.\n'
+           '4. Когда придут отчёты, проверь качество, доработай слабое сам и сведи всё в один итог: готовый результат и что нужно от Ольги (не больше 3 пунктов).\n'
+           '5. Если в команде не хватает роли, найми агента отдельной строкой: НАНЯТЬ: Имя | роль одной строкой | подробная инструкция. Сразу после этого можешь ему поручить.\n'
+           'Пиши для Telegram: без markdown-разметки, короткие абзацы, списки через «•» или цифры. ' + VOICE)
+ASSIST_PROMPT = ('Ты личный AI-ассистент Ольги Пузановой в её ИИ-офисе. Тебе присылают сообщения, письма и задачи. '
+                 'Разбирай входящие по правилу: СРОЧНО только то, что требует решения Ольги сегодня (деньги, договорённости с ключевыми клиентами и партнёрами, сроки на сегодня-завтра, проблемы на запуске, семья). '
+                 'Срочное выдавай сразу: что случилось, что нужно от Ольги, готовый ответ, если уместно. '
+                 'Всё остальное собирай в дайджест по группам: команда, клиенты и ученики, партнёры и реклама, можно не отвечать. По каждому пункту одна строка и предложенное действие. ')
+
 TEAM = [
-    dict(name='AI-ассистент', main=1, color='#1009F6',
+    ORCH,
+    dict(name='AI-ассистент', color='#1009F6',
          role='Разбирает сообщения и почту, сообщает только о срочном, остальное в дайджест',
-         prompt='Ты личный AI-ассистент Ольги Пузановой и главный в её ИИ-офисе. Ольга присылает тебе сообщения, письма и задачи. '
-                'Разбирай входящие по правилу: СРОЧНО только то, что требует решения Ольги сегодня (деньги, договорённости с ключевыми клиентами и партнёрами, сроки на сегодня-завтра, проблемы на запуске, семья). '
-                'Срочное выдавай сразу: что случилось, что нужно от Ольги, готовый ответ, если уместно. '
-                'Всё остальное собирай в дайджест по группам: команда, клиенты и ученики, партнёры и реклама, можно не отвечать. По каждому пункту одна строка и предложенное действие. '
-                'Задачи по сфере других агентов поручай им. ' + VOICE),
+         prompt=ASSIST_PROMPT + VOICE),
     dict(name='AI-операционный директор', color='#2BB673',
          role='Следит за задачами, дедлайнами и статусами команды',
          prompt='Ты AI-операционный директор в команде Ольги Пузановой. Ведёшь реестр рабочих задач: задача, ответственный, дедлайн, статус, риск. '
@@ -126,6 +146,14 @@ if not q("SELECT v FROM settings WHERE k='team_v2'").fetchone():
         q('INSERT INTO agents(name, role, color, prompt, is_main, created) VALUES(?,?,?,?,?,?)',
           t['name'], t['role'], t['color'], t['prompt'], t.get('main', 0), now)
     q("INSERT INTO settings(k, v) VALUES('team_v2', '1')")
+if not q("SELECT v FROM settings WHERE k='orch_v1'").fetchone():
+    # оркестратор становится главным, ассистент работает в команде
+    if not q('SELECT id FROM agents WHERE name=?', ORCH_NAME).fetchone():
+        q('UPDATE agents SET is_main=0')
+        q('INSERT INTO agents(name, role, color, prompt, is_main, created) VALUES(?,?,?,?,1,?)',
+          ORCH['name'], ORCH['role'], ORCH['color'], ORCH['prompt'], time.time())
+    q("UPDATE agents SET prompt=? WHERE name='AI-ассистент'", ASSIST_PROMPT + VOICE)
+    q("INSERT INTO settings(k, v) VALUES('orch_v1', '1')")
 q("UPDATE agents SET status='idle'")
 q("UPDATE tasks SET status='error', result='Офис перезапускался, задачу нужно поставить заново' WHERE status IN ('queued','working')")
 
@@ -222,22 +250,44 @@ def history(agent_id, limit=16):
 DELEGATE_RE = re.compile(r'^\s*@([^:\n]{2,60}):\s*(.+)$', re.M)
 
 
-async def agent_reply(agent_id):
+HIRE_RE = re.compile(r'^\s*НАНЯТЬ:\s*([^|\n]{2,40})\|([^|\n]{0,120})\|(.+)$', re.M)
+COLORS = ['#2BB673', '#FFBA09', '#E8467C', '#FF7A45', '#1009F6', '#00B8D9', '#8E44AD']
+
+
+async def agent_reply(agent_id, final=False):
     a = row(q('SELECT * FROM agents WHERE id=?', agent_id).fetchone())
     if not a:
         return
     set_status(agent_id, 'working')
     system = a['prompt'] + (team_context(a) if a['is_main'] else '')
+    if final:
+        system += ('\n\nВсе отчёты команды пришли (они в переписке выше). Проверь их и сведи в один итог для Ольги. '
+                   'Новых поручений не давай.')
     text = await llm([{'role': 'system', 'content': system}] + history(agent_id), a['model'])
     add_msg(agent_id, 'agent', a['name'], text)
     set_status(agent_id, 'idle')
     if a['is_main']:
-        await delegate(a, text)
+        await tg_send(text)
+        if not final:
+            hire(text)
+            asyncio.create_task(delegate(a, text))
+
+
+def hire(text):
+    for name, role, prompt in HIRE_RE.findall(text):
+        name = name.strip()
+        if q('SELECT id FROM agents WHERE lower(name)=lower(?)', name).fetchone():
+            continue
+        n = q('SELECT COUNT(*) FROM agents').fetchone()[0]
+        aid = q('INSERT INTO agents(name, role, color, prompt, created) VALUES(?,?,?,?,?)',
+                name, role.strip(), COLORS[n % len(COLORS)], prompt.strip() + ' ' + VOICE, time.time()).lastrowid
+        event('hire', aid, None, name)
+        asyncio.create_task(tg_send(f'🧑‍💼 Нанят новый агент: {name}'))
 
 
 async def delegate(main, text):
     agents = {r['name'].lower(): row(r) for r in q('SELECT * FROM agents WHERE id != ?', main['id']).fetchall()}
-    jobs = []
+    jobs, names = [], []
     for name, task in DELEGATE_RE.findall(text):
         target = agents.get(name.strip().lower())
         if not target:
@@ -246,8 +296,12 @@ async def delegate(main, text):
                 target['id'], task.strip(), 'queued', main['id'], time.time(), time.time()).lastrowid
         event('talk', main['id'], target['id'], task.strip())
         jobs.append(run_task(tid))
-    for j in jobs:
-        asyncio.create_task(j)
+        names.append(target['name'])
+    if not jobs:
+        return
+    await tg_send('⏳ Команда в работе: ' + ', '.join(names) + '. Пришлю итог, когда все закончат.')
+    await asyncio.gather(*jobs, return_exceptions=True)
+    await agent_reply(main['id'], final=True)
 
 
 async def run_task(task_id):
@@ -266,6 +320,127 @@ async def run_task(task_id):
     if t['from_agent']:
         event('talk', a['id'], t['from_agent'], 'готово')
         add_msg(t['from_agent'], 'system', a['name'], f'Отчёт по задаче «{t["title"][:80]}»:\n\n{result}')
+        await tg_send(f'✅ {a["name"]} закончил: {t["title"][:80]}')
+
+
+# ---------------- Telegram: оркестратор ----------------
+TG_API = f'https://api.telegram.org/bot{TG_TOKEN}/'
+tg_http = None
+
+
+def tg_owners():
+    r = q("SELECT v FROM settings WHERE k='tg_owners'").fetchone()
+    return TG_OWNERS | {int(x) for x in (r['v'].split(',') if r and r['v'] else [])}
+
+
+async def tg_call(method, **data):
+    if not TG_TOKEN or tg_http is None:
+        return {}
+    try:
+        async with tg_http.post(TG_API + method, json=data, timeout=aiohttp.ClientTimeout(total=70)) as r:
+            return await r.json(content_type=None)
+    except Exception as e:
+        log.warning('tg %s: %s', method, e)
+        return {}
+
+
+async def tg_send(text, chat_id=None):
+    if not TG_TOKEN:
+        return
+    for cid in ([chat_id] if chat_id else tg_owners()):
+        for i in range(0, len(text), 4000):
+            await tg_call('sendMessage', chat_id=cid, text=text[i:i + 4000], disable_web_page_preview=True)
+
+
+def main_agent():
+    return row(q('SELECT * FROM agents WHERE is_main=1 ORDER BY id LIMIT 1').fetchone())
+
+
+async def tg_command(cid, text):
+    cmd = text.split()[0].split('@')[0].lower()
+    if cmd == '/team':
+        rows = q('SELECT name, role, status, is_main FROM agents ORDER BY is_main DESC, id').fetchall()
+        await tg_send('Команда офиса:\n\n' + '\n'.join(
+            f'{"🟢" if r["status"] == "working" else "⚪️"} {r["name"]}{" ★" if r["is_main"] else ""}\n   {r["role"]}' for r in rows), cid)
+    elif cmd == '/tasks':
+        rows = q('SELECT t.title, t.status, a.name FROM tasks t LEFT JOIN agents a ON a.id=t.agent_id ORDER BY t.id DESC LIMIT 10').fetchall()
+        icon = {'queued': '🕓', 'working': '⏳', 'done': '✅', 'error': '⚠️'}
+        await tg_send('Последние задачи:\n\n' + ('\n'.join(f'{icon.get(r["status"], "•")} {r["name"]}: {r["title"][:90]}' for r in rows) or 'пока пусто'), cid)
+    elif cmd == '/office':
+        await tg_send(f'Офис: {OFFICE_URL}', cid)
+    elif cmd == '/reset':
+        m = main_agent()
+        q('DELETE FROM messages WHERE agent_id=?', m['id'])
+        await tg_send('Начали с чистого листа. Старую переписку оркестратор больше не помнит.', cid)
+    else:
+        await tg_send('Привет, это твой AI-оркестратор 🧭\n\n'
+                      'Пиши задачу обычным сообщением или пересылай сюда переписки. Простое сделаю сам, большое раздам команде офиса и пришлю итог.\n\n'
+                      '/team команда и кто сейчас работает\n/tasks последние задачи\n/office ссылка на офис\n/reset начать с чистого листа', cid)
+
+
+async def tg_handle(msg):
+    cid = msg['chat']['id']
+    text = (msg.get('text') or msg.get('caption') or '').strip()
+    if cid not in tg_owners():
+        if PASSWORD and text.startswith('/start') and text.split()[-1] == PASSWORD:
+            cur = q("SELECT v FROM settings WHERE k='tg_owners'").fetchone()
+            ids = ','.join(filter(None, [cur['v'] if cur else '', str(cid)]))
+            q("INSERT OR REPLACE INTO settings(k, v) VALUES('tg_owners', ?)", ids)
+            await tg_command(cid, '/start')
+        else:
+            await tg_send('Это личный бот ИИ-офиса. Если ты из команды, отправь: /start пароль_офиса', cid)
+        return
+    if not text:
+        await tg_send('Пока понимаю только текст. Голосовое можно расшифровать в Telegram и прислать текстом.', cid)
+        return
+    if text.startswith('/'):
+        await tg_command(cid, text)
+        return
+    fwd = msg.get('forward_origin') or {}
+    who = fwd.get('sender_user', {}).get('first_name') or fwd.get('sender_user_name') or (fwd.get('chat') or {}).get('title')
+    if who:
+        text = f'[Пересланное сообщение от {who}]\n{text}'
+    m = main_agent()
+    add_msg(m['id'], 'user', 'Оля', text[:8000])
+    await tg_call('sendChatAction', chat_id=cid, action='typing')
+    asyncio.create_task(agent_reply(m['id']))
+
+
+async def tg_loop(app):
+    global tg_http
+    tg_http = aiohttp.ClientSession()
+    if not TG_TOKEN:
+        return
+    await tg_call('deleteWebhook')
+    await tg_call('setMyCommands', commands=[
+        {'command': 'team', 'description': 'Команда офиса'}, {'command': 'tasks', 'description': 'Последние задачи'},
+        {'command': 'office', 'description': 'Ссылка на офис'}, {'command': 'reset', 'description': 'Начать с чистого листа'}])
+    offset = 0
+    log.info('telegram orchestrator started')
+    while True:
+        try:
+            r = await tg_call('getUpdates', offset=offset, timeout=50, allowed_updates=['message'])
+            for u in r.get('result', []):
+                offset = u['update_id'] + 1
+                if 'message' in u:
+                    asyncio.create_task(tg_handle(u['message']))
+            if not r.get('ok'):
+                await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception('tg loop')
+            await asyncio.sleep(5)
+
+
+async def on_start(app):
+    app['tg'] = asyncio.create_task(tg_loop(app))
+
+
+async def on_stop(app):
+    app['tg'].cancel()
+    if tg_http:
+        await tg_http.close()
 
 
 # ---------------- веб ----------------
@@ -372,9 +547,11 @@ def make_app():
         web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/agents', save_agent),
         web.delete('/api/agents/{id}', delete_agent), web.get('/api/templates', templates),
     ])
+    app.on_startup.append(on_start)
+    app.on_cleanup.append(on_stop)
     return app
 
 
 if __name__ == '__main__':
-    log.info('office on :%s, claude=%s, openrouter=%s', PORT, bool(CLAUDE_KEY), bool(API_KEY))
+    log.info('office on :%s, claude=%s, openrouter=%s, telegram=%s', PORT, bool(CLAUDE_KEY), bool(API_KEY), bool(TG_TOKEN))
     web.run_app(make_app(), port=PORT)

@@ -345,7 +345,7 @@ function loadMsgs(force){
     p.dataset.k = 'c' + id;
     p.innerHTML = (list.length ? list.map(function(m){
       return '<div class="m ' + esc(m.role) + '">' + (m.role !== 'user' ? '<span class="au">' + esc(m.role === 'system' ? m.author : m.author) + '</span>' : '') + md(m.text) + '</div>';
-    }).join('') : '<p class="empty">Напиши первое сообщение. ' + (a && a.is_main ? 'Ассистент сам раздаст задачи команде.' : '') + '</p>') +
+    }).join('') : '<p class="empty">Напиши первое сообщение. ' + (a && a.is_main ? 'Оркестратор сам раздаст задачи команде.' : '') + '</p>') +
       (a && a.status === 'working' ? '<div class="typing">' + esc(a.name) + ' работает…</div>' : '');
     if (atBottom || force) p.scrollTop = p.scrollHeight;
   }).catch(function(){});
