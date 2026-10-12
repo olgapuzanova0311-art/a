@@ -1,0 +1,59 @@
+name: Недельная сводка задач
+
+on:
+  schedule:
+    - cron: "52 14 * * 5" # пятница 17:52 по Москве (14:52 UTC)
+  workflow_dispatch: {}    # кнопка «Run workflow» для ручного запуска
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: weekly-digest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: weekly-digest/requirements.txt
+      - run: pip install -r requirements.txt
+
+      - name: 1. Скачать переписки за неделю
+        run: python -m digest.main --collect-only
+        env:
+          DIGEST_CONFIG: ${{ secrets.DIGEST_CONFIG }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_SESSION: ${{ secrets.TG_SESSION }}
+          YOUGILE_API_KEY: ${{ secrets.YOUGILE_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ZOOM_ACCOUNT_ID: ${{ secrets.ZOOM_ACCOUNT_ID }}
+          ZOOM_CLIENT_ID: ${{ secrets.ZOOM_CLIENT_ID }}
+          ZOOM_CLIENT_SECRET: ${{ secrets.ZOOM_CLIENT_SECRET }}
+
+      # Разбор делает Claude Code по подписке Claude (Pro/Max) — ключ API не нужен.
+      # Ключи от Telegram и остального на этот шаг не передаются, а Claude может только
+      # читать файлы, записать сводку и проверить её формат.
+      - name: 2. Claude Code выписывает задачи
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude -p "$(cat CLAUDE_PROMPT.md)" \
+            --allowedTools "Read" "Write" "Bash(python -m digest.main --dry-run --deliver:*)" \
+            --max-turns 200
+          test -s output/digest.json
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          DIGEST_CONFIG: ${{ secrets.DIGEST_CONFIG }}
+
+      - name: 3. Отправить сводку
+        run: python -m digest.main --deliver output/digest.json
+        env:
+          DIGEST_CONFIG: ${{ secrets.DIGEST_CONFIG }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_SESSION: ${{ secrets.TG_SESSION }}
+          YOUGILE_API_KEY: ${{ secrets.YOUGILE_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}

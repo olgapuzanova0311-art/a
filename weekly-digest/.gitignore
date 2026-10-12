@@ -1,0 +1,7 @@
+.env
+config.yaml
+output/
+notes/
+*.session
+__pycache__/
+.venv/
