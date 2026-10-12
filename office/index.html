@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ИИ-офис</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#1009F6;--blue-d:#0B06B8;--yellow:#FFBA09;--ink:#141414;--ink2:#55555C;--cream:#F3F3EF;--line:#DADAD3;--white:#fff;--sky:#DCE8F7;--font:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--cream);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-rows:auto 1fr;height:100dvh}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--white);border-bottom:1.5px solid var(--ink)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;white-space:nowrap}
+.logo i{width:32px;height:32px;border-radius:10px;background:var(--blue);display:grid;place-items:center;color:var(--yellow);font-style:normal;font-size:16px}
+.brain{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--cream);white-space:nowrap}
+.brain.on{background:#DDF6E8;color:#11653A}.brain.off{background:#FFE9C7;color:#8A5A00}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--ink);background:var(--white);font-weight:700;font-size:14px;white-space:nowrap}
+.btn.y{background:var(--yellow)}.btn.b{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.sm{height:34px;padding:0 12px;font-size:13px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0;overflow:hidden}
+.stage{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;padding:16px;gap:12px}
+.room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;min-height:240px;box-shadow:6px 6px 0 var(--yellow)}
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
+@media (max-width:600px){.hint{display:none}}
+.hint{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.92);border:1.5px solid var(--ink);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+.team{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
+.card{flex:none;display:flex;gap:10px;align-items:center;padding:8px 12px 8px 8px;border-radius:16px;border:1.5px solid var(--ink);background:var(--white);cursor:pointer;min-width:190px}
+.card.sel{background:var(--yellow)}
+.av{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;border:1.5px solid var(--ink)}
+.card b{display:block;font-size:14px;line-height:1.2}.card small{font-size:12px;color:var(--ink2)}
+.st{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B8B8C0;margin-right:5px;vertical-align:1px}
+.st.working{background:#2BB673;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+aside{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;border-left:1.5px solid var(--ink);background:var(--white);min-height:0;overflow:hidden}
+.ah{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1.5px solid var(--line)}
+.ah .av{width:44px;height:44px;font-size:18px}
+.ah h2{margin:0;font-size:17px;line-height:1.2}.ah p{margin:2px 0 0;font-size:12.5px;color:var(--ink2)}
+.tabs{display:flex;gap:6px;padding:10px 16px;border-bottom:1.5px solid var(--line)}
+.tab{border:1.5px solid var(--line);background:var(--white);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.msgs{min-height:0;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--cream)}
+.m{max-width:88%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;border:1.5px solid var(--ink)}
+.m.user{align-self:flex-end;background:var(--yellow);border-bottom-right-radius:4px}
+.m.agent{align-self:flex-start;background:var(--white);border-bottom-left-radius:4px}
+.m.system{align-self:stretch;max-width:100%;background:var(--sky);border-style:dashed;font-size:13px}
+.m .au{display:block;font-size:11.5px;font-weight:800;color:var(--blue);margin-bottom:3px}
+.typing{align-self:flex-start;font-size:13px;color:var(--ink2);font-weight:600}
+.empty{color:var(--ink2);font-size:14px;text-align:center;margin:auto;max-width:28ch}
+.composer{padding:12px 16px;border-top:1.5px solid var(--line);display:grid;gap:8px}
+textarea,input,select{width:100%;font:15px var(--font);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--cream);color:var(--ink);resize:none}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);background:#fff}
+.row{display:flex;gap:8px}.row .btn{flex:1;justify-content:center}
+.form{overflow-y:auto;padding:16px;display:grid;gap:12px;align-content:start}
+.form label{display:grid;gap:6px;font-size:13px;font-weight:700}
+.colors{display:flex;gap:8px;flex-wrap:wrap}
+.colors button{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--ink)}
+.colors button.on{outline:3px solid var(--ink);outline-offset:2px}
+.tpls{display:flex;gap:6px;flex-wrap:wrap}
+.tpls button{border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:6px 10px;font-size:12.5px;font-weight:700}
+.task{border:1.5px solid var(--ink);border-radius:14px;background:#fff;padding:10px 12px;font-size:13.5px}
+.task summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:flex-start}
+.task .s{flex:none;font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--cream)}
+.task .s.done{background:#DDF6E8;color:#11653A}.task .s.working,.task .s.queued{background:#FFE9C7;color:#8A5A00}.task .s.error{background:#FDE2E2;color:#9B1C1C}
+.task pre{white-space:pre-wrap;font:13px/1.45 var(--font);margin:8px 0 0;background:var(--cream);border-radius:10px;padding:8px}
+.overlay{position:fixed;inset:0;background:rgba(20,20,20,.45);display:grid;place-items:center;z-index:20;padding:16px}
+.modal{background:#fff;border:2px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--yellow);width:min(440px,100%);padding:24px;display:grid;gap:14px}
+.modal h3{margin:0;font-size:22px}
+.err{color:#B42318;font-size:13px;font-weight:600;min-height:1em}
+@media (max-width:900px){
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
+  .app{height:auto;min-height:100dvh}
+  .room{height:58vw;min-height:220px}
+  aside{border-left:0;border-top:1.5px solid var(--ink);height:78dvh}
+  header .hide-m{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><i>◆</i><span>ИИ-офис</span></div>
+    <span class="brain" id="brain">…</span>
+    <span class="sp"></span>
+    <button class="btn sm hide-m" id="btnTasks">📋 Задачи</button>
+    <button class="btn y sm" id="btnHire">+ Нанять агента</button>
+  </header>
+  <div class="main">
+    <section class="stage">
+      <div class="room"><canvas id="cv"></canvas><span class="hint">Нажми на робота, чтобы поговорить</span></div>
+      <div class="team" id="team"></div>
+    </section>
+    <aside>
+      <div class="ah" id="ah"></div>
+      <div class="tabs"><button class="tab on" data-tab="chat">Чат</button><button class="tab" data-tab="tasks">Задачи</button><button class="tab" data-tab="edit">Настройки</button></div>
+      <div class="msgs" id="pane"></div>
+      <div class="composer" id="composer">
+        <textarea id="inp" rows="3" placeholder="Напиши сообщение или задачу…"></textarea>
+        <div class="row"><button class="btn b" id="send">Написать</button><button class="btn y" id="task">Дать задачу</button></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="overlay" id="login" hidden>
+  <form class="modal" id="loginForm">
+    <h3>Вход в ИИ-офис</h3>
+    <input type="password" id="pwd" placeholder="Пароль" autocomplete="current-password">
+    <div class="err" id="loginErr"></div>
+    <button class="btn y" type="submit" style="justify-content:center">Войти</button>
+  </form>
+</div>
+
+<div class="overlay" id="hire" hidden>
+  <div class="modal" style="width:min(560px,100%);max-height:92dvh;overflow:auto">
+    <h3 id="hireTitle">Нанять агента</h3>
+    <div><div style="font-size:13px;font-weight:700;margin-bottom:6px">Готовые роли</div><div class="tpls" id="tpls"></div></div>
+    <div class="form" style="padding:0">
+      <label>Имя<input id="fName" maxlength="40" placeholder="Например: Аналитик продаж"></label>
+      <label>Чем занимается<input id="fRole" maxlength="120" placeholder="Коротко, одной строкой"></label>
+      <label>Инструкция: роль, материалы, правила, результат<textarea id="fPrompt" rows="7" placeholder="Ты … Материалы: … Правила: … Результат: …"></textarea></label>
+      <label>Цвет робота<div class="colors" id="fColors"></div></label>
+      <label>Модель (необязательно)<input id="fModel" placeholder="по умолчанию из настроек офиса"></label>
+    </div>
+    <div class="err" id="hireErr"></div>
+    <div class="row"><button class="btn" id="hireCancel">Отмена</button><button class="btn y" id="hireSave">Нанять</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var COLORS = ['#1009F6','#FFBA09','#2BB673','#FF7A45','#8E5CF7','#E8467C','#14A3C7','#0B06B8','#3DBE8B','#6B7280'];
+var S = { agents: [], tasks: [], last: 0, sel: null, tab: 'chat', msgsKey: '', editId: null, color: COLORS[0], waiting: {} };
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function md(s){ return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+function api(path, body, method){
+  return fetch(path, { method: method || (body ? 'POST' : 'GET'), headers: body ? {'Content-Type':'application/json'} : {}, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' })
+    .then(function(r){ if (r.status === 401) { $('login').hidden = false; throw new Error('auth'); } return r.json(); });
+}
+function agent(id){ for (var i = 0; i < S.agents.length; i++) if (S.agents[i].id === id) return S.agents[i]; return null; }
+function initials(n){ return (n || '?').trim().charAt(0).toUpperCase(); }
+
+/* ================= пиксельный офис ================= */
+var W = 384, H = 224, cv = $('cv'), ctx = cv.getContext('2d');
+var off = document.createElement('canvas'); off.width = W; off.height = H; var px = off.getContext('2d');
+var robots = {}, bubbles = [], tick = 0;
+var DESKS = [{x:300,y:58,boss:true}];
+[[34,74],[98,74],[162,74],[226,74],[34,134],[98,134],[162,134],[226,134],[34,188],[98,188]].forEach(function(p){ DESKS.push({x:p[0],y:p[1]}); });
+var LOUNGE = [{x:300,y:150},{x:330,y:170},{x:355,y:150},{x:300,y:200},{x:350,y:200},{x:180,y:200},{x:260,y:200},{x:140,y:110}];
+var COFFEE = {x:360,y:118};
+
+function rect(x,y,w,h,c){ px.fillStyle = c; px.fillRect(x|0, y|0, w, h); }
+function shade(hex, k){
+  var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  function f(v){ return Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); }
+  return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+}
+function drawRoom(){
+  for (var y = 32; y < H; y += 16) for (var x = 0; x < W; x += 16) rect(x, y, 16, 16, ((x + y) / 16) % 2 ? '#E9E6DC' : '#F1EEE5');
+  rect(0, 0, W, 32, '#C9D6F2'); rect(0, 30, W, 3, '#141414');
+  [[24,6],[120,6],[216,6]].forEach(function(w){ rect(w[0], w[1], 56, 20, '#141414'); rect(w[0]+2, w[1]+2, 52, 16, '#9CC9FF'); rect(w[0]+28, w[1]+2, 1, 16, '#141414'); rect(w[0]+4, w[1]+4, 10, 2, '#E8F3FF'); });
+  rect(282, 5, 64, 22, '#1009F6'); rect(282, 5, 64, 1, '#141414'); rect(282, 26, 64, 1, '#141414');
+  px.fillStyle = '#FFBA09'; px.font = '8px "Press Start 2P", monospace'; px.fillText('ИИ-ОФИС', 287, 20);
+  // зона отдыха
+  rect(286, 140, 92, 76, '#DCE8F7'); rect(286, 140, 92, 1, '#B6C6E6');
+  rect(300, 186, 56, 14, '#FF7A45'); rect(300, 182, 56, 6, '#E2602F'); rect(298, 184, 4, 16, '#C94F22'); rect(354, 184, 4, 16, '#C94F22');
+  rect(COFFEE.x - 6, COFFEE.y - 18, 14, 22, '#5B5F73'); rect(COFFEE.x - 4, COFFEE.y - 14, 10, 6, '#2B2D42'); rect(COFFEE.x - 2, COFFEE.y - 4, 4, 3, '#FFFFFF');
+  [[372,40],[6,40],[274,206],[6,206]].forEach(function(p){ rect(p[0], p[1]+8, 8, 8, '#B5651D'); rect(p[0]-2, p[1], 12, 9, '#2BB673'); rect(p[0]+1, p[1]-3, 6, 4, '#3DBE8B'); });
+  // переговорка
+  rect(150, 192, 60, 18, '#B98B5E'); rect(150, 192, 60, 2, '#8C6440');
+}
+function drawDesk(d, a){
+  var w = d.boss ? 44 : 36;
+  rect(d.x - w/2, d.y - 6, w, 12, '#B98B5E'); rect(d.x - w/2, d.y - 6, w, 2, '#D4AA80'); rect(d.x - w/2 + 2, d.y + 6, 3, 8, '#8C6440'); rect(d.x + w/2 - 5, d.y + 6, 3, 8, '#8C6440');
+  rect(d.x - 8, d.y - 18, 16, 11, '#141414');
+  var on = a && a.status === 'working';
+  rect(d.x - 7, d.y - 17, 14, 9, on ? (tick % 20 < 10 ? shade(a.color, .55) : shade(a.color, .35)) : '#3A3D55');
+  if (on) for (var i = 0; i < 3; i++) rect(d.x - 5 + i * 4, d.y - 14 + ((tick / 6 + i) % 3 | 0), 2, 1, '#FFFFFF');
+  rect(d.x - 2, d.y - 7, 4, 2, '#141414');
+  if (d.boss) { rect(d.x + 10, d.y - 10, 6, 5, '#FFBA09'); rect(d.x + 12, d.y - 12, 2, 2, '#FFFFFF'); }
+}
+function drawRobot(r){
+  var a = agent(r.id); if (!a) return;
+  var x = Math.round(r.x), y = Math.round(r.y), c = a.color, step = r.moving ? ((tick / 5 | 0) % 2) : 0;
+  rect(x - 5, y + 1, 10, 2, 'rgba(0,0,0,.18)');
+  rect(x - 3, y - 3, 2, 3 - step, '#2B2D42'); rect(x + 1, y - 3, 2, 2 + step, '#2B2D42');
+  rect(x - 5, y - 9, 10, 7, c); rect(x - 5, y - 9, 10, 1, shade(c, .3)); rect(x - 2, y - 7, 4, 3, shade(c, .5));
+  rect(x - 6, y - 8, 1, 4, shade(c, -.25)); rect(x + 5, y - 8, 1, 4, shade(c, -.25));
+  rect(x - 5, y - 16, 10, 7, '#E8ECF7'); rect(x - 5, y - 16, 10, 1, '#FFFFFF'); rect(x - 4, y - 14, 8, 3, '#1C1E2E');
+  var blink = (tick + r.id * 17) % 140 < 4;
+  if (!blink) { rect(x - 3, y - 13, 2, 1, '#5CF2FF'); rect(x + 1, y - 13, 2, 1, '#5CF2FF'); }
+  rect(x, y - 19, 1, 3, '#2B2D42'); rect(x - 1, y - 21, 3, 2, a.status === 'working' ? (tick % 16 < 8 ? '#FFBA09' : '#FF7A45') : c);
+  if (a.is_main) { rect(x - 3, y - 18, 1, 2, '#FFBA09'); rect(x + 3, y - 18, 1, 2, '#FFBA09'); rect(x - 3, y - 18, 7, 1, '#FFBA09'); }
+  if (S.sel === r.id) { rect(x - 7, y + 3, 14, 1, '#FFBA09'); }
+}
+
+function deskOf(a){
+  var idx = 0, i, list = S.agents.filter(function(x){ return !x.is_main; });
+  if (a.is_main) return DESKS[0];
+  for (i = 0; i < list.length; i++) if (list[i].id === a.id) idx = i;
+  return DESKS[1 + (idx % (DESKS.length - 1))];
+}
+function seat(a){ var d = deskOf(a); return {x: d.x, y: d.y + 18}; }
+function syncRobots(){
+  var seen = {};
+  S.agents.forEach(function(a){
+    seen[a.id] = 1;
+    if (!robots[a.id]) { var s = seat(a); robots[a.id] = {id: a.id, x: s.x, y: s.y, tx: s.x, ty: s.y, moving: false, wait: 60 + Math.random() * 200, plan: null}; }
+  });
+  Object.keys(robots).forEach(function(k){ if (!seen[k]) delete robots[k]; });
+}
+function goTo(r, x, y, then){ r.tx = x; r.ty = y; r.plan = then || null; }
+function think(r){
+  var a = agent(r.id); if (!a) return;
+  if (r.busyUntil && r.busyUntil > tick) return;
+  if (a.status === 'working') { var s = seat(a); goTo(r, s.x, s.y); return; }
+  if (r.moving) return;
+  if ((r.wait -= 1) > 0) return;
+  r.wait = 200 + Math.random() * 400;
+  var roll = Math.random();
+  if (roll < .45) { var s2 = seat(a); goTo(r, s2.x, s2.y); }
+  else if (roll < .6) goTo(r, COFFEE.x - 14, COFFEE.y + 10, function(){ say(r.id, '☕'); });
+  else { var p = LOUNGE[(Math.random() * LOUNGE.length) | 0]; goTo(r, p.x + (Math.random() * 16 - 8), p.y); }
+}
+function move(r){
+  var dx = r.tx - r.x, dy = r.ty - r.y, d = Math.sqrt(dx * dx + dy * dy), sp = .9;
+  if (d < 1) { r.x = r.tx; r.y = r.ty; if (r.moving && r.plan) { var p = r.plan; r.plan = null; p(); } r.moving = false; return; }
+  r.moving = true; r.x += dx / d * Math.min(sp, d); r.y += dy / d * Math.min(sp, d);
+}
+function say(id, text, ttl){ bubbles = bubbles.filter(function(b){ return b.id !== id; }); bubbles.push({id: id, text: text, until: tick + (ttl || 150)}); }
+function talk(aId, bId, text){
+  var ra = robots[aId], rb = robots[bId]; if (!ra || !rb) return;
+  ra.busyUntil = tick + 400;
+  goTo(ra, rb.x + (rb.x > 200 ? -14 : 14), rb.y, function(){
+    say(aId, text ? text.slice(0, 46) + (text.length > 46 ? '…' : '') : '💬', 220);
+    setTimeout(function(){ say(bId, '👍', 120); }, 900);
+    ra.busyUntil = tick + 200;
+  });
+}
+function onEvent(e){
+  if (e.type === 'talk') talk(e.a, e.b, e.text);
+  else if (e.type === 'hire') { var r = robots[e.a]; if (r) { r.x = 6; r.y = 120; } say(e.a, 'Привет! 👋', 200); }
+}
+
+function resize(){
+  var r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+}
+function view(){
+  var s = Math.min(cv.width / W, cv.height / H), w = W * s, h = H * s;
+  return {s: s, ox: (cv.width - w) / 2, oy: (cv.height - h) / 2};
+}
+function frame(){
+  tick++;
+  Object.keys(robots).forEach(function(k){ think(robots[k]); move(robots[k]); });
+  drawRoom();
+  var occupied = {};
+  S.agents.forEach(function(a){ occupied[DESKS.indexOf(deskOf(a))] = a; });
+  DESKS.forEach(function(d, i){ drawDesk(d, occupied[i]); });
+  Object.keys(robots).map(function(k){ return robots[k]; }).sort(function(a, b){ return a.y - b.y; }).forEach(drawRobot);
+  var v = view(), dpr = cv.width / cv.getBoundingClientRect().width || 1;
+  ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#2b2d42'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(off, v.ox, v.oy, W * v.s, H * v.s);
+  // подписи и облачка в полном разрешении
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  Object.keys(robots).forEach(function(k){
+    var r = robots[k], a = agent(r.id); if (!a) return;
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(10, Math.round(3.6 * v.s));
+    ctx.font = '700 ' + fs + 'px Onest, sans-serif';
+    var t = a.name.length > 16 ? a.name.slice(0, 15) + '…' : a.name, tw = ctx.measureText(t).width + 10 * dpr;
+    ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
+    ctx.fillStyle = '#141414'; ctx.fillText(t, X, Y + 1);
+  });
+  bubbles = bubbles.filter(function(b){ return b.until > tick; });
+  bubbles.forEach(function(b){
+    var r = robots[b.id]; if (!r) return;
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(11, Math.round(3.8 * v.s));
+    ctx.font = '600 ' + fs + 'px Onest, sans-serif';
+    var tw = Math.min(ctx.measureText(b.text).width + 16 * dpr, cv.width * .6);
+    ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5 * dpr;
+    roundRect(X - tw / 2, Y - fs, tw, fs * 2, fs * .7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#141414'; ctx.fillText(b.text, X, Y + 1, tw - 10 * dpr);
+  });
+  requestAnimationFrame(frame);
+}
+function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+cv.addEventListener('click', function(ev){
+  var b = cv.getBoundingClientRect(), dpr = cv.width / b.width, v = view();
+  var x = ((ev.clientX - b.left) * dpr - v.ox) / v.s, y = ((ev.clientY - b.top) * dpr - v.oy) / v.s, best = null, bd = 14;
+  Object.keys(robots).forEach(function(k){ var r = robots[k], d = Math.hypot(r.x - x, (r.y - 8) - y); if (d < bd) { bd = d; best = r.id; } });
+  if (best) select(best);
+});
+window.addEventListener('resize', resize);
+
+/* ================= панели ================= */
+function renderTeam(){
+  $('team').innerHTML = S.agents.map(function(a){
+    return '<div class="card' + (S.sel === a.id ? ' sel' : '') + '" data-id="' + a.id + '"><span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><span><b>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</b><small><span class="st ' + esc(a.status) + '"></span>' + (a.status === 'working' ? 'работает' : 'свободен') + '</small></span></div>';
+  }).join('');
+}
+$('team').addEventListener('click', function(e){ var c = e.target.closest('.card'); if (c) select(+c.dataset.id); });
+function renderHead(){
+  var a = agent(S.sel);
+  $('ah').innerHTML = a ? '<span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><div><h2>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</h2><p><span class="st ' + esc(a.status) + '"></span>' + esc(a.role || '') + '</p></div>' : '';
+}
+function select(id){ S.sel = id; S.msgsKey = ''; renderTeam(); renderHead(); renderPane(true); var r = robots[id]; if (r) say(id, 'Слушаю 👀', 120); }
+document.querySelectorAll('.tab').forEach(function(t){ t.addEventListener('click', function(){ S.tab = t.dataset.tab; document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on', x === t); }); S.msgsKey = ''; renderPane(true); }); });
+
+function renderPane(force){
+  var a = agent(S.sel); if (!a) return;
+  $('composer').hidden = S.tab !== 'chat';
+  if (S.tab === 'chat') return loadMsgs(force);
+  if (S.tab === 'tasks') {
+    var list = S.tasks.filter(function(t){ return t.agent_id === a.id; });
+    var html = list.length ? list.map(taskHtml).join('') : '<p class="empty">Задач пока нет. Напиши в чате и нажми «Дать задачу».</p>';
+    if ($('pane').dataset.k !== 't' + a.id + JSON.stringify(list.map(function(t){ return [t.id, t.status]; })) || force) { $('pane').innerHTML = '<div style="display:grid;gap:8px">' + html + '</div>'; $('pane').dataset.k = 't' + a.id + JSON.stringify(list.map(function(t){ return [t.id, t.status]; })); }
+    return;
+  }
+  if (S.tab === 'edit' && (force || $('pane').dataset.k !== 'e' + a.id)) {
+    $('pane').dataset.k = 'e' + a.id;
+    $('pane').innerHTML = '<div class="form" style="padding:0"><label>Инструкция агента<textarea rows="10" readonly>' + esc(a.prompt) + '</textarea></label>' +
+      '<div class="row"><button class="btn y" id="editA">✏️ Изменить</button>' + (a.is_main ? '' : '<button class="btn" id="fireA">Уволить</button>') + '</div></div>';
+    $('editA').onclick = function(){ openHire(a); };
+    if ($('fireA')) $('fireA').onclick = function(){ if (confirm('Уволить «' + a.name + '»? Переписка с ним удалится.')) api('/api/agents/' + a.id, null, 'DELETE').then(function(){ S.sel = null; poll(); }); };
+  }
+}
+function taskHtml(t){
+  var a = agent(t.agent_id), st = {queued:'в очереди', working:'в работе', done:'готово', error:'ошибка'}[t.status] || t.status;
+  return '<details class="task"><summary><span class="s ' + esc(t.status) + '">' + st + '</span><span>' + (a ? '<b>' + esc(a.name) + ':</b> ' : '') + esc(t.title.slice(0, 140)) + '</span></summary>' + (t.result ? '<pre>' + md(t.result) + '</pre>' : '') + '</details>';
+}
+function loadMsgs(force){
+  var id = S.sel; if (!id) return;
+  api('/api/messages?agent_id=' + id).then(function(list){
+    if (id !== S.sel || S.tab !== 'chat') return;
+    var a = agent(id), key = id + ':' + list.length + ':' + (a && a.status);
+    if (!force && key === S.msgsKey) return; S.msgsKey = key;
+    var p = $('pane'), atBottom = p.scrollHeight - p.scrollTop - p.clientHeight < 80;
+    p.dataset.k = 'c' + id;
+    p.innerHTML = (list.length ? list.map(function(m){
+      return '<div class="m ' + esc(m.role) + '">' + (m.role !== 'user' ? '<span class="au">' + esc(m.role === 'system' ? m.author : m.author) + '</span>' : '') + md(m.text) + '</div>';
+    }).join('') : '<p class="empty">Напиши первое сообщение. ' + (a && a.is_main ? 'Ассистент сам раздаст задачи команде.' : '') + '</p>') +
+      (a && a.status === 'working' ? '<div class="typing">' + esc(a.name) + ' работает…</div>' : '');
+    if (atBottom || force) p.scrollTop = p.scrollHeight;
+  }).catch(function(){});
+}
+function send(asTask){
+  var text = $('inp').value.trim(), a = agent(S.sel); if (!text || !a) return;
+  $('inp').value = '';
+  var p = asTask ? api('/api/tasks', {agent_id: a.id, title: text}) : api('/api/chat', {agent_id: a.id, text: text});
+  say(a.id, asTask ? 'Взял задачу 💪' : '…', 120);
+  p.then(function(){ S.msgsKey = ''; setTimeout(poll, 300); });
+}
+$('send').onclick = function(){ send(false); };
+$('task').onclick = function(){ send(true); };
+$('inp').addEventListener('keydown', function(e){ if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(false); });
+$('btnTasks').onclick = function(){ document.querySelector('.tab[data-tab="tasks"]').click(); };
+
+/* ================= найм ================= */
+var TPLS = [];
+function openHire(a){
+  S.editId = a ? a.id : null;
+  $('hireTitle').textContent = a ? 'Настройки агента' : 'Нанять агента';
+  $('hireSave').textContent = a ? 'Сохранить' : 'Нанять';
+  $('fName').value = a ? a.name : ''; $('fRole').value = a ? a.role : ''; $('fPrompt').value = a ? a.prompt : ''; $('fModel').value = a ? (a.model || '') : '';
+  S.color = a ? a.color : COLORS[(S.agents.length) % COLORS.length]; paintColors(); $('hireErr').textContent = '';
+  $('tpls').parentNode.hidden = !!a;
+  $('hire').hidden = false; setTimeout(function(){ $('fName').focus(); }, 50);
+}
+function paintColors(){ $('fColors').innerHTML = COLORS.map(function(c){ return '<button type="button" data-c="' + c + '" class="' + (c === S.color ? 'on' : '') + '" style="background:' + c + '"></button>'; }).join(''); }
+$('fColors').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) { S.color = b.dataset.c; paintColors(); } });
+$('tpls').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var t = TPLS[+b.dataset.i]; $('fName').value = t.name; $('fRole').value = t.role; $('fPrompt').value = t.prompt; S.color = t.color; paintColors(); });
+$('btnHire').onclick = function(){ openHire(null); };
+$('hireCancel').onclick = function(){ $('hire').hidden = true; };
+$('hireSave').onclick = function(){
+  var body = {id: S.editId, name: $('fName').value.trim(), role: $('fRole').value.trim(), prompt: $('fPrompt').value.trim(), color: S.color, model: $('fModel').value.trim()};
+  if (!body.name) { $('hireErr').textContent = 'Дай агенту имя'; return; }
+  if (!body.prompt) { $('hireErr').textContent = 'Напиши инструкцию: кто он, с чем работает и что выдаёт'; return; }
+  api('/api/agents', body).then(function(r){ if (!r.ok) { $('hireErr').textContent = r.error || 'Не получилось'; return; } $('hire').hidden = true; poll().then(function(){ select(r.id); }); });
+};
+
+/* ================= вход и опрос ================= */
+$('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  api('/api/login', {password: $('pwd').value}).then(function(r){ if (r.ok) { $('login').hidden = true; start(); } else $('loginErr').textContent = 'Неверный пароль'; }).catch(function(){ $('loginErr').textContent = 'Неверный пароль'; });
+});
+var polling = false;
+function poll(){
+  return api('/api/state?since=' + S.last).then(function(d){
+    var first = !S.last;
+    S.agents = d.agents; S.tasks = d.tasks;
+    if (!first) d.events.forEach(onEvent);
+    S.last = d.last;
+    $('brain').textContent = d.brain ? '🧠 ' + d.model.split('/').pop() : '🔌 нейросеть не подключена';
+    $('brain').className = 'brain ' + (d.brain ? 'on' : 'off');
+    syncRobots();
+    if (!agent(S.sel) && S.agents.length) { S.sel = S.agents[0].id; }
+    renderTeam(); renderHead(); renderPane(false);
+  });
+}
+var started = false;
+function start(){
+  if (started) return; started = true;
+  api('/api/templates').then(function(t){ TPLS = t; $('tpls').innerHTML = t.map(function(x, i){ return '<button type="button" data-i="' + i + '">' + esc(x.name) + '</button>'; }).join(''); });
+  poll().then(function(){ renderPane(true); });
+  setInterval(function(){ if (!document.hidden) poll().catch(function(){}); }, 1500);
+}
+resize(); requestAnimationFrame(frame);
+api('/api/state').then(function(){ start(); }).catch(function(){});
+})();
+</script>
+</body>
+</html>
