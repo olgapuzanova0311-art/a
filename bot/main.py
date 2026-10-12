@@ -23,6 +23,7 @@ from aiogram.types import (BufferedInputFile, CallbackQuery, ChatMemberUpdated, 
                            ReplyKeyboardRemove, WebAppInfo)
 
 import texts as T
+from max_bot import MaxBot
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger('bot')
@@ -32,6 +33,8 @@ ADMIN_CODE = os.environ.get('ADMIN_CODE', '')
 SHEET_URL = os.environ.get('SHEET_URL', '')
 PUBLIC_URL = os.environ.get('PUBLIC_URL', '').rstrip('/')
 DB_PATH = os.environ.get('DB_PATH', '/data/bot.db')
+MAX_TOKEN = os.environ.get('MAX_TOKEN', '')
+MX = None
 DEFAULT_LINKS = {
     'TG': os.environ.get('TG_URL', 'https://t.me/+cjxoa6weO0czOWRi'),
     'MAX': os.environ.get('MAX_URL', 'https://max.ru/join/PzpWaFYZ8q-BaFvU1pUAVlj1jycdgZgt9afSZqP9sQA'),
@@ -421,7 +424,8 @@ async def stats(m: Message):
                    f'VIP: <b>{c("SELECT COUNT(*) FROM users WHERE vip=1")}</b>\n'
                    f'Прошли опрос: <b>{c("SELECT COUNT(*) FROM users WHERE survey IS NOT NULL")}</b>\n'
                    f'Пришли по ссылкам друзей: <b>{c("SELECT COUNT(*) FROM users WHERE credited=1")}</b>\n'
-                   f'Заблокировали бота: <b>{c("SELECT COUNT(*) FROM users WHERE blocked=1")}</b>\n\n'
+                   f'Заблокировали бота: <b>{c("SELECT COUNT(*) FROM users WHERE blocked=1")}</b>\n'
+                   + (f'\n<b>MAX:</b> всего {MX.count()[0]}, с телефоном {MX.count()[1]}, с почтой {MX.count()[2]}\n' if MX else '') + '\n'
                    f'Эфир сб: {setting("stream1") or "не задан"}\nЭфир вс: {setting("stream2") or "не задан"}\nАнкета: {setting("anketa") or "не задана"}')
 
 for _cmd, _key in (('link1', 'stream1'), ('link2', 'stream2'), ('anketa', 'anketa')):
@@ -466,6 +470,7 @@ async def broadcast(m: Message):
     if not m.reply_to_message:
         return await m.answer('Ответь командой /broadcast на сообщение, которое нужно разослать.')
     set_setting('bc_msg', f'{m.chat.id}:{m.reply_to_message.message_id}')
+    set_setting('bc_text', m.reply_to_message.html_text or '')
     total = q('SELECT COUNT(*) FROM users WHERE blocked=0').fetchone()[0]
     await m.answer(f'Разослать это сообщение {total} участникам?', reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🧪 Сначала себе', callback_data='bc:me')], [InlineKeyboardButton(text='✅ Да, отправить всем', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
 
@@ -486,7 +491,13 @@ async def bc_go(c: CallbackQuery):
         except Exception as e:
             if 'blocked' in str(e) or 'deactivated' in str(e): q('UPDATE users SET blocked=1 WHERE id=?', r['id'])
         await asyncio.sleep(0.05)
-    await bot.send_message(c.from_user.id, f'✅ Доставлено: {ok}')
+    await bot.send_message(c.from_user.id, f'✅ Доставлено в Telegram: {ok}')
+    if MX and c.data == 'bc:go':
+        if setting('bc_text'):
+            n = await MX.broadcast(setting('bc_text'))
+            await bot.send_message(c.from_user.id, f'✅ Доставлено в MAX: {n}')
+        else:
+            await bot.send_message(c.from_user.id, 'В MAX рассылаю только текст: в этом сообщении его нет, поэтому в MAX не отправила.')
 
 PAGE = 15
 
@@ -729,9 +740,14 @@ async def main():
     dp = Dispatcher(); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
+    global MX
+    if MAX_TOKEN and PUBLIC_URL:
+        MX = MaxBot(MAX_TOKEN, db, links, SHEET_URL, PUBLIC_URL)
+        await MX.setup(app)
     runner = web.AppRunner(app); await runner.setup()
     await web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080))).start()
     asyncio.create_task(scheduler())
+    if MX: asyncio.create_task(MX.run())
     log.info('started as @%s', BOT_USERNAME)
     await dp.start_polling(bot, allowed_updates=['message', 'callback_query', 'my_chat_member'])
 

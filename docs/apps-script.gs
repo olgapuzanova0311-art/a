@@ -135,6 +135,9 @@ function parseLead(d) {
   if ((m = page.match(/^Telegram @(\S+) id (\d+)/))) {
     r.tgid = m[2]; r.tg = m[1] === '-' ? '' : '@' + m[1]; r.src = 'бот';
     if ((m = page.match(/опрос: (.+)$/))) r.survey = m[1];
+  } else if ((m = page.match(/^MAX @(\S+) id (\d+)/))) {
+    r.tg = m[1] === '-' ? '' : 'MAX @' + m[1]; r.src = 'бот MAX';
+    if ((m = page.match(/опрос: (.+)$/))) r.survey = m[1];
   } else {
     r.src = 'сайт';
   }
@@ -200,7 +203,7 @@ function mergeInto(cur, r, when) {
   if (r.tgid) cur[U.tgid] = r.tgid;
   if (r.survey) cur[U.survey] = r.survey;
   if ((TARIFF_RANK[r.tariff] || 0) > (TARIFF_RANK[cur[U.tariff]] || 0)) cur[U.tariff] = r.tariff;
-  if (r.src && String(cur[U.src]).indexOf(r.src) < 0) cur[U.src] = cur[U.src] ? 'сайт и бот' : r.src;
+  if (r.src && String(cur[U.src]).indexOf(r.src) < 0) cur[U.src] = cur[U.src] ? cur[U.src] + ', ' + r.src : r.src;
   if (!cur[U.first]) cur[U.first] = when;
   cur[U.last] = when;
 }
