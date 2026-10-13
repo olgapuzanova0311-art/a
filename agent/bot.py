@@ -45,7 +45,7 @@ SYSTEM = """Ты Claude Code, рабочая копия Claude Ольги Пуз
    python agent/office.py wait <id> <id>              дождаться отчётов
    python agent/office.py hire "Имя" "роль" "инструкция"  нанять агента, если роли не хватает
    Поручай нескольким агентам сразу, потом жди всех. Проверь отчёты, доработай слабое и сведи в один итог.
-4. Файлы, которые прислала Ольга, лежат в inbox/.
+4. Файлы, которые прислала Ольга, лежат в inbox/. Готовые файлы для Ольги (видео, картинки, документы) клади в outbox/: бот сам отправит их ей после твоего ответа. Для монтажа роликов используй навык reel-montage (фирменный стиль Ольги), для простых задач с видео навык montage.
 5. Отвечай для Telegram: коротко, по делу, без markdown-таблиц и заголовков, списки через «•» или цифры. В конце итога: что нужно от Ольги, если нужно.
 Ограничения этого сервера: нет доступа к Railway, GitHub и Google-аккаунтам Ольги, публиковать сайт и бота отсюда нельзя. Если задача требует этого, подготовь всё и скажи, что запустить нужно из основного Claude Code."""
 
@@ -101,7 +101,7 @@ async def download(file_id, dest: Path):
     info = await tg('getFile', file_id=file_id)
     path = (info.get('result') or {}).get('file_path')
     if not path:
-        raise RuntimeError('Telegram не отдал файл (больше 20 МБ?)')
+        raise RuntimeError('Telegram отдаёт ботам файлы только до 20 МБ. Большое видео пришли ссылкой на Яндекс Диск или Google Drive')
     dest.parent.mkdir(parents=True, exist_ok=True)
     async with http.get(FILE_API + path, timeout=aiohttp.ClientTimeout(total=300)) as r:
         dest.write_bytes(await r.read())
@@ -158,6 +158,7 @@ async def run_claude(cid, prompt):
     status = await tg('sendMessage', chat_id=cid, text='⏳ Взяла в работу')
     mid = (status.get('result') or {}).get('message_id')
     steps, last_edit, result, new_sid, failed = [], 0.0, '', None, False
+    started = time.time()
     proc = await asyncio.create_subprocess_exec(*args, cwd=WS, env=env, stdout=asyncio.subprocess.PIPE,
                                                 stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024)
     busy[cid] = proc
@@ -195,6 +196,43 @@ async def run_claude(cid, prompt):
         await tg('editMessageText', chat_id=cid, message_id=mid,
                  text=('⚠️ Остановилась' if failed else '✅ Готово') + (f' · шагов: {len(steps)}' if steps else ''))
     await say(cid, result)
+    await send_outbox(cid, started)
+
+
+async def send_file(cid, path: Path):
+    kind = {'.mp4': ('sendVideo', 'video'), '.mov': ('sendVideo', 'video'), '.jpg': ('sendPhoto', 'photo'),
+            '.jpeg': ('sendPhoto', 'photo'), '.png': ('sendPhoto', 'photo'), '.mp3': ('sendAudio', 'audio')}
+    method, field = kind.get(path.suffix.lower(), ('sendDocument', 'document'))
+    if path.stat().st_size > 49 * 1024 * 1024:
+        return await say(cid, f'⚠️ {path.name} больше 50 МБ, Telegram не пропустит. Попроси сжать или порезать.')
+    form = aiohttp.FormData()
+    form.add_field('chat_id', str(cid))
+    if method == 'sendVideo':
+        form.add_field('supports_streaming', 'true')
+    with open(path, 'rb') as f:
+        form.add_field(field, f, filename=path.name)
+        try:
+            async with http.post(API + method, data=form, timeout=aiohttp.ClientTimeout(total=600)) as r:
+                res = await r.json(content_type=None)
+            if not res.get('ok') and method != 'sendDocument':
+                f.seek(0)
+                form2 = aiohttp.FormData(); form2.add_field('chat_id', str(cid)); form2.add_field('document', f, filename=path.name)
+                async with http.post(API + 'sendDocument', data=form2, timeout=aiohttp.ClientTimeout(total=600)) as r:
+                    res = await r.json(content_type=None)
+            if not res.get('ok'):
+                await say(cid, f'⚠️ Не получилось отправить {path.name}: {res.get("description", "")}')
+        except Exception as e:
+            await say(cid, f'⚠️ Не получилось отправить {path.name}: {e}')
+
+
+async def send_outbox(cid, since):
+    out = WS / 'outbox'
+    if not out.exists():
+        return
+    for p in sorted(out.iterdir(), key=lambda x: x.stat().st_mtime):
+        if p.is_file() and p.stat().st_mtime >= since - 1:
+            await tg('sendChatAction', chat_id=cid, action='upload_document')
+            await send_file(cid, p)
 
 
 async def work(cid, prompt):
@@ -312,6 +350,17 @@ def prepare_workspace():
         if not dst.exists() or src.stat().st_mtime > dst.stat().st_mtime:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
+    skills = WS / '.claude' / 'skills'
+    if (REPO / 'agent' / 'skills').exists():
+        shutil.copytree(REPO / 'agent' / 'skills', skills, dirs_exist_ok=True)
+    if (REPO / 'agent' / 'agents').exists():
+        shutil.copytree(REPO / 'agent' / 'agents', WS / '.claude' / 'agents', dirs_exist_ok=True)
+    for d in ('inbox', 'outbox', 'work'):
+        (WS / d).mkdir(exist_ok=True)
+    if os.environ.get('GH_TOKEN'):
+        subprocess.run(['gh', 'auth', 'setup-git'], check=False)
+        subprocess.run(['git', 'config', '--global', 'user.name', 'Claude (Telegram)'], check=False)
+        subprocess.run(['git', 'config', '--global', 'user.email', 'noreply@anthropic.com'], check=False)
     if not (WS / '.git').exists():
         subprocess.run(['git', 'init', '-q'], cwd=WS, check=False)
 
