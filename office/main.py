@@ -504,7 +504,12 @@ async def new_task(req):
     aid, title = int(d['agent_id']), str(d.get('title', '')).strip()
     if not title:
         return web.json_response({'ok': False})
-    tid = q('INSERT INTO tasks(agent_id, title, status, created, updated) VALUES(?,?,?,?,?)', aid, title[:8000], 'queued', time.time(), time.time()).lastrowid
+    boss = main_agent() if d.get('from_main') else None
+    frm = boss['id'] if boss and boss['id'] != aid else None
+    tid = q('INSERT INTO tasks(agent_id, title, status, from_agent, created, updated) VALUES(?,?,?,?,?,?)',
+            aid, title[:8000], 'queued', frm, time.time(), time.time()).lastrowid
+    if frm:
+        event('talk', frm, aid, title[:200])
     asyncio.create_task(run_task(tid))
     return web.json_response({'ok': True, 'id': tid})
 
