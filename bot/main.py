@@ -175,6 +175,14 @@ def mark(uid, key):
         return False
 
 # ---------------- регистрация ----------------
+def attach_referrer(u, source):
+    # человек уже был в боте и потом открыл ссылку друга: засчитываем, если его ещё никто не пригласил
+    if not source.startswith('r') or u['referrer'] or u['credited']: return False
+    r = q('SELECT id, referrer FROM users WHERE ref_code=?', source[1:]).fetchone()
+    if not r or r['id'] == u['id'] or r['referrer'] == u['id']: return False
+    q('UPDATE users SET referrer=? WHERE id=?', r['id'], u['id'])
+    return True
+
 def new_user(m: Message, source: str):
     code = secrets.token_hex(4)
     referrer = None
@@ -190,6 +198,9 @@ async def start(m: Message, command: CommandObject):
     u = user(m.from_user.id)
     if u:
         q('UPDATE users SET blocked=0, username=?, first_name=? WHERE id=?', m.from_user.username, m.from_user.first_name, u['id'])
+        if attach_referrer(u, (command.args or '').strip()):
+            u = user(u['id'])
+            if u['phone']: await credit_referrer(u)
         if u['email']:
             await send(u['id'], T.ALREADY, T.MENU_BTNS)
         else:
@@ -290,9 +301,9 @@ def unlocked_text(uid):
     if nxt: s += f'До следующего подарка («{nxt["title"]}») осталось друзей: <b>{nxt["friends"] - n}</b>.'
     return s or 'Ты открыл все уровни! 🏆'
 
-async def credit_referrer(u):
+async def credit_referrer(u, force=False):
     if not u['referrer'] or u['credited']: return
-    if not await is_channel_member(u['id']):
+    if not force and not await is_channel_member(u['id']):
         await send(u['id'], 'Последний шаг: подпишись на закрытый канал. Тогда друг, который тебя позвал, получит подарок 🙌',
                    [[('url', '📢 Подписаться', '{TG}')], [('cb', '✅ Я подписался', 'chk')]])
         return
@@ -400,6 +411,7 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/segments · кто «внедряю», кто «зарабатываю», выгрузка по сегментам\n'
   '/users · список всех участников (листается кнопками)\n'
   '/find имя, ник, телефон или почта · найти участника\n'
+  '/friend id_друга id_пригласившего · засчитать друга вручную\n'
   '/export · выгрузка участников в файл для Excel\n'
   '/backup · прислать бэкап базы (он же приходит каждую ночь)\n'
   '/restore · ответь на файл бэкапа, чтобы восстановить базу\n'
@@ -557,7 +569,18 @@ def user_line(r):
             f"📞 {escape(r['phone'] or '—')} · ✉️ {escape(r['email'] or '—')}\n"
             f"{marks}🕒 {datetime.fromtimestamp(r['created'], T.MSK).strftime('%d.%m %H:%M')}"
             + (f' · 👥 друзей: {fr}' if fr else '') + (f" · {escape(r['source'])}" if r['source'] else '')
+            + f"\n🆔 {r['id']}" + ref_status(r)
             + (f"\n📝 {escape(r['survey'])}" if r['survey'] else ''))
+
+def ref_status(r):
+    if not r['referrer']: return ''
+    from html import escape
+    ref = user(r['referrer'])
+    who = escape((ref['first_name'] if ref else None) or str(r['referrer']))
+    if r['credited']: why = '✅ засчитан'
+    elif not r['phone']: why = '⏳ не засчитан: не поделился номером'
+    else: why = '⏳ не засчитан: не подписан на канал'
+    return f'\n🤝 пришёл от {who} ({r["referrer"]}) · {why}'
 
 def users_page(page):
     total = q('SELECT COUNT(*) FROM users').fetchone()[0]
@@ -597,6 +620,21 @@ async def find_cmd(m: Message, command: CommandObject):
     rows = [r for r in q('SELECT * FROM users ORDER BY created DESC').fetchall() if hit(r)][:20]
     if not rows: return await m.answer('Никого не нашла 🤷‍♀️')
     await m.answer(f'🔎 Нашла: {len(rows)}\n\n' + '\n\n'.join(user_line(r) for r in rows), disable_web_page_preview=True)
+
+@router.message(Command('friend'))
+@admin_only
+async def friend_cmd(m: Message, command: CommandObject):
+    ids = re.findall(r'\d+', command.args or '')
+    if len(ids) != 2:
+        return await m.answer('Засчитать друга вручную: /friend id_друга id_пригласившего\nid видно в /find (строка 🆔).')
+    fr, rf = user(int(ids[0])), user(int(ids[1]))
+    if not fr or not rf or fr['id'] == rf['id']:
+        return await m.answer('Не нашла кого-то из них в боте. Проверь id через /find.')
+    if fr['credited']:
+        return await m.answer('Этот друг уже засчитан' + (f' пригласившему {fr["referrer"]}' if fr['referrer'] else '') + '.')
+    q('UPDATE users SET referrer=? WHERE id=?', rf['id'], fr['id'])
+    await credit_referrer(user(fr['id']), force=True)
+    await m.answer(f'Готово ✅ {fr["first_name"]} засчитан(а) для {rf["first_name"]}. Друзей теперь: {friends_count(rf["id"])}.')
 
 @router.message(Command('export'))
 @admin_only
