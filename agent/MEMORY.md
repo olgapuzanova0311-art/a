@@ -30,7 +30,8 @@
 ## Инфраструктура
 - Репозиторий olgapuzanova0311-art/a, ветка claude/busy-noether-jpca9m. Railway: сервисы bot, site, office, agent (этот бот).
 - GitHub подключён (токен ко всем репозиториям, до января 2027). Публикация: пуш в ветку claude/busy-noether-jpca9m, Railway выкладывает сам.
-- Railway, Google, Notion, Higgsfield: подключаются по мере того, как Ольга присылает ключи.
+- Railway подключён (токен рабочего пространства, видит все проекты Ольги: ii-komanda-bot, team-digest, brandos, ozon-detective, synapse-app и др.). Команда `railway`, проект этого интенсива: ii-komanda-bot.
+- Google (служебный аккаунт claude-agent@claude-agent-511513.iam.gserviceaccount.com), Notion, Higgsfield: подключаются по мере того, как Ольга присылает ключи.
 
 ## Облако смыслов и материалы
 - Облако смыслов (22 ветки, 186 тем): https://claude.ai/artifact/2TdoeT1vcKZxQQzimFHtkB
