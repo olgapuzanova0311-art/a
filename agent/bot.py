@@ -123,9 +123,17 @@ def warm_whisper():
         _whisper = WhisperModel(WHISPER, device='cpu', compute_type='int8', download_root=str(DATA / 'models'))
 
 
+def load_audio(path):
+    # ffmpeg вместо встроенного декодера: PyAV новых версий несовместим с faster-whisper
+    import numpy as np, subprocess
+    raw = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(path), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'],
+                         capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+
+
 def transcribe_sync(path):
     warm_whisper()
-    segs, _ = _whisper.transcribe(str(path), language='ru', vad_filter=True, beam_size=1)
+    segs, _ = _whisper.transcribe(load_audio(path), language='ru', vad_filter=True, beam_size=1)
     return ' '.join(s.text.strip() for s in segs).strip()
 
 

@@ -11,11 +11,19 @@ from pathlib import Path
 DATA = Path(os.environ.get('DATA', '/data'))
 
 
+def load_audio(path):
+    # ffmpeg вместо встроенного декодера: PyAV новых версий несовместим с faster-whisper
+    import numpy as np, subprocess
+    raw = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(path), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'],
+                         capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+
+
 def words(path):
     from faster_whisper import WhisperModel
     m = WhisperModel(os.environ.get('WHISPER_MODEL', 'small'), device='cpu', compute_type='int8',
                      download_root=str(DATA / 'models'))
-    segs, _ = m.transcribe(str(path), language='ru', word_timestamps=True, vad_filter=True)
+    segs, _ = m.transcribe(load_audio(path), language='ru', word_timestamps=True, vad_filter=True)
     out = []
     for s in segs:
         for w in s.words or []:

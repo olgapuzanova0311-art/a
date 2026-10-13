@@ -175,36 +175,49 @@ function ensureSourceColumn(sheet) {
   sheet.getRange(2, col, n, 1).setValues(pages.map(function (r) { return [sourceName(r[0])]; }));
 }
 
-// Лист «Источники»: сколько уникальных людей пришло по каждой метке, отдельно сайт, Telegram и MAX
+// Лист «Источники»: сколько уникальных людей пришло по каждой метке, отдельно сайт, Telegram и MAX.
+// Один человек склеивается по Telegram id, телефону и почте (как на листе «Участники»),
+// поэтому в «Всего» и «Итого» он считается один раз, даже если регистрировался и на сайте, и в боте.
 function rebuildSources() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var j = journalSheet();
   var n = j.getLastRow() - 1;
   var rows = n > 0 ? j.getRange(2, 1, n, 9).getValues() : [];
-  var stat = {}, seen = {};
+  var parent = {};
+  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+  function union(a, b) { a = find(a); b = find(b); if (a !== b) parent[b] = a; }
+  var recs = [];
   rows.forEach(function (r) {
-    var page = String(r[8] || ''), ch = channelOf(page), src = sourceName(page);
-    var m = page.match(/id (\d+)/);
-    var who = m ? ch + m[1] : (digits10(r[2]) || String(r[3] || '').trim().toLowerCase());
-    if (!who) return;
-    var key = src + '|' + ch + '|' + who;
-    if (seen[key]) return;
-    seen[key] = true;
-    var s = stat[src] || (stat[src] = {'Сайт': 0, 'Telegram': 0, 'MAX': 0});
-    s[ch]++;
+    var page = String(r[8] || ''), ch = channelOf(page), keys = [];
+    var m = page.match(/ id (\d+)/);
+    if (m) keys.push(ch + ':' + m[1]);
+    var p = digits10(r[2]); if (p) keys.push('p:' + p);
+    var e = String(r[3] || '').trim().toLowerCase(); if (/@/.test(e)) keys.push('e:' + e);
+    if (!keys.length) return;
+    keys.forEach(function (k) { if (!(k in parent)) parent[k] = k; });
+    for (var i = 1; i < keys.length; i++) union(keys[0], keys[i]);
+    recs.push({key: keys[0], ch: ch, src: sourceName(page)});
   });
+  var stat = {}, all = {Сайт: {}, Telegram: {}, MAX: {}, total: {}};
+  recs.forEach(function (x) {
+    var who = find(x.key);
+    var s = stat[x.src] || (stat[x.src] = {Сайт: {}, Telegram: {}, MAX: {}, total: {}});
+    s[x.ch][who] = 1; s.total[who] = 1; all[x.ch][who] = 1; all.total[who] = 1;
+  });
+  var cnt = function (o) { return Object.keys(o).length; };
   var out = Object.keys(stat).map(function (k) {
     var s = stat[k];
-    return [k, s['Сайт'], s['Telegram'], s['MAX'], s['Сайт'] + s['Telegram'] + s['MAX']];
+    return [k, cnt(s['Сайт']), cnt(s.Telegram), cnt(s.MAX), cnt(s.total)];
   }).sort(function (a, b) { return b[4] - a[4]; });
   var sh = ss.getSheetByName(SOURCES_SHEET) || ss.insertSheet(SOURCES_SHEET, ss.getSheets().length);
   sh.clear();
-  var head = ['Источник', 'Сайт', 'Telegram', 'MAX', 'Всего'];
+  var head = ['Источник', 'Сайт', 'Telegram', 'MAX', 'Всего людей'];
   sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#FFBA09');
   if (out.length) sh.getRange(2, 1, out.length, head.length).setValues(out);
-  var t = out.reduce(function (a, r) { return [a[0] + r[1], a[1] + r[2], a[2] + r[3], a[3] + r[4]]; }, [0, 0, 0, 0]);
-  sh.getRange(out.length + 2, 1, 1, head.length).setValues([['Итого', t[0], t[1], t[2], t[3]]]).setFontWeight('bold');
-  sh.getRange(out.length + 4, 1).setValue('Уникальные люди: один человек считается один раз в каждом источнике и канале. ' +
+  sh.getRange(out.length + 2, 1, 1, head.length)
+    .setValues([['Итого уникальных', cnt(all['Сайт']), cnt(all.Telegram), cnt(all.MAX), cnt(all.total)]]).setFontWeight('bold');
+  sh.getRange(out.length + 4, 1).setValue('Один человек считается один раз: если он зарегистрировался и на сайте, и в боте, он есть в обеих колонках, ' +
+    'но в «Всего людей» один. Если пришёл по двум меткам, он есть в обеих строках, а в «Итого» один. ' +
     'Обновлено ' + Utilities.formatDate(new Date(), 'Europe/Moscow', 'dd.MM.yyyy HH:mm') + ' МСК').setFontColor('#888888');
   sh.setFrozenRows(1);
   sh.autoResizeColumns(1, head.length);
