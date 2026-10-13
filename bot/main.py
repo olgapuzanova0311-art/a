@@ -410,6 +410,7 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/broadcast · ответь этой командой на любое сообщение и выбери, кому разослать\n'
   '/segments · кто «внедряю», кто «зарабатываю», выгрузка по сегментам\n'
   '/users · список всех участников (листается кнопками)\n'
+  '/sources · откуда пришли люди (по меткам)\n'
   '/find имя, ник, телефон или почта · найти участника\n'
   '/friend id_друга id_пригласившего · засчитать друга вручную\n'
   '/export · выгрузка участников в файл для Excel\n'
@@ -440,6 +441,26 @@ async def stats(m: Message):
                    f'Заблокировали бота: <b>{c("SELECT COUNT(*) FROM users WHERE blocked=1")}</b>\n'
                    + (f'\n<b>MAX:</b> всего {MX.count()[0]}, с телефоном {MX.count()[1]}, с почтой {MX.count()[2]}\n' if MX else '') + '\n'
                    f'Эфир сб: {setting("stream1") or "не задан"}\nЭфир вс: {setting("stream2") or "не задан"}\nАнкета: {setting("anketa") or "не задана"}')
+
+def source_rows(rows):
+    # rows: (source, всего, с телефоном, с почтой); реферальные ссылки r<код> сводим в одну строку
+    agg = {}
+    for src, n, ph, em in rows:
+        key = 'друзья (рефералка)' if re.fullmatch(r'r[0-9a-f]{8}', src or '') else (src or 'бот')
+        a = agg.setdefault(key, [0, 0, 0])
+        a[0] += n; a[1] += ph; a[2] += em
+    return sorted(agg.items(), key=lambda x: -x[1][0])
+
+@router.message(Command('sources'))
+@admin_only
+async def sources(m: Message):
+    sql = 'SELECT source, COUNT(*), COUNT(phone), COUNT(email) FROM {} GROUP BY source'
+    out = ['📈 <b>Откуда пришли</b> (всего · с телефоном · с почтой)\n', '<b>Telegram</b>']
+    out += [f'{k}: {v[0]} · {v[1]} · {v[2]}' for k, v in source_rows(q(sql.format('users')).fetchall())]
+    if MX:
+        out += ['', '<b>MAX</b>'] + [f'{k}: {v[0]} · {v[1]} · {v[2]}' for k, v in source_rows(MX.q(sql.format('max_users')).fetchall())]
+    out += ['', 'Регистрации с сайта: в таблице, колонка «Страница» (там видно utm_source).']
+    await m.answer('\n'.join(out))
 
 for _cmd, _key in (('link1', 'stream1'), ('link2', 'stream2'), ('anketa', 'anketa')):
     def _mk(key):
