@@ -12,12 +12,14 @@
  * 5. Письма: выберите функцию testEmail → «Выполнить» → разрешите доступ к почте.
  *    Проверьте письмо у себя во входящих. После этого снова сделайте шаг 4 (новая версия).
  *    Лимит Gmail: 100 писем в сутки (Google Workspace: 1 500). Если лимит кончился, бот пришлёт предупреждение.
+ * 6. Источники: выберите функцию setupSources → «Выполнить». В журнале появится колонка «Источник»,
+ *    а лист «Источники» покажет, сколько людей пришло по каждой UTM-метке. Дальше он обновляется сам с каждой заявкой.
  */
 var BOT_TOKEN = 'ВСТАВЬТЕ_ТОКЕН_БОТА';
 // CHAT_ID можно не заполнять: напишите боту «Старт», и скрипт сам запомнит ваш чат при первой заявке
 var CHAT_ID = '';
 
-var HEADERS = ['Дата и время', 'Имя', 'Телефон', 'Почта', 'Тариф', 'Согласие ПД', 'Согласие на рассылку', 'Событие', 'Страница'];
+var HEADERS = ['Дата и время', 'Имя', 'Телефон', 'Почта', 'Тариф', 'Согласие ПД', 'Согласие на рассылку', 'Событие', 'Страница', 'Источник'];
 
 function doPost(e) {
   var d = {};
@@ -33,11 +35,13 @@ function doPost(e) {
       sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#FFBA09');
       sheet.setFrozenRows(1);
     }
+    ensureSourceColumn(sheet);
     // Апостроф: телефон «+7 (900)…» хранится как текст, без #ERROR!
     sheet.appendRow([new Date(), d.name || '', d.phone ? "'" + d.phone : '', d.email || '', d.tariff || '',
-      d.consent_data || '', d.consent_mailing || '', d.event || '', d.page || '']);
+      d.consent_data || '', d.consent_mailing || '', d.event || '', d.page || '', sourceName(d.page)]);
     saved = true;
     try { upsertUser(d, new Date()); } catch (err) { notifyText('⚠️ Лист «' + USERS_SHEET + '» не обновился: ' + err); }
+    try { rebuildSources(); } catch (err) { notifyText('⚠️ Лист «' + SOURCES_SHEET + '» не обновился: ' + err); }
   } catch (err) {
     error = String(err);
   } finally {
@@ -103,10 +107,13 @@ var USERS_SHEET = 'Участники';
 var U_HEADERS = ['Имя', 'Телефон', 'Почта', 'Telegram', 'Telegram id', 'Тариф', 'Опрос', 'Откуда', 'Первая регистрация', 'Последнее действие', 'Статус (менеджер)', 'Комментарий (менеджер)'];
 var U = {name: 0, phone: 1, email: 2, tg: 3, tgid: 4, tariff: 5, survey: 6, src: 7, first: 8, last: 9};
 
-// Журнал всех заявок: первый лист, который не «Участники»
+// Журнал всех заявок: первый лист, который не «Участники» и не «Источники»
 function journalSheet() {
   var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
-  for (var i = 0; i < sheets.length; i++) if (sheets[i].getName() !== USERS_SHEET) return sheets[i];
+  for (var i = 0; i < sheets.length; i++) {
+    var nm = sheets[i].getName();
+    if (nm !== USERS_SHEET && nm !== SOURCES_SHEET) return sheets[i];
+  }
   return SpreadsheetApp.getActiveSpreadsheet().insertSheet('Лист1', 0);
 }
 
@@ -123,6 +130,90 @@ function usersSheet() {
   sh.getRange('I:J').setNumberFormat('dd.MM.yyyy HH:mm');
   rebuildUsers(sh);
   return sh;
+}
+
+// ---------- Источники (UTM-метки): колонка в журнале и лист с итогами ----------
+var SOURCES_SHEET = 'Источники';
+var SOURCE_NAMES = {
+  channel_ii: 'Канал ИИ', channel: 'Личный канал', mailing: 'Рассылка', callbot: 'Звонобот', mail: 'Email',
+  bot: 'Бот', alumni_chats: 'Чаты выпускников', veronika: 'Рассылка Вероники', insta: 'Instagram', max: 'MAX'
+};
+
+// Метка из адреса сайта (?utm_source=…) или из строки бота («· источник …»)
+function sourceCode(page) {
+  page = String(page || '');
+  var m = page.match(/[?&]utm_source=([^&#\s]+)/) || page.match(/источник ([^\s·]+)/);
+  var code = m ? decodeURIComponent(m[1]).trim().toLowerCase() : '';
+  if (/^r[0-9a-f]{8}$/.test(code)) return 'friends';
+  if (code === '-' || code === 'бот') return '';
+  if (code === 'max' && /^MAX /.test(page)) return '';  // MAX-бот без метки сам пишет источник «max»
+  return code;
+}
+
+function sourceName(page) {
+  var c = sourceCode(page);
+  if (!c) return 'без метки';
+  if (c === 'friends') return 'Друзья (рефералка)';
+  return SOURCE_NAMES[c] || c;
+}
+
+function channelOf(page) {
+  page = String(page || '');
+  if (/^Telegram /.test(page)) return 'Telegram';
+  if (/^MAX /.test(page)) return 'MAX';
+  return 'Сайт';
+}
+
+// В старом журнале нет колонки «Источник»: добавляем заголовок и заполняем по колонке «Страница»
+function ensureSourceColumn(sheet) {
+  var col = HEADERS.length;
+  if (sheet.getLastRow() < 1 || sheet.getRange(1, col).getValue() === 'Источник') return;
+  sheet.getRange(1, col).setValue('Источник').setFontWeight('bold').setBackground('#FFBA09');
+  var n = sheet.getLastRow() - 1;
+  if (n < 1) return;
+  var pages = sheet.getRange(2, col - 1, n, 1).getValues();
+  sheet.getRange(2, col, n, 1).setValues(pages.map(function (r) { return [sourceName(r[0])]; }));
+}
+
+// Лист «Источники»: сколько уникальных людей пришло по каждой метке, отдельно сайт, Telegram и MAX
+function rebuildSources() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var j = journalSheet();
+  var n = j.getLastRow() - 1;
+  var rows = n > 0 ? j.getRange(2, 1, n, 9).getValues() : [];
+  var stat = {}, seen = {};
+  rows.forEach(function (r) {
+    var page = String(r[8] || ''), ch = channelOf(page), src = sourceName(page);
+    var m = page.match(/id (\d+)/);
+    var who = m ? ch + m[1] : (digits10(r[2]) || String(r[3] || '').trim().toLowerCase());
+    if (!who) return;
+    var key = src + '|' + ch + '|' + who;
+    if (seen[key]) return;
+    seen[key] = true;
+    var s = stat[src] || (stat[src] = {'Сайт': 0, 'Telegram': 0, 'MAX': 0});
+    s[ch]++;
+  });
+  var out = Object.keys(stat).map(function (k) {
+    var s = stat[k];
+    return [k, s['Сайт'], s['Telegram'], s['MAX'], s['Сайт'] + s['Telegram'] + s['MAX']];
+  }).sort(function (a, b) { return b[4] - a[4]; });
+  var sh = ss.getSheetByName(SOURCES_SHEET) || ss.insertSheet(SOURCES_SHEET, ss.getSheets().length);
+  sh.clear();
+  var head = ['Источник', 'Сайт', 'Telegram', 'MAX', 'Всего'];
+  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#FFBA09');
+  if (out.length) sh.getRange(2, 1, out.length, head.length).setValues(out);
+  var t = out.reduce(function (a, r) { return [a[0] + r[1], a[1] + r[2], a[2] + r[3], a[3] + r[4]]; }, [0, 0, 0, 0]);
+  sh.getRange(out.length + 2, 1, 1, head.length).setValues([['Итого', t[0], t[1], t[2], t[3]]]).setFontWeight('bold');
+  sh.getRange(out.length + 4, 1).setValue('Уникальные люди: один человек считается один раз в каждом источнике и канале. ' +
+    'Обновлено ' + Utilities.formatDate(new Date(), 'Europe/Moscow', 'dd.MM.yyyy HH:mm') + ' МСК').setFontColor('#888888');
+  sh.setFrozenRows(1);
+  sh.autoResizeColumns(1, head.length);
+}
+
+// Запустить один раз вручную после вставки кода: заполнит колонку и лист по старым заявкам
+function setupSources() {
+  ensureSourceColumn(journalSheet());
+  rebuildSources();
 }
 
 function digits10(p) { var x = String(p || '').replace(/\D/g, ''); return x.length >= 10 ? x.slice(-10) : ''; }
