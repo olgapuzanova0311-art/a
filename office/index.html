@@ -236,12 +236,30 @@ function move(r){
 }
 function say(id, text, ttl){ bubbles = bubbles.filter(function(b){ return b.id !== id; }); bubbles.push({id: id, text: text, until: tick + (ttl || 150)}); }
 function talk(aId, bId, text){
-  var ra = robots[aId], rb = robots[bId]; if (!ra || !rb) return;
-  ra.busyUntil = tick + 400;
+  // поручения встают в очередь: робот обходит всех адресатов по порядку и возвращается на место
+  var ra = robots[aId]; if (!ra || !robots[bId]) return;
+  ra.queue = ra.queue || [];
+  ra.queue.push({to: bId, text: text});
+  if (!ra.walking) nextVisit(ra);
+}
+function nextVisit(ra){
+  var a = agent(ra.id), v = ra.queue && ra.queue.shift();
+  if (!v) {
+    ra.walking = false;
+    if (a) { var s = seat(a); goTo(ra, s.x, s.y); }
+    ra.busyUntil = tick + 60;
+    return;
+  }
+  var rb = robots[v.to]; if (!rb) return nextVisit(ra);
+  ra.walking = true; ra.busyUntil = tick + 100000;
+  say(ra.id, v.text === 'готово' ? '✅ готово' : '📋 несу задачу', 160);
   goTo(ra, rb.x + (rb.x > 200 ? -14 : 14), rb.y, function(){
-    say(aId, text ? text.slice(0, 46) + (text.length > 46 ? '…' : '') : '💬', 220);
-    setTimeout(function(){ say(bId, '👍', 120); }, 900);
-    ra.busyUntil = tick + 200;
+    var t = v.text || '💬';
+    say(ra.id, t === 'готово' ? '✅ Готово, вот отчёт' : t.slice(0, 46) + (t.length > 46 ? '…' : ''), 220);
+    setTimeout(function(){ say(v.to, '👍', 120); }, 900);
+    var wait = tick + 150;
+    ra.plan = null;
+    (function hold(){ if (tick < wait) return requestAnimationFrame(hold); nextVisit(ra); })();
   });
 }
 function onEvent(e){
@@ -395,8 +413,9 @@ function poll(){
   return api('/api/state?since=' + S.last).then(function(d){
     var first = !S.last;
     S.agents = d.agents; S.tasks = d.tasks;
-    if (!first) d.events.forEach(onEvent);
-    S.last = d.last;
+    if (!first) { syncRobots(); d.events.filter(function(e){ return e.ts > Date.now() / 1000 - 180; }).forEach(onEvent); }
+    // при первом открытии проигрываем недавние события, чтобы было видно, как раздавались задачи
+    S.last = first ? Math.max(0, d.last - 20) : d.last;
     $('brain').textContent = d.brain ? '🧠 ' + d.model.split('/').pop() : '🔌 нейросеть не подключена';
     $('brain').className = 'brain ' + (d.brain ? 'on' : 'off');
     syncRobots();
