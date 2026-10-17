@@ -1,0 +1,262 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Контент-план: Instagram, Threads, Telegram · текстиль и дерево для дома</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAF7F2;--card:#FFFFFF;--line:#E9E2D6;--ink:#2B2620;--muted:#6F665B;--sage:#7C8B6F;--sage-l:#E6EBE0;--terra:#B9734B;--terra-l:#F5E6DB;--wood:#A47B5B;--sky:#4F7FA8;--sky-l:#E3ECF4;--char:#3A3631;--char-l:#ECEAE6;--r:18px}
+*{box-sizing:border-box}html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Manrope,system-ui,sans-serif}
+h1,h2,h3{font-family:"Cormorant Garamond",serif;font-weight:600;line-height:1.1;margin:0}
+h2{font-size:clamp(30px,4vw,44px);margin-bottom:12px}h3{font-size:24px;margin-bottom:6px}
+p{margin:0 0 10px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+section{padding:64px 0;border-top:1px solid var(--line)}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);font-weight:700;margin-bottom:10px}
+.lead{font-size:18px;color:var(--muted);max-width:720px}
+/* nav */
+.top{position:sticky;top:0;z-index:20;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;gap:18px;align-items:center;height:60px;overflow-x:auto;scrollbar-width:none}
+.top .wrap::-webkit-scrollbar{display:none}
+.logo{font-family:"Cormorant Garamond",serif;font-size:22px;font-weight:700;white-space:nowrap;margin-right:auto}
+.top a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap;padding:10px 2px}
+.top a:hover{color:var(--ink)}
+/* hero */
+.hero{padding:56px 0 64px;border:0}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+.hero h1{font-size:clamp(40px,6vw,72px);margin:6px 0 18px}
+.hero h1 em{font-style:italic;color:var(--terra)}
+.stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;min-width:130px}
+.stat b{display:block;font-size:24px;font-family:"Cormorant Garamond",serif}.stat span{font-size:13px;color:var(--muted)}
+.collage{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:170px 170px;gap:12px}
+.collage .ph:first-child{grid-row:span 2}
+.ph{border-radius:var(--r);display:flex;align-items:flex-end;padding:14px;min-height:120px;position:relative;overflow:hidden;
+ background:linear-gradient(135deg,#EFE6DA,#E3D6C5)}
+.ph::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 10px)}
+.ph span{position:relative;font-size:13px;color:#5d5246;background:rgba(255,255,255,.75);padding:4px 10px;border-radius:99px}
+.ph.sage{background:linear-gradient(135deg,#E6EBE0,#CFD8C6)}.ph.wood{background:linear-gradient(135deg,#E8D7C6,#CDAE91)}.ph.sky{background:linear-gradient(135deg,#E9EFF4,#D3DFEA)}
+.note{margin-top:22px;font-size:14px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:12px 14px}
+/* cards */
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.card ul{margin:8px 0 0;padding-left:18px}.card li{margin:4px 0}
+.muted{color:var(--muted)}.small{font-size:14px}
+.net{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:99px}
+.net.ig{background:var(--terra-l);color:#8E4F2C}.net.th{background:var(--char-l);color:var(--char)}.net.tg{background:var(--sky-l);color:#2F5F86}
+.netcard{border-top:4px solid var(--terra)}.netcard.th{border-top-color:var(--char)}.netcard.tg{border-top-color:var(--sky)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:12px;font-size:15px}.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:600}
+/* pie */
+.mix{display:flex;height:16px;border-radius:99px;overflow:hidden;margin:18px 0 12px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* table */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:640px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:#FBF9F5}
+tr:last-child td{border-bottom:0}
+/* calendar */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:10px 16px;min-height:44px;font:600 14px Manrope,sans-serif;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip:focus-visible,.day summary:focus-visible{outline:3px solid var(--sage);outline-offset:2px}
+.week{margin-top:34px}.week-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-bottom:6px}
+.week-head h3{font-size:28px;margin:0}.week-head .tag{font-size:13px;font-weight:700;color:var(--sage);text-transform:uppercase;letter-spacing:.1em}
+.days{display:grid;gap:12px;margin-top:14px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.day summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 18px;min-height:56px}
+.day summary::-webkit-details-marker{display:none}
+.day .d{font-family:"Cormorant Garamond",serif;font-size:22px;font-weight:700;min-width:118px}
+.day .d small{font-family:Manrope;font-size:13px;color:var(--muted);font-weight:600;margin-left:6px}
+.day .sum{flex:1;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day .arr{margin-left:auto;transition:transform .2s;color:var(--muted)}.day[open] .arr{transform:rotate(180deg)}
+.items{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px 18px}
+.item{border:1px solid var(--line);border-radius:14px;padding:14px;background:#FFFDFA}
+.item .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.fmt{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 8px}
+.item h4{margin:0 0 6px;font-size:16px;line-height:1.35}
+.item p{font-size:14px;color:#4a433b;margin:0 0 10px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}.tags span{font-size:12px;background:var(--sage-l);color:#4E5C43;border-radius:6px;padding:2px 8px}
+.tags span.goal{background:#F3EEE6;color:#7a6a58}
+/* scripts */
+.script ol{margin:10px 0 0;padding-left:20px}.script li{margin:6px 0}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--terra);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.tpl{background:#FFFDFA;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:15px;white-space:pre-line;margin-top:10px}
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:980px){.hero-grid,.g3,.g4{grid-template-columns:1fr 1fr}.items{grid-template-columns:1fr}}
+@media (max-width:640px){.hero-grid,.g2,.g3,.g4{grid-template-columns:1fr}.collage{grid-template-rows:130px 130px}section{padding:48px 0}.day .sum{display:none}.day .d{min-width:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header class="top"><div class="wrap"><div class="logo">[Название бренда]</div>
+<a href="#strategy">Стратегия</a><a href="#nets">Площадки</a><a href="#rubrics">Рубрики</a><a href="#calendar">Календарь</a><a href="#stories">Сторис</a><a href="#scripts">Сценарии</a><a href="#funnel">Продажи</a><a href="#kpi">Метрики</a><a href="#shoot">Съёмка</a></div></header>
+
+<main>
+<section class="hero"><div class="wrap hero-grid"><div>
+<div class="eyebrow">Контент-план · ноябрь 2026</div>
+<h1>Дом, который хочется <em>трогать</em></h1>
+<p class="lead">Контент-план на 4 недели для Instagram, Threads и Telegram. Бренд домашнего текстиля и изделий из дерева: полотенца, халаты, пледы, панно и картины. Продажи на Wildberries и Ozon.</p>
+<div class="stats"><div class="stat"><b>28</b><span>дней плана</span></div><div class="stat"><b>84</b><span>публикации в ленте</span></div><div class="stat"><b>9</b><span>рубрик</span></div><div class="stat"><b>3</b><span>площадки</span></div></div>
+</div>
+<div class="collage"><div class="ph "><span>фото: халат на крючке в ванной</span></div><div class="ph sage"><span>фото: макро махры</span></div><div class="ph wood"><span>фото: панно из дерева на стене</span></div></div></div>
+<div class="wrap"><p class="note">Вместо фото стоят заглушки с подписью, что снять. Название бренда, промокоды и артикулы помечены [в скобках]: замените на свои. Цифры плотности и размеров даны как ориентир, сверьте с карточками.</p></div>
+</section>
+
+<section id="strategy"><div class="wrap">
+<div class="eyebrow">01 · Стратегия</div><h2>О чём мы говорим и с кем</h2>
+<p class="lead">Мы продаём ощущение: мягкое утро, тёплый вечер, стена с характером. Контент показывает, как вещь живёт в доме, и помогает выбрать на маркетплейсе без ошибок.</p>
+<div class="grid g3" style="margin-top:26px">
+<div class="card"><h3>Аудитория</h3><ul><li>Женщины 27–45 лет, обустраивают дом или квартиру после ремонта</li><li>Покупают на WB и Ozon, читают отзывы и сравнивают составы</li><li>Ищут подарки: маме, подруге, коллегам, на новоселье</li><li>Любят спокойные интерьеры: светлые, натуральные материалы</li></ul></div>
+<div class="card"><h3>Позиционирование</h3><p>Текстиль и дерево для спокойного дома. Натуральные материалы, честный состав, красиво в подарок.</p><p class="muted small">Отличие от безликих карточек: показываем ткань крупным планом, мастерскую и живые интерьеры покупателей.</p></div>
+<div class="card"><h3>Тон голоса</h3><ul><li>Тёплый, спокойный, на «вы» в ленте, на «ты» допустимо в Threads</li><li>Конкретика: граммы, сантиметры, уход</li><li>Без капса, давления и «успей, последний шанс», если это неправда</li><li>Эмодзи умеренно: 🤍 🌿 ☕️ 🪵</li></ul></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Баланс контента за месяц</h3>
+<div class="mix" role="img" aria-label="Польза 30%, вдохновение 25%, продукт 20%, вовлечение 15%, продажи 10%"><div style="width:30%;background:#7C8B6F"></div><div style="width:25%;background:#C9B79F"></div><div style="width:20%;background:#B9734B"></div><div style="width:15%;background:#4F7FA8"></div><div style="width:10%;background:#3A3631"></div></div>
+<div class="legend"><span><i style="background:#7C8B6F"></i>Польза 30%</span><span><i style="background:#C9B79F"></i>Вдохновение и уют 25%</span><span><i style="background:#B9734B"></i>Продукт и за кадром 20%</span><span><i style="background:#4F7FA8"></i>Вовлечение 15%</span><span><i style="background:#3A3631"></i>Прямые продажи 10%</span></div>
+<p class="muted small" style="margin-top:12px">Продающие посты сгущаются вокруг 11.11 и Чёрной пятницы (27.11). В остальные дни продаём мягко: артикул в конце полезного поста.</p></div>
+</div></section>
+
+<section id="nets"><div class="wrap">
+<div class="eyebrow">02 · Площадки</div><h2>У каждой сети своя роль</h2>
+<div class="grid g3" style="margin-top:22px">
+<div class="card netcard"><span class="net ig">Instagram</span><h3 style="margin-top:12px">Витрина и охват</h3><p class="muted">Красивая картинка, Reels для новых людей, сторис для доверия и продаж.</p>
+<dl class="kv"><dt>Reels</dt><dd>4 в неделю</dd><dt>Карусели</dt><dd>2 в неделю</dd><dt>Фото-пост</dt><dd>1 в неделю</dd><dt>Сторис</dt><dd>5–8 в день</dd><dt>Лучшее время</dt><dd>8:00–9:30, 19:00–21:30</dd></dl>
+<ul class="small"><li>Сетка профиля в 3 тонах: молочный, шалфей, дерево</li><li>Закреплённые: «Кто мы», «Как выбрать полотенце», «Отзывы»</li><li>Хайлайты: Новинки, Уход, Отзывы, Подарки, Где купить</li></ul></div>
+<div class="card netcard th"><span class="net th">Threads</span><h3 style="margin-top:12px">Живой разговор</h3><p class="muted">Короткие мысли, вопросы, мнения и ветки. Здесь бренд звучит как человек.</p>
+<dl class="kv"><dt>Посты</dt><dd>1–3 в день</dd><dt>Ветки</dt><dd>2 в неделю</dd><dt>Ответы</dt><dd>в первые 2 часа</dd><dt>Лучшее время</dt><dd>12:00–14:00, 20:00–22:00</dd></dl>
+<ul class="small"><li>Вопросы с вариантами ответа собирают больше реплик</li><li>Отвечаем в чужих ветках про уют и интерьер</li><li>Фото по желанию, текст важнее</li></ul></div>
+<div class="card netcard tg"><span class="net tg">Telegram</span><h3 style="margin-top:12px">Клуб покупателей</h3><p class="muted">Своя база: ранний доступ, промокоды, артикулы и опросы. Сюда ведём из Instagram и Threads.</p>
+<dl class="kv"><dt>Посты</dt><dd>1 в день</dd><dt>Опросы</dt><dd>1–2 в неделю</dd><dt>Промокоды</dt><dd>только здесь</dd><dt>Лучшее время</dt><dd>10:00–11:00, 20:00</dd></dl>
+<ul class="small"><li>Каждый товар с артикулом WB и Ozon</li><li>Закреп: правила клуба и навигация по хештегам</li><li>Хештеги рубрик: #уход #новинки #подарки #дерево</li></ul></div>
+</div>
+<p class="note">Instagram и Threads принадлежат Meta, которая в России признана экстремистской организацией. Реклама в этих сетях для российских компаний запрещена, органические публикации пока допустимы. Перед запуском уточните актуальные правила у юриста, а Telegram держите основной своей площадкой.</p>
+</div></section>
+
+<section id="rubrics"><div class="wrap">
+<div class="eyebrow">03 · Рубрики</div><h2>9 рубрик, из которых собран месяц</h2>
+<div class="tw" style="margin-top:22px"><table><thead><tr><th>Рубрика</th><th>Что показываем</th><th>Где лучше</th><th>Пример темы</th></tr></thead><tbody>
+<tr><td><b>Польза</b></td><td>Как выбрать, как ухаживать, как сочетать</td><td>IG карусели, TG, Threads ветки</td><td>«5 признаков хорошего полотенца»</td></tr>
+<tr><td><b>Продукт</b></td><td>Ткань крупным планом, размеры, состав, новинки</td><td>IG Reels, TG</td><td>ASMR махры, разбор халатов</td></tr>
+<tr><td><b>Лайфстайл</b></td><td>Утро, ванная-спа, вечер с пледом</td><td>IG Reels, фото, сторис</td><td>«Утро, которое начинается с мягкого»</td></tr>
+<tr><td><b>Дерево</b></td><td>Панно и картины в интерьере, до и после</td><td>IG карусели и Reels</td><td>«Один угол, 3 образа»</td></tr>
+<tr><td><b>За кадром</b></td><td>Мастерская, упаковка, люди бренда</td><td>Threads, TG, сторис</td><td>«Как делают наши панно: 5 шагов»</td></tr>
+<tr><td><b>Отзывы и UGC</b></td><td>Скрины отзывов, фото покупателей</td><td>Сторис, TG, Threads</td><td>«Отзыв, который нас растрогал»</td></tr>
+<tr><td><b>Вовлечение</b></td><td>Опросы, «этот или тот», конкурсы</td><td>Threads, TG опросы, сторис</td><td>«Покажите пустую стену, подскажем панно»</td></tr>
+<tr><td><b>Подарки</b></td><td>Подборки по бюджету и получателю, упаковка</td><td>IG карусели, TG</td><td>«Подарки до 1 000 / 3 000 / 5 000 ₽»</td></tr>
+<tr><td><b>Продажа</b></td><td>Акции, промокоды, артикулы, остатки</td><td>TG, сторис со ссылкой</td><td>«11.11: промокод для своих»</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section id="calendar"><div class="wrap">
+<div class="eyebrow">04 · Календарь</div><h2>План по дням: 2–29 ноября</h2>
+<p class="lead">Нажмите на день, чтобы открыть публикации. Фильтр показывает одну площадку.</p>
+<div class="filters" role="group" aria-label="Фильтр по площадке">
+<button class="chip" data-f="all" aria-pressed="true">Все площадки</button><button class="chip" data-f="ig" aria-pressed="false">Instagram</button><button class="chip" data-f="th" aria-pressed="false">Threads</button><button class="chip" data-f="tg" aria-pressed="false">Telegram</button>
+<button class="chip" id="openall" aria-pressed="false">Раскрыть все дни</button></div>
+<div id="cal"></div>
+</div></section>
+
+<section id="stories"><div class="wrap">
+<div class="eyebrow">05 · Сторис</div><h2>Ежедневная сетка сторис</h2>
+<p class="lead">Шаблон дня, на который накладываются темы календаря. 5–8 сторис, чтобы человек видел бренд утром, днём и вечером.</p>
+<div class="tw" style="margin-top:22px"><table><thead><tr><th>Время</th><th>Что публикуем</th><th>Интерактив</th></tr></thead><tbody>
+<tr><td>8:30</td><td>Утренний кадр: свет, текстиль, кофе</td><td>Реакция-эмодзи</td></tr>
+<tr><td>11:00</td><td>Польза дня: совет по уходу или выбору</td><td>Квиз «правда или миф»</td></tr>
+<tr><td>14:00</td><td>Товар в деле: крупный план, размер, артикул</td><td>Стикер-ссылка на карточку</td></tr>
+<tr><td>17:00</td><td>За кадром: упаковка, мастерская, команда</td><td>Вопрос «что показать завтра?»</td></tr>
+<tr><td>20:00</td><td>Отзыв или фото покупателя</td><td>Репост с отметкой</td></tr>
+<tr><td>21:30</td><td>Вечерний уют + анонс завтра</td><td>Опрос из 2 вариантов</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section id="scripts"><div class="wrap">
+<div class="eyebrow">06 · Сценарии и шаблоны</div><h2>5 Reels, которые стоит снять первыми</h2>
+<div class="grid g2" style="margin-top:22px">
+<div class="card script"><div class="badge">Reels · 15 сек · охват</div><h3>«Мы делаем дом мягче»</h3><ol><li>0–3 с: ладонь проводит по махре, текст «Это хочется трогать»</li><li>3–8 с: халат на крючке, пар из душа</li><li>8–12 с: панно на стене, мягкий свет</li><li>12–15 с: логотип и «Ищите нас на WB и Ozon»</li></ol><p class="muted small">Музыка: спокойный акустический трек из библиотеки Instagram.</p></div>
+<div class="card script"><div class="badge">Reels · 12 сек · охват</div><h3>ASMR: ткань крупным планом</h3><ol><li>Макро петель махры, звук касания</li><li>Вафельная клетка, сгиб ткани</li><li>Шов и бирка с составом</li><li>Текст в начале: «Включите звук»</li></ol><p class="muted small">Снимать на телефон в режиме макро, у окна, без музыки.</p></div>
+<div class="card script"><div class="badge">Reels · 20 сек · дерево</div><h3>Таймлапс: как рождается панно</h3><ol><li>Чистая доска на верстаке</li><li>Разметка эскиза карандашом</li><li>Резка и шлифовка, опилки в луче света</li><li>Готовое панно на стене, текст «3 дня работы за 20 секунд»</li></ol></div>
+<div class="card script"><div class="badge">Reels · 15 сек · вовлечение</div><h3>Один угол, 3 образа</h3><ol><li>Один угол комнаты, кадр со штатива</li><li>Вариант 1: светлое панно + молочный плед</li><li>Вариант 2: тёмное дерево + графитовый текстиль</li><li>Вариант 3: панно с надписью + шалфей. Текст «1, 2 или 3?»</li></ol></div>
+<div class="card script"><div class="badge">Reels · 10 сек · подарки</div><h3>«Подарок, который точно используют»</h3><ol><li>Коробка с лентой на столе</li><li>Руки развязывают ленту</li><li>Внутри халат и открытка</li><li>Текст «Не ещё одна свеча» и «Артикулы в Telegram»</li></ol></div>
+<div class="card"><div class="badge">Шаблоны текстов</div><h3>Пост с товаром в Telegram</h3>
+<div class="tpl">🌿 [Название товара]
+
+[1 строка: какое ощущение даёт вещь]
+→ состав: [100% хлопок]
+→ размер: [70×140 см]
+→ уход: [стирка 40°]
+
+WB: [артикул] · Ozon: [артикул]
+Для своих промокод [КОД] до [дата] 🤍</div>
+<h3 style="margin-top:16px">Вопрос в Threads</h3><div class="tpl">[Провокационный вопрос в 1 строку]?
+Мы за [наш вариант], а вы?</div></div>
+</div>
+</div></section>
+
+<section id="funnel"><div class="wrap">
+<div class="eyebrow">07 · Путь к покупке</div><h2>Как контент приводит на маркетплейс</h2>
+<div class="grid g4" style="margin-top:22px">
+<div class="card"><span class="net ig">1 · Охват</span><p style="margin-top:10px">Reels и Threads приводят новых людей. Призыв: подписаться и забрать гид в Telegram.</p></div>
+<div class="card"><span class="net th">2 · Интерес</span><p style="margin-top:10px">Карусели с пользой и ветки. Человек сохраняет, возвращается, пишет в комментариях.</p></div>
+<div class="card"><span class="net tg">3 · Клуб</span><p style="margin-top:10px">В Telegram: артикулы, промокоды, ранний доступ. Здесь своя база, она не зависит от алгоритмов.</p></div>
+<div class="card"><span class="net ig">4 · Покупка</span><p style="margin-top:10px">Переход по артикулу или ссылке на WB и Ozon. Потом просим отзыв с фото и делаем из него UGC.</p></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+<div class="card"><h3>Что настроить</h3><ul><li>Отдельный промокод или купон продавца для каждой площадки, чтобы видеть, откуда продажи</li><li>Ссылки с метками для внешнего трафика, если используете аналитику внешнего трафика на WB или Ozon</li><li>Вкладыш в посылку: QR на Telegram-канал и «пришлите фото, подарим скидку»</li><li>Шаблон ответа на отзывы с приглашением в канал</li></ul></div>
+<div class="card"><h3>Акции месяца</h3><ul><li><b>11.11:</b> разогрев 8–10.11, акция 11–12.11, итоги 13.11</li><li><b>Конкурс:</b> 14–21.11, приз [халат], условие: фото уютного угла</li><li><b>Чёрная пятница:</b> ранний доступ в TG 26.11, акция 27–29.11</li><li><b>Корпоративные подарки:</b> 25.11 пост и сбор заявок в личку</li></ul></div>
+</div>
+</div></section>
+
+<section id="kpi"><div class="wrap">
+<div class="eyebrow">08 · Метрики</div><h2>Что считать каждую неделю</h2>
+<div class="tw" style="margin-top:22px"><table><thead><tr><th>Площадка</th><th>Главные метрики</th><th>Ориентир на месяц</th></tr></thead><tbody>
+<tr><td><span class="net ig">Instagram</span></td><td>Охват Reels, сохранения каруселей, переходы по стикерам, новые подписчики</td><td>[+X подписчиков], сохранения от 3% охвата</td></tr>
+<tr><td><span class="net th">Threads</span></td><td>Ответы и репосты, переходы в профиль, подписчики</td><td>от 10 ответов на вопрос-пост</td></tr>
+<tr><td><span class="net tg">Telegram</span></td><td>Рост подписчиков, просмотры поста к подписчикам, голоса в опросах, использование промокодов</td><td>просмотры от 30% подписчиков, [X] применений промокода</td></tr>
+<tr><td><b>Маркетплейсы</b></td><td>Заказы по промокодам, рост поисковых запросов по бренду, отзывы с фото</td><td>[X заказов с соцсетей], [X] отзывов с фото</td></tr>
+</tbody></table></div>
+<p class="note">Ориентиры в скобках поставьте после первой недели: возьмите свои стартовые цифры и прибавьте 20–30%.</p>
+</div></section>
+
+<section id="shoot"><div class="wrap">
+<div class="eyebrow">09 · Производство</div><h2>Съёмочный список на месяц</h2>
+<p class="lead">Один съёмочный день в неделю закрывает весь контент. Снимайте пачкой у окна при дневном свете.</p>
+<div class="grid g3" style="margin-top:22px"><div class="card"><div class="ph sage"><span>фото: ванная, полотенца стопкой</span></div><h3 style="margin-top:14px">Ванная</h3><ul class="small"><li>Стопка полотенец в один тон</li><li>Халат на крючке, пар</li><li>Макро махры и вафли</li><li>Руки, которые вытирают лицо</li></ul></div><div class="card"><div class="ph "><span>фото: спальня, утренний свет</span></div><h3 style="margin-top:14px">Спальня и гостиная</h3><ul class="small"><li>Плед на кресле с книгой</li><li>Утро в халате с кофе</li><li>Один угол, 3 образа</li><li>Вечер со свечой</li></ul></div><div class="card"><div class="ph wood"><span>фото: мастерская, опилки в луче</span></div><h3 style="margin-top:14px">Мастерская и упаковка</h3><ul class="small"><li>Таймлапс работы над панно</li><li>Руки мастера крупно</li><li>Упаковка заказа</li><li>Коробка с лентой для подарка</li></ul></div></div>
+<div class="card" style="margin-top:16px"><h3>Неделя команды</h3><div class="tw" style="margin-top:10px;border:0"><table><tbody>
+<tr><td><b>Пн</b></td><td>Планёрка 30 мин: темы недели, проверка артикулов и остатков</td></tr>
+<tr><td><b>Вт</b></td><td>Съёмочный день: фото и видео на неделю вперёд</td></tr>
+<tr><td><b>Ср</b></td><td>Монтаж Reels, дизайн каруселей, тексты</td></tr>
+<tr><td><b>Чт</b></td><td>Загрузка в отложенный постинг, ответы на комментарии</td></tr>
+<tr><td><b>Пт</b></td><td>Метрики недели: что зашло, что повторить</td></tr>
+</tbody></table></div></div>
+</div></section>
+</main>
+<footer><div class="wrap">Контент-план для бренда [Название бренда] · ноябрь 2026 · подготовлено ИИ-командой Ольги Пузановой</div></footer>
+
+<script>
+const DATA={"days": [{"date": "2 ноября", "wd": "Пн", "week": 0, "items": [{"net": "ig", "fmt": "Reels", "title": "Знакомство: «Мы делаем дом мягче»", "desc": "15 сек: руки гладят махру, халат на крючке, панно на стене. Текст на экране: «Мы шьём то, что хочется трогать». В подписи: кто мы, что продаём, где купить (WB и Ozon, поиск по названию бренда).", "rub": "Бренд", "goal": "Охват"}, {"net": "th", "fmt": "Пост", "title": "«Какой текстиль у вас дома самый любимый?»", "desc": "Короткий вопрос без продажи. Отвечаем каждому в первые 2 часа, алгоритм Threads любит живые ветки.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост + закреп", "title": "Добро пожаловать в клуб", "desc": "Кто мы, что будет в канале: ранний доступ к новинкам, промокоды только для подписчиков, честные обзоры тканей. Закрепить.", "rub": "Бренд", "goal": "Подписка"}]}, {"date": "3 ноября", "wd": "Вт", "week": 0, "items": [{"net": "ig", "fmt": "Карусель", "title": "«5 признаков хорошего полотенца»", "desc": "Слайды: плотность от 450 г/м², длинная петля, кромка без затяжек, мягкость после 1-й стирки, не линяет. Последний слайд: «Сохраняй, чтобы не ошибиться на маркетплейсе».", "rub": "Польза", "goal": "Сохранения"}, {"net": "th", "fmt": "Ветка", "title": "Что значит «плотность 500 г/м²» простыми словами", "desc": "3–4 коротких поста подряд: цифра → что чувствуешь рукой → как быстро сохнет → для кого какая плотность.", "rub": "Польза", "goal": "Охват"}, {"net": "tg", "fmt": "Пост", "title": "Гид: как выбрать полотенце по карточке на WB", "desc": "Где в карточке смотреть состав и плотность, на что в отзывах обращать внимание. Внизу артикулы 2 наших хитов.", "rub": "Польза", "goal": "Переходы"}]}, {"date": "4 ноября", "wd": "Ср", "week": 0, "items": [{"net": "ig", "fmt": "Stories-серия", "title": "Праздничный день: «Как мы отдыхаем»", "desc": "5–6 сторис: утро в халате, кофе, плед, опрос «Вы сегодня отдыхаете?». Мягко, без продаж.", "rub": "Лайфстайл", "goal": "Вовлечение"}, {"net": "th", "fmt": "Пост", "title": "«Халат в выходной: роскошь или необходимость?»", "desc": "Мнение-провокация, 2 варианта ответа. Собираем реплики, лучшие потом в сторис.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Опрос", "title": "Какой халат ваш: вафельный, махровый или муслин?", "desc": "Опрос в 3 варианта. По итогам завтра пост с разбором каждого.", "rub": "Вовлечение", "goal": "Активность"}]}, {"date": "5 ноября", "wd": "Чт", "week": 0, "items": [{"net": "ig", "fmt": "Reels", "title": "ASMR: ткань крупным планом", "desc": "Макро: петли махры, вафельная клетка, шов. Звук ткани, без музыки. Текст: «Включи звук».", "rub": "Продукт", "goal": "Охват"}, {"net": "th", "fmt": "Пост", "title": "Итоги опроса из Telegram + разбор", "desc": "Пишем, что выбрали подписчики канала, и коротко, кому какой халат подходит. Ссылка на канал в профиле.", "rub": "Польза", "goal": "Трафик в TG"}, {"net": "tg", "fmt": "Пост", "title": "Разбор: вафля, махра, муслин", "desc": "Кому что подойдёт: сауна, утро, лето, дача. Фото 3 халатов, артикулы.", "rub": "Продукт", "goal": "Переходы"}]}, {"date": "6 ноября", "wd": "Пт", "week": 0, "items": [{"net": "ig", "fmt": "Карусель", "title": "Панно из дерева: 4 стены до и после", "desc": "Пары слайдов «голая стена → стена с панно». Последний слайд: «Какая стена ваша? Пишите номер».", "rub": "Дерево", "goal": "Комментарии"}, {"net": "th", "fmt": "Пост", "title": "Фото рабочего стола мастерской", "desc": "«Здесь рождаются наши панно». Опилки, эскиз, инструмент. Без продажи.", "rub": "За кадром", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Как делают наши панно: 5 шагов", "desc": "Эскиз → выбор дерева → резка → шлифовка → покрытие. Фото процесса.", "rub": "За кадром", "goal": "Доверие"}]}, {"date": "7 ноября", "wd": "Сб", "week": 0, "items": [{"net": "ig", "fmt": "Stories", "title": "Выходной уют: подписчики показывают свой дом", "desc": "Просим прислать фото текстиля дома, отмечаем бренд. Репостим лучшие.", "rub": "UGC", "goal": "Вовлечение"}, {"net": "th", "fmt": "Пост", "title": "«Субботний ритуал: что вы делаете для себя?»", "desc": "Личный вопрос от лица бренда, сами отвечаем первыми: ванна, халат, книга.", "rub": "Лайфстайл", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Подборка: уютные выходные за 3 шага", "desc": "Плед + халат + аромасвеча (партнёр или своя). Мягкая ссылка на артикулы.", "rub": "Лайфстайл", "goal": "Переходы"}]}, {"date": "8 ноября", "wd": "Вс", "week": 0, "items": [{"net": "ig", "fmt": "Пост (фото)", "title": "Тихое воскресное фото", "desc": "Атмосферный кадр: кровать, плед, утренний свет. Подпись в 3 строки + вопрос.", "rub": "Лайфстайл", "goal": "Сохранения"}, {"net": "th", "fmt": "Пост", "title": "Итоги недели бренда", "desc": "Что сделали, что запускаем, честная мелочь, которая не получилась. Люди любят откровенность.", "rub": "Бренд", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Анонс: 11.11 будет промокод для своих", "desc": "Интрига: «В среду только здесь». Просим включить уведомления.", "rub": "Продажа", "goal": "Удержание"}]}, {"date": "9 ноября", "wd": "Пн", "week": 1, "items": [{"net": "ig", "fmt": "Reels", "title": "«Утро, которое начинается с мягкого»", "desc": "Будильник → халат → тёплые тапочки → кофе. Пастельная цветокоррекция. Текст: «Сделай утро понедельника добрее».", "rub": "Лайфстайл", "goal": "Охват"}, {"net": "th", "fmt": "Пост", "title": "«Что делает утро понедельника терпимым?»", "desc": "Вопрос + наш ответ: тёплый халат после душа.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Распродажа 11.11: что будет со скидкой", "desc": "Список позиций, которые войдут в акцию, без цен. «Сохраните пост».", "rub": "Продажа", "goal": "Разогрев"}]}, {"date": "10 ноября", "wd": "Вт", "week": 1, "items": [{"net": "ig", "fmt": "Карусель", "title": "Как стирать махру, чтобы была мягкой", "desc": "Температура 40°, без кондиционера, сушить встряхнув, раз в месяц уксус. Последний слайд: чек-лист для сохранения.", "rub": "Польза", "goal": "Сохранения"}, {"net": "th", "fmt": "Ветка", "title": "Миф: кондиционер делает полотенце мягче", "desc": "Объясняем, почему он забивает петли и полотенце хуже впитывает.", "rub": "Польза", "goal": "Охват"}, {"net": "tg", "fmt": "Пост", "title": "Памятка по уходу в картинке", "desc": "Картинка-шпаргалка «уход за текстилем», чтобы сохранили в избранное.", "rub": "Польза", "goal": "Сохранения"}]}, {"date": "11 ноября", "wd": "Ср", "week": 1, "items": [{"net": "ig", "fmt": "Reels + Stories", "title": "11.11: распродажа стартовала", "desc": "Reels 10 сек: быстрые кадры товаров + «−X% до 13.11». Stories: каждые 3 часа напоминание, стикер-ссылка на карточку.", "rub": "Продажа", "goal": "Продажи"}, {"net": "th", "fmt": "Пост", "title": "«Сегодня 11.11, что берёте?»", "desc": "Без давления: показываем 3 позиции и спрашиваем, что в корзине.", "rub": "Продажа", "goal": "Переходы"}, {"net": "tg", "fmt": "Пост", "title": "Промокод только для подписчиков", "desc": "Промокод/купон продавца на WB или Ozon + артикулы. Срок действия 48 часов.", "rub": "Продажа", "goal": "Продажи"}]}, {"date": "12 ноября", "wd": "Чт", "week": 1, "items": [{"net": "ig", "fmt": "Stories", "title": "Последний день скидок", "desc": "Обратный отсчёт, стикер-таймер, топ-3 позиции, ответы на вопросы о размерах.", "rub": "Продажа", "goal": "Продажи"}, {"net": "th", "fmt": "Пост", "title": "Отзыв покупателя (скрин)", "desc": "Скрин отзыва с маркетплейса + наш короткий ответ «спасибо».", "rub": "Отзывы", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Напоминание: промокод до полуночи", "desc": "Коротко, 2 строки + артикулы.", "rub": "Продажа", "goal": "Продажи"}]}, {"date": "13 ноября", "wd": "Пт", "week": 1, "items": [{"net": "ig", "fmt": "Карусель", "title": "Ванная в стиле спа за 1 вечер", "desc": "Полотенца в один тон, корзина, халат на крючке, деревянная полка. 6 слайдов.", "rub": "Лайфстайл", "goal": "Сохранения"}, {"net": "th", "fmt": "Пост", "title": "«Сколько полотенец нужно на семью из 4 человек?»", "desc": "Вопрос + ответ бренда с расчётом.", "rub": "Польза", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Итоги 11.11: спасибо и цифра", "desc": "Сколько заказов (если готовы делиться), что разобрали первым. Благодарность клубу.", "rub": "Бренд", "goal": "Доверие"}]}, {"date": "14 ноября", "wd": "Сб", "week": 1, "items": [{"net": "ig", "fmt": "Reels", "title": "Распаковка заказа с маркетплейса", "desc": "Как приходит наш халат: пакет, открытка, бирка. Текст «Распаковываем вместе».", "rub": "Продукт", "goal": "Доверие"}, {"net": "th", "fmt": "Пост", "title": "Фото подписчика с нашим пледом", "desc": "Репост UGC с отметкой автора (с согласия).", "rub": "UGC", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Конкурс: фото вашего уютного угла", "desc": "Условия: подписка, фото в комментариях, итоги через 7 дней. Приз: халат.", "rub": "Вовлечение", "goal": "Рост базы"}]}, {"date": "15 ноября", "wd": "Вс", "week": 1, "items": [{"net": "ig", "fmt": "Пост (фото)", "title": "Тёплое воскресенье", "desc": "Кадр: плед на кресле, книга, чай. Вопрос «Что читаете?».", "rub": "Лайфстайл", "goal": "Комментарии"}, {"net": "th", "fmt": "Пост", "title": "«Неделя в цифрах» от бренда", "desc": "Честные цифры и одна история покупателя.", "rub": "Бренд", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Анонс недели: дерево в интерьере", "desc": "Что будем показывать: как выбрать панно, мастерская, новинка.", "rub": "Дерево", "goal": "Удержание"}]}, {"date": "16 ноября", "wd": "Пн", "week": 2, "items": [{"net": "ig", "fmt": "Reels", "title": "Таймлапс: как рождается панно", "desc": "От доски до готового панно за 20 секунд. Текст «3 дня работы за 20 секунд».", "rub": "Дерево", "goal": "Охват"}, {"net": "th", "fmt": "Пост", "title": "«Дерево в интерьере: тепло или пылесборник?»", "desc": "Мнения, отвечаем на возражения.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Почему мы выбираем это дерево", "desc": "Порода, сушка, покрытие, безопасность для детской.", "rub": "Дерево", "goal": "Доверие"}]}, {"date": "17 ноября", "wd": "Вт", "week": 2, "items": [{"net": "ig", "fmt": "Карусель", "title": "Как выбрать размер панно под стену", "desc": "Правило 2/3 ширины дивана, высота подвеса 150–160 см до центра, схемы.", "rub": "Польза", "goal": "Сохранения"}, {"net": "th", "fmt": "Ветка", "title": "3 ошибки при выборе картины в гостиную", "desc": "Слишком маленькая, слишком высоко, не тот цвет. Коротко и с примерами.", "rub": "Польза", "goal": "Охват"}, {"net": "tg", "fmt": "Пост", "title": "Шпаргалка «где повесить панно»", "desc": "Картинка-схема + артикулы 3 панно разных размеров.", "rub": "Польза", "goal": "Переходы"}]}, {"date": "18 ноября", "wd": "Ср", "week": 2, "items": [{"net": "ig", "fmt": "Stories", "title": "Опрос: какое панно повесить в студии", "desc": "2 варианта на стене, стикер-голосование, итог вечером.", "rub": "Вовлечение", "goal": "Активность"}, {"net": "th", "fmt": "Пост", "title": "«Покажите свою пустую стену, подскажем панно»", "desc": "Интерактив: люди присылают фото, отвечаем советом.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Новинка: панно [название]", "desc": "Фото, размеры, артикул, для какого интерьера.", "rub": "Продукт", "goal": "Продажи"}]}, {"date": "19 ноября", "wd": "Чт", "week": 2, "items": [{"net": "ig", "fmt": "Reels", "title": "Один угол, 3 образа", "desc": "Тот же угол комнаты с 3 разными панно и текстилем. «Какой вариант ваш: 1, 2 или 3?».", "rub": "Дерево", "goal": "Комментарии"}, {"net": "th", "fmt": "Пост", "title": "История мастера", "desc": "Кто делает наши панно, почему он любит дерево. Фото рук.", "rub": "За кадром", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Интервью с мастером", "desc": "Короткие вопросы-ответы + 2 фото процесса.", "rub": "За кадром", "goal": "Доверие"}]}, {"date": "20 ноября", "wd": "Пт", "week": 2, "items": [{"net": "ig", "fmt": "Карусель", "title": "Текстиль + дерево: 5 сочетаний", "desc": "Лён + светлый дуб, графит + орех, молочный + бук и т.д.", "rub": "Лайфстайл", "goal": "Сохранения"}, {"net": "th", "fmt": "Пост", "title": "«Какое сочетание цветов дома вас успокаивает?»", "desc": "Вопрос + 3 палитры.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Опрос", "title": "Какую новинку выпустить следующей?", "desc": "3 варианта: панно с надписью, халат детский, набор полотенец в коробке.", "rub": "Вовлечение", "goal": "Активность"}]}, {"date": "21 ноября", "wd": "Сб", "week": 2, "items": [{"net": "ig", "fmt": "Stories", "title": "Итоги конкурса", "desc": "Победитель, приз, благодарность всем. Репост лучших работ.", "rub": "Вовлечение", "goal": "Доверие"}, {"net": "th", "fmt": "Пост", "title": "Итоги конкурса из Telegram", "desc": "Анонс победителя и приглашение в канал на следующий.", "rub": "Вовлечение", "goal": "Трафик в TG"}, {"net": "tg", "fmt": "Пост", "title": "Победитель конкурса + следующий", "desc": "Объявляем победителя, анонсируем подарок на Чёрную пятницу.", "rub": "Вовлечение", "goal": "Удержание"}]}, {"date": "22 ноября", "wd": "Вс", "week": 2, "items": [{"net": "ig", "fmt": "Пост (фото)", "title": "Стена с панно в мягком вечернем свете", "desc": "Атмосферный кадр + подпись про дом как место силы.", "rub": "Дерево", "goal": "Сохранения"}, {"net": "th", "fmt": "Пост", "title": "Что мы поняли за неделю про дерево", "desc": "3 мысли бренда коротко.", "rub": "Бренд", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Анонс: неделя подарков и Чёрная пятница", "desc": "Что будет, когда, где выгоднее (канал первым).", "rub": "Продажа", "goal": "Разогрев"}]}, {"date": "23 ноября", "wd": "Пн", "week": 3, "items": [{"net": "ig", "fmt": "Reels", "title": "«Подарок, который точно используют»", "desc": "Халат в коробке с лентой, реакция получателя (постановка). Текст: «Не ещё одна свеча».", "rub": "Подарки", "goal": "Охват"}, {"net": "th", "fmt": "Пост", "title": "«Худший подарок, который вам дарили?»", "desc": "Весёлая ветка, хорошо набирает ответы.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Гид подарков: маме, подруге, коллеге, себе", "desc": "4 блока, по 2 артикула в каждом, бюджеты.", "rub": "Подарки", "goal": "Переходы"}]}, {"date": "24 ноября", "wd": "Вт", "week": 3, "items": [{"net": "ig", "fmt": "Карусель", "title": "Подарки до 1 000 / 3 000 / 5 000 ₽", "desc": "По 2–3 товара в каждом бюджете, артикулы в подписи.", "rub": "Подарки", "goal": "Сохранения"}, {"net": "th", "fmt": "Ветка", "title": "Как красиво упаковать текстиль без коробки", "desc": "Фуросики, лента, веточка ели. Пошагово.", "rub": "Польза", "goal": "Охват"}, {"net": "tg", "fmt": "Пост", "title": "Набор «Подарок без хлопот»", "desc": "Готовые сочетания: полотенце + халат, панно + плед. Артикулы.", "rub": "Подарки", "goal": "Продажи"}]}, {"date": "25 ноября", "wd": "Ср", "week": 3, "items": [{"net": "ig", "fmt": "Stories", "title": "Ответы на вопросы о подарках", "desc": "Стикер-вопрос, отвечаем голосом и видео, показываем упаковку.", "rub": "Подарки", "goal": "Вовлечение"}, {"net": "th", "fmt": "Пост", "title": "«Корпоративные подарки: что дарите сотрудникам?»", "desc": "Ловим B2B-интерес, приглашаем в личку.", "rub": "Подарки", "goal": "Лиды"}, {"net": "tg", "fmt": "Пост", "title": "Корпоративным клиентам", "desc": "Наборы для команды, именная гравировка на дереве (если есть), как заказать оптом.", "rub": "Продажа", "goal": "Лиды"}]}, {"date": "26 ноября", "wd": "Чт", "week": 3, "items": [{"net": "ig", "fmt": "Reels", "title": "Разогрев: «Завтра Чёрная пятница»", "desc": "Тизер: накрытые тканью товары, «завтра открываем». Призыв включить уведомления.", "rub": "Продажа", "goal": "Разогрев"}, {"net": "th", "fmt": "Пост", "title": "«Ждёте Чёрную пятницу или не верите скидкам?»", "desc": "Честный разговор о реальных скидках.", "rub": "Вовлечение", "goal": "Разговор"}, {"net": "tg", "fmt": "Пост", "title": "Ранний доступ: список товаров со скидкой", "desc": "Подписчики канала узнают список на сутки раньше.", "rub": "Продажа", "goal": "Удержание"}]}, {"date": "27 ноября", "wd": "Пт", "week": 3, "items": [{"net": "ig", "fmt": "Reels + Stories", "title": "Чёрная пятница: старт", "desc": "Reels 10 сек + сторис каждые 2–3 часа, стикер-ссылки, остатки «осталось мало» только если правда.", "rub": "Продажа", "goal": "Продажи"}, {"net": "th", "fmt": "Пост", "title": "«Чёрная пятница: топ-3 у нас сегодня»", "desc": "Короткий список + где искать.", "rub": "Продажа", "goal": "Переходы"}, {"net": "tg", "fmt": "Пост", "title": "Промокод Чёрной пятницы", "desc": "Промокод/купон продавца на 72 часа + артикулы. Закрепить.", "rub": "Продажа", "goal": "Продажи"}]}, {"date": "28 ноября", "wd": "Сб", "week": 3, "items": [{"net": "ig", "fmt": "Stories", "title": "Отзывы покупателей пачкой", "desc": "5–7 скринов отзывов, «спасибо, что выбираете нас».", "rub": "Отзывы", "goal": "Доверие"}, {"net": "th", "fmt": "Пост", "title": "Отзыв, который нас растрогал", "desc": "Одна история покупателя, без продажи.", "rub": "Отзывы", "goal": "Доверие"}, {"net": "tg", "fmt": "Пост", "title": "Напоминание: акция до воскресенья", "desc": "2 строки + артикулы + промокод.", "rub": "Продажа", "goal": "Продажи"}]}, {"date": "29 ноября", "wd": "Вс", "week": 3, "items": [{"net": "ig", "fmt": "Пост (фото)", "title": "Итоги месяца: спасибо, что вы с нами", "desc": "Тёплый кадр, благодарность, анонс декабря: новогодние наборы.", "rub": "Бренд", "goal": "Удержание"}, {"net": "th", "fmt": "Пост", "title": "Что дальше в декабре", "desc": "Анонс тем: новогодний текстиль, ёлочные игрушки из дерева (если есть).", "rub": "Бренд", "goal": "Удержание"}, {"net": "tg", "fmt": "Пост", "title": "Итоги месяца клуба + опрос о декабре", "desc": "Цифры, благодарность, опрос «что показать в декабре».", "rub": "Бренд", "goal": "Удержание"}]}], "weeks": [["Неделя 1 · 2–8 ноября", "Знакомство и ткань", "Показываем, кто мы и почему наш текстиль приятно трогать. Цель недели: охват и подписки."], ["Неделя 2 · 9–15 ноября", "Уют холодных дней + 11.11", "Утро, ванная, плед и чай. Разогрев к распродаже 11.11 и сама распродажа. Цель: переходы на WB и Ozon."], ["Неделя 3 · 16–22 ноября", "Дерево в интерьере", "Панно и картины из дерева: как выбрать, куда повесить, как сделано. Цель: сохранения и продажи декора."], ["Неделя 4 · 23–29 ноября", "Подарки и Чёрная пятница", "Подборки подарков к Новому году, упаковка, Чёрная пятница 27.11. Цель: продажи и рост базы в Telegram."]]};
+const NET={ig:"Instagram",th:"Threads",tg:"Telegram"};
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let filter="all";
+function render(){
+  const openState=[...document.querySelectorAll(".day")].map(d=>d.open);
+  let h="";
+  DATA.weeks.forEach((w,wi)=>{
+    h+=`<div class="week"><div class="week-head"><h3>${esc(w[1])}</h3><span class="tag">${esc(w[0])}</span></div><p class="muted">${esc(w[2])}</p><div class="days">`;
+    DATA.days.filter(d=>d.week===wi).forEach(d=>{
+      const items=d.items.filter(i=>filter==="all"||i.net===filter);
+      const sum=items.map(i=>i.title).join(" · ");
+      h+=`<details class="day"><summary><span class="d">${esc(d.date)}<small>${esc(d.wd)}</small></span><span class="sum">${esc(sum)}</span><span class="arr" aria-hidden="true">▾</span></summary><div class="items">`+
+      items.map(i=>`<article class="item"><div class="meta"><span class="net ${i.net}">${NET[i.net]}</span><span class="fmt">${esc(i.fmt)}</span></div><h4>${esc(i.title)}</h4><p>${esc(i.desc)}</p><div class="tags"><span>${esc(i.rub)}</span><span class="goal">Цель: ${esc(i.goal)}</span></div></article>`).join("")+`</div></details>`;
+    });
+    h+=`</div></div>`;
+  });
+  document.getElementById("cal").innerHTML=h;
+  document.querySelectorAll(".day").forEach((d,i)=>{if(openState[i])d.open=true});
+  if(!openState.length){const f=document.querySelector(".day");if(f)f.open=true}
+}
+document.querySelectorAll(".chip[data-f]").forEach(b=>b.addEventListener("click",()=>{
+  filter=b.dataset.f;document.querySelectorAll(".chip[data-f]").forEach(x=>x.setAttribute("aria-pressed",x===b));render();
+}));
+const oa=document.getElementById("openall");
+oa.addEventListener("click",()=>{const on=oa.getAttribute("aria-pressed")!=="true";oa.setAttribute("aria-pressed",on);oa.textContent=on?"Свернуть все дни":"Раскрыть все дни";document.querySelectorAll(".day").forEach(d=>d.open=on)});
+render();
+</script></body></html>
