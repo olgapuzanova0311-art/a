@@ -12,7 +12,9 @@ Claude Code в Telegram для Ольги Пузановой.
   MODEL              модель Claude Code (по умолчанию claude-opus-5-5)
   WHISPER_MODEL      модель расшифровки (по умолчанию small)
 """
-import asyncio, json, logging, os, re, shutil, subprocess, time
+import asyncio, json, logging, os, re, shutil, subprocess, sys, time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import aiohttp
@@ -32,6 +34,7 @@ STATE = DATA / 'state.json'
 API = f'https://api.telegram.org/bot{TOKEN}/'
 FILE_API = f'https://api.telegram.org/file/bot{TOKEN}/'
 PORT = int(os.environ.get('PORT', '8080'))
+MSK = ZoneInfo('Europe/Moscow')
 
 SYSTEM = """Ты Claude Code, рабочая копия Claude Ольги Пузановой. Ольга пишет тебе из Telegram, часто голосом: текст расшифрован автоматически и может содержать ошибки, понимай по смыслу.
 Ты одновременно главный в её ИИ-офисе: команда агентов на Claude, которые берут задачи и пишут отчёты.
@@ -45,8 +48,14 @@ SYSTEM = """Ты Claude Code, рабочая копия Claude Ольги Пуз
    python agent/office.py wait <id> <id>              дождаться отчётов
    python agent/office.py hire "Имя" "роль" "инструкция"  нанять агента, если роли не хватает
    Поручай нескольким агентам сразу, потом жди всех. Проверь отчёты, доработай слабое и сведи в один итог.
-4. Файлы, которые прислала Ольга, лежат в inbox/. Готовые файлы для Ольги (видео, картинки, документы) клади в outbox/: бот сам отправит их ей после твоего ответа. Для монтажа роликов используй навык reel-montage (фирменный стиль Ольги), для простых задач с видео навык montage.
-5. Отвечай для Telegram: коротко, по делу, без markdown-таблиц и заголовков, списки через «•» или цифры. В конце итога: что нужно от Ольги, если нужно.
+4. Завод агентов: ты сам создаёшь постоянных агентов под задачи Ольги, пишешь им роль и навыки, ставишь на расписание.
+   python agent/tools/factory.py  (без аргументов покажет все команды)
+   Как собрать агента: продумай роль и результат → напиши подробную инструкцию в work/<id>.md (кто он, что делает, откуда берёт данные, формат отчёта) →
+   если нужен навык, создай .claude/skills/<навык>/SKILL.md → factory.py create … → проверь первым запуском factory.py run … → поставь расписание factory.py schedule ….
+   Агент завода это полноценный Claude Code со всеми твоими инструментами и доступами; отчёты по расписанию бот сам присылает Ольге и показывает в ИИ-офисе.
+   Расписание по Москве; не ставь чаще раза в час без прямой просьбы Ольги (каждый запуск тратит деньги на API).
+5. Файлы, которые прислала Ольга, лежат в inbox/. Готовые файлы для Ольги (видео, картинки, документы) клади в outbox/: бот сам отправит их ей после твоего ответа. Для монтажа роликов используй навык reel-montage (фирменный стиль Ольги), для простых задач с видео навык montage.
+6. Отвечай для Telegram: коротко, по делу, без markdown-таблиц и заголовков, списки через «•» или цифры. В конце итога: что нужно от Ольги, если нужно.
 Доступы сервера (проверь `env`, какие ключи заданы):
 • GH_TOKEN: GitHub ко всем репозиториям Ольги через gh и git. Основной проект: olgapuzanova0311-art/a, рабочая ветка claude/busy-noether-jpca9m. Изменения сайта и ботов делай в клоне: `gh repo clone olgapuzanova0311-art/a ~/repo -- -b claude/busy-noether-jpca9m` (или `git -C ~/repo pull`), правь, коммить, `git push`. Railway сам выкладывает сайт, ботов и офис после пуша в эту ветку. Папка ws/ это копия для чтения, в git её не пушь.
 • RAILWAY_API_TOKEN: Railway CLI (`railway`), проект ii-komanda-bot: сервисы bot, site, office, agent.
@@ -377,6 +386,126 @@ def prepare_workspace():
         subprocess.run(['git', 'init', '-q'], cwd=WS, check=False)
 
 
+# ---------------- завод агентов: расписание и очередь ----------------
+FACTORY = DATA / 'factory.json'
+QUEUE = DATA / 'factory-queue'
+busy_agents: set = set()
+
+
+def cron_field(spec, val, lo, hi):
+    for part in spec.split(','):
+        step = 1
+        if '/' in part:
+            part, st = part.split('/'); step = int(st)
+        if part == '*':
+            a, b = lo, hi
+        elif '-' in part:
+            a, b = map(int, part.split('-'))
+        else:
+            a = b = int(part)
+        if a <= val <= b and (val - a) % step == 0:
+            return True
+    return False
+
+
+def cron_due(expr, now):
+    m, h, dom, mon, dow = expr.split()
+    return (cron_field(m, now.minute, 0, 59) and cron_field(h, now.hour, 0, 23) and cron_field(dom, now.day, 1, 31)
+            and cron_field(mon, now.month, 1, 12)
+            and (cron_field(dow, now.isoweekday() % 7, 0, 6) or (now.isoweekday() == 7 and cron_field(dow, 7, 0, 7))))
+
+
+def agent_file(aid):
+    f = WS / '.claude' / 'agents' / f'{aid}.md'
+    if not f.exists():
+        return None, None
+    txt = f.read_text(encoding='utf-8')
+    m = re.match(r'---\n(.*?)\n---\n(.*)', txt, re.S)
+    meta = dict(l.split(':', 1) for l in m.group(1).splitlines() if ':' in l) if m else {}
+    return {k.strip(): v.strip() for k, v in meta.items()}, (m.group(2) if m else txt)
+
+
+def office_call(fn, *a):
+    sys.path.insert(0, str(REPO / 'agent'))
+    import office as o
+    o.login()
+    return fn(o, *a)
+
+
+async def run_factory_agent(aid, task, why):
+    if aid in busy_agents:
+        return
+    reg = json.loads(FACTORY.read_text()) if FACTORY.exists() else {'agents': {}}
+    info = reg.get('agents', {}).get(aid, {})
+    meta, body = agent_file(aid)
+    if body is None:
+        return await asyncio.gather(*(say(c, f'⚠️ Агент {aid} не найден на заводе') for c in owners()))
+    busy_agents.add(aid)
+    name = info.get('name', aid)
+    tid = None
+    try:
+        if info.get('office_id'):
+            r = await asyncio.to_thread(office_call, lambda o: o.call('/api/tasks', {
+                'agent_id': info['office_id'], 'title': task, 'from_main': True, 'external': True}))
+            tid = (r or {}).get('id')
+    except Exception as e:
+        log.warning('office start: %s', e)
+    model = meta.get('model', 'inherit')
+    args = ['claude', '-p', task, '--output-format', 'json', '--model', MODEL if model in ('', 'inherit') else model,
+            '--permission-mode', 'bypassPermissions', '--append-system-prompt', body]
+    env = dict(os.environ, HOME=str(DATA / 'home'), CLAUDE_CODE_DISABLE_AUTOUPDATER='1')
+    env.pop('TG_TOKEN', None)
+    started = time.time()
+    result, failed = '', False
+    try:
+        proc = await asyncio.create_subprocess_exec(*args, cwd=WS, env=env, stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024)
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=3600)
+        try:
+            d = json.loads(out)
+            result, failed = d.get('result') or '', bool(d.get('is_error'))
+        except Exception:
+            result, failed = (err or out).decode(errors='ignore')[-1500:], True
+    except asyncio.TimeoutError:
+        result, failed = 'Не уложился в час, остановлен.', True
+    finally:
+        busy_agents.discard(aid)
+    try:
+        if tid:
+            await asyncio.to_thread(office_call, lambda o: o.call(f'/api/tasks/{tid}/done', {'result': result, 'error': failed}))
+    except Exception as e:
+        log.warning('office done: %s', e)
+    for c in owners():
+        await say(c, f"{'⚠️' if failed else '🤖'} {name} · {why}\n\n{result or 'Пустой ответ'}")
+        await send_outbox(c, started)
+
+
+async def factory_loop():
+    last_min = ''
+    while True:
+        try:
+            if QUEUE.exists():
+                for f in sorted(QUEUE.glob('*.json')):
+                    job = json.loads(f.read_text()); f.unlink()
+                    asyncio.create_task(run_factory_agent(job['agent'], job['task'], 'задача от главного'))
+            now = datetime.now(MSK)
+            key = now.strftime('%Y%m%d%H%M')
+            if key != last_min and FACTORY.exists():
+                last_min = key
+                reg = json.loads(FACTORY.read_text())
+                for s in reg.get('schedules', []):
+                    try:
+                        if cron_due(s['cron'], now) and s.get('last') != key:
+                            s['last'] = key
+                            asyncio.create_task(run_factory_agent(s['agent'], s['task'], f"по расписанию «{s['cron']}»"))
+                    except Exception as e:
+                        log.warning('cron %s: %s', s, e)
+                FACTORY.write_text(json.dumps(reg, ensure_ascii=False, indent=1))
+        except Exception:
+            log.exception('factory')
+        await asyncio.sleep(15)
+
+
 async def main():
     global http
     prepare_workspace()
@@ -387,6 +516,7 @@ async def main():
         while True:
             await asyncio.sleep(3600)
     asyncio.create_task(asyncio.to_thread(warm_whisper))
+    asyncio.create_task(factory_loop())
     log.info('agent started, model=%s, claude=%s', MODEL, shutil.which('claude'))
     await poll()
 

@@ -510,8 +510,33 @@ async def new_task(req):
             aid, title[:8000], 'queued', frm, time.time(), time.time()).lastrowid
     if frm:
         event('talk', frm, aid, title[:200])
-    asyncio.create_task(run_task(tid))
+    if d.get('external'):
+        # задачу выполняет агент завода (Claude Code в Telegram), офис только показывает работу и отчёт
+        q("UPDATE tasks SET status='working', updated=? WHERE id=?", time.time(), tid)
+        set_status(aid, 'working')
+        add_msg(aid, 'system', 'Задача', title[:8000])
+    else:
+        asyncio.create_task(run_task(tid))
     return web.json_response({'ok': True, 'id': tid})
+
+
+async def finish_task(req):
+    tid = int(req.match_info['id'])
+    d = await req.json()
+    t = row(q('SELECT * FROM tasks WHERE id=?', tid).fetchone())
+    if not t:
+        return web.json_response({'ok': False}, status=404)
+    result = str(d.get('result', ''))[:20000]
+    status = 'error' if d.get('error') else 'done'
+    q('UPDATE tasks SET status=?, result=?, updated=? WHERE id=?', status, result, time.time(), tid)
+    a = row(q('SELECT * FROM agents WHERE id=?', t['agent_id']).fetchone())
+    if a:
+        add_msg(a['id'], 'agent', a['name'], result)
+        set_status(a['id'], 'idle')
+        if t['from_agent']:
+            event('talk', a['id'], t['from_agent'], 'готово')
+            add_msg(t['from_agent'], 'system', a['name'], f'Отчёт по задаче «{t["title"][:80]}»:\n\n{result}')
+    return web.json_response({'ok': True})
 
 
 async def save_agent(req):
@@ -549,7 +574,7 @@ def make_app():
     app.add_routes([
         web.get('/', index), web.get('/health', health),
         web.post('/api/login', login), web.get('/api/state', state), web.get('/api/messages', messages),
-        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/agents', save_agent),
+        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/agents', save_agent),
         web.delete('/api/agents/{id}', delete_agent), web.get('/api/templates', templates),
     ])
     app.on_startup.append(on_start)
