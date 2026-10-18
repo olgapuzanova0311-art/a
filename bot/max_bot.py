@@ -5,7 +5,7 @@
   MAX_TOKEN   токен бота MAX (без него модуль не запускается)
   PUBLIC_URL  https-адрес сервиса, на него MAX присылает события (webhook)
 """
-import asyncio, json, logging, re, secrets, sqlite3, time
+import asyncio, json, logging, os, re, secrets, sqlite3, time
 from datetime import datetime, timedelta
 
 import aiohttp
@@ -265,7 +265,10 @@ class MaxBot:
             try:
                 now = datetime.now(T.MSK)
                 nowts = int(time.time())
-                if now < T.EVENT_END:
+                r = self.q("SELECT v FROM settings WHERE k='paused'").fetchone()
+                pv = r[0] if r else ''
+                is_paused = pv == '1' or (pv != '0' and os.environ.get('BOT_PAUSED') == '1')
+                if now < T.EVENT_END and not is_paused:
                     for step in T.CHAIN:
                         if step['key'] == 'ref_nudge':
                             continue  # игра с друзьями пока только в Telegram
@@ -275,7 +278,7 @@ class MaxBot:
                             if self.cond_ok(u, step.get('only')) and self.mark(u['id'], step['key']):
                                 btns = [[('contact', '📱 Поделиться номером')]] if step['key'] == 'no_contact' else self.clean_btns(step.get('btns'))
                                 await self.send(u['id'], step['text'], btns, step.get('photo')); await asyncio.sleep(0.6)
-                for msg in T.SCHEDULE:
+                for msg in ([] if is_paused else T.SCHEDULE):
                     at = msg['at']
                     if at <= now < at + timedelta(hours=2):
                         for u in self.q('SELECT * FROM max_users WHERE blocked=0 AND created<=?', int(at.timestamp())).fetchall():

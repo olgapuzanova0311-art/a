@@ -73,6 +73,11 @@ def setting(k, default=''):
 def set_setting(k, v):
     q('INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', k, v)
 
+def paused():
+    # пауза автоматических рассылок (цепочка и расписание); BOT_PAUSED=1 включает её по умолчанию, /resume снимает
+    v = setting('paused')
+    return v == '1' or (v != '0' and os.environ.get('BOT_PAUSED') == '1')
+
 def user(uid):
     return q('SELECT * FROM users WHERE id=?', uid).fetchone()
 
@@ -410,6 +415,7 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/broadcast · ответь этой командой на любое сообщение и выбери, кому разослать\n'
   '/segments · кто «внедряю», кто «зарабатываю», выгрузка по сегментам\n'
   '/users · список всех участников (листается кнопками)\n'
+  '/pause · поставить автоматические рассылки на паузу, /resume · включить\n'
   '/sources · откуда пришли люди (по меткам)\n'
   '/find имя, ник, телефон или почта · найти участника\n'
   '/friend id_друга id_пригласившего · засчитать друга вручную\n'
@@ -427,6 +433,19 @@ def admin_only(fn):
         return await fn(m, **{x: v for x, v in k.items() if x in names})
     w.__name__ = fn.__name__
     return w
+
+@router.message(Command('pause'))
+@admin_only
+async def pause_cmd(m: Message):
+    set_setting('paused', '1')
+    await m.answer('⏸ Автоматические рассылки на паузе (цепочка после регистрации и сообщения по расписанию, Telegram и MAX).\n'
+                   'Ручная /broadcast работает. Включить обратно: /resume')
+
+@router.message(Command('resume'))
+@admin_only
+async def resume_cmd(m: Message):
+    set_setting('paused', '0')
+    await m.answer('▶️ Автоматические рассылки снова включены. Сообщения, время которых прошло больше 2 часов назад, не отправятся.')
 
 @router.message(Command('stats'))
 @admin_only
@@ -774,13 +793,13 @@ async def scheduler():
         try:
             now = datetime.now(T.MSK)
             nowts = int(time.time())
-            if now < T.EVENT_END:
+            if now < T.EVENT_END and not paused():
                 for step in T.CHAIN:
                     rows = q('SELECT * FROM users WHERE blocked=0 AND created<=? AND created>=?', nowts - step['after'] * 60, nowts - step['after'] * 60 - 6 * 3600).fetchall()
                     for u in rows:
                         if cond_ok(u, step.get('only')) and mark(u['id'], step['key']):
                             await send(u['id'], step['text'], step.get('btns'), step.get('photo')); await asyncio.sleep(0.05)
-            for msg in T.SCHEDULE:
+            for msg in ([] if paused() else T.SCHEDULE):
                 at = msg['at']
                 if at <= now < at + timedelta(hours=2):
                     rows = q('SELECT * FROM users WHERE blocked=0 AND created<=?', int(at.timestamp())).fetchall()
