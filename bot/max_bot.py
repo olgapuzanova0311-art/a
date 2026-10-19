@@ -278,9 +278,9 @@ class MaxBot:
                             if self.cond_ok(u, step.get('only')) and self.mark(u['id'], step['key']):
                                 btns = [[('contact', '📱 Поделиться номером')]] if step['key'] == 'no_contact' else self.clean_btns(step.get('btns'))
                                 await self.send(u['id'], step['text'], btns, step.get('photo')); await asyncio.sleep(0.6)
-                for msg in ([] if is_paused else T.SCHEDULE):
+                for msg in [m for m in T.SCHEDULE if m.get('force') or not is_paused]:
                     at = msg['at']
-                    if at <= now < at + timedelta(hours=2):
+                    if at <= now < at + timedelta(minutes=msg.get('window', 120)):
                         for u in self.q('SELECT * FROM max_users WHERE blocked=0 AND created<=?', int(at.timestamp())).fetchall():
                             if self.cond_ok(u, msg.get('only')) and self.mark(u['id'], msg['key']):
                                 await self.send(u['id'], msg['text'], self.clean_btns(msg.get('btns')), msg.get('photo')); await asyncio.sleep(0.6)

@@ -799,9 +799,9 @@ async def scheduler():
                     for u in rows:
                         if cond_ok(u, step.get('only')) and mark(u['id'], step['key']):
                             await send(u['id'], step['text'], step.get('btns'), step.get('photo')); await asyncio.sleep(0.05)
-            for msg in ([] if paused() else T.SCHEDULE):
+            for msg in [x for x in T.SCHEDULE if x.get('force') or not paused()]:
                 at = msg['at']
-                if at <= now < at + timedelta(hours=2):
+                if at <= now < at + timedelta(minutes=msg.get('window', 120)):
                     rows = q('SELECT * FROM users WHERE blocked=0 AND created<=?', int(at.timestamp())).fetchall()
                     for u in rows:
                         if cond_ok(u, msg.get('only')) and mark(u['id'], msg['key']):
