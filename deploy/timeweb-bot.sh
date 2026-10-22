@@ -5,7 +5,12 @@
 set -e
 . /opt/bot.env
 # ход установки виден в описании бота на языке zu (людям оно не показывается); в конце очищается
-report() { curl -s -m 15 "https://api.telegram.org/bot$BOT_TOKEN/setMyShortDescription" --data-urlencode "short_description=$1" -d language_code=zu >/dev/null || true; }
+report() {
+  curl -s -m 15 "https://api.telegram.org/bot$BOT_TOKEN/setMyShortDescription" --data-urlencode "short_description=$1" -d language_code=zu >/dev/null || true
+  # запасной канал на время установки: задача в ИИ-офисе (если задан REPORT_COOKIE)
+  [ -n "$REPORT_COOKIE" ] && curl -s -m 15 -b "office_s=$REPORT_COOKIE" -H 'Content-Type: application/json' \
+    -d "{\"agent_id\":2,\"external\":true,\"title\":\"[timeweb] $1\"}" https://office-production-833a.up.railway.app/api/tasks >/dev/null || true
+}
 trap 'report "install failed at line $LINENO: $(tail -c 80 /var/log/bot-install.log | tr "\n" " ")"' ERR
 report "install: start"
 export DEBIAN_FRONTEND=noninteractive
