@@ -19,7 +19,9 @@ HOST="$(echo $IP | tr . -).sslip.io"
 # HTTPS с настоящим сертификатом (Let's Encrypt) на адрес вида 1-2-3-4.sslip.io
 printf '%s {\n  reverse_proxy 127.0.0.1:8080\n}\n' "$HOST" > /etc/caddy/Caddyfile
 systemctl restart caddy
-[ -d /opt/a ] || git clone -b claude/busy-noether-jpca9m https://github.com/olgapuzanova0311-art/a.git /opt/a
+# код: из GitHub, а если GitHub недоступен, из архива, который cloud-init положил в $SRC
+[ -d /opt/a ] || timeout 90 git clone -q -b claude/busy-noether-jpca9m https://github.com/olgapuzanova0311-art/a.git /opt/a || { rm -rf /opt/a; mkdir -p /opt/a && cp -r "$SRC/bot" /opt/a/; }
+report "install: code $( [ -d /opt/a/.git ] && echo git || echo archive )"
 grep -q '^PUBLIC_URL=' /opt/bot.env || echo "PUBLIC_URL=https://$HOST" >> /opt/bot.env
 grep -q '^WEBHOOK=' /opt/bot.env || echo "WEBHOOK=1" >> /opt/bot.env
 mkdir -p /data
@@ -47,9 +49,10 @@ set -e
 cd /opt/a && git pull -q && /opt/venv/bin/pip install -q -r /opt/a/bot/requirements.txt && systemctl restart bot
 EOS
 chmod +x /opt/update.sh
-# автообновление: раз в 2 минуты проверяем новые коммиты в ветке
-cat > /etc/cron.d/bot-update <<'EOS'
+# автообновление: раз в 2 минуты проверяем новые коммиты в ветке (только если код из git)
+if [ -d /opt/a/.git ]; then cat > /etc/cron.d/bot-update <<'EOS'
 */2 * * * * root cd /opt/a && git fetch -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ] && /opt/update.sh >> /var/log/bot-update.log 2>&1
 EOS
+fi
 sleep 20
 report "install: done, bot $(systemctl is-active bot)"
