@@ -1,6 +1,6 @@
 #!/bin/bash
 # Установка бота регистрации/автовеба на чистый сервер Timeweb Cloud (Ubuntu). Запускается один раз при создании сервера.
-# Перед запуском подставляются: __GH_TOKEN__ (доступ к репозиторию) и файл /opt/bot.env (переменные бота).
+# Перед запуском должен быть файл /opt/bot.env с переменными бота (его пишет cloud-init сервера).
 set -e
 apt-get update -y && apt-get install -y docker.io git curl debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -11,7 +11,7 @@ HOST="$(echo $IP | tr . -).sslip.io"
 # HTTPS с настоящим сертификатом (Let's Encrypt) на адрес вида 1-2-3-4.sslip.io
 printf '%s {\n  reverse_proxy 127.0.0.1:8080\n}\n' "$HOST" > /etc/caddy/Caddyfile
 systemctl restart caddy
-git clone -b claude/busy-noether-jpca9m https://x-access-token:__GH_TOKEN__@github.com/olgapuzanova0311-art/a.git /opt/a
+git clone -b claude/busy-noether-jpca9m https://github.com/olgapuzanova0311-art/a.git /opt/a
 echo "PUBLIC_URL=https://$HOST" >> /opt/bot.env
 echo "WEBHOOK=1" >> /opt/bot.env
 mkdir -p /opt/data

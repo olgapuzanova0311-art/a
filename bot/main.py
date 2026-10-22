@@ -872,6 +872,8 @@ async def main():
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
     me = await bot.get_me(); BOT_USERNAME = me.username
     avto.init(sys.modules[__name__])
+    for a in re.findall(r'\d+', os.environ.get('ADMIN_IDS', '')):
+        q('INSERT OR IGNORE INTO admins(id) VALUES(?)', int(a))
     dp = Dispatcher(); dp.include_router(avto.router); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
