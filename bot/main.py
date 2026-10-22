@@ -9,7 +9,7 @@
   DB_PATH        путь к базе (по умолчанию /data/bot.db)
   PORT           порт веб-сервера (Railway задаёт сам)
 """
-import asyncio, re, csv, hashlib, hmac, inspect, io, json, logging, os, secrets, sqlite3, time
+import asyncio, re, sys, csv, hashlib, hmac, inspect, io, json, logging, os, secrets, sqlite3, time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, quote
 
@@ -23,6 +23,7 @@ from aiogram.types import (BufferedInputFile, CallbackQuery, ChatMemberUpdated, 
                            ReplyKeyboardRemove, WebAppInfo)
 
 import texts as T
+import avto
 from max_bot import MaxBot
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -424,7 +425,8 @@ ADMIN_HELP = ('🛠 <b>Ты админ.</b> Команды:\n'
   '/restore · ответь на файл бэкапа, чтобы восстановить базу\n'
   '/test · прислать себе приветствие\n'
   '/reset_me · забыть тебя, чтобы пройти регистрацию заново\n'
-  '/chain · показать все сообщения цепочки по порядку')
+  '/chain · показать все сообщения цепочки по порядку\n\n'
+  '🎬 /avtohelp · команды автовеба')
 
 def admin_only(fn):
     names = set(inspect.signature(fn).parameters)
@@ -523,7 +525,13 @@ SEGMENTS = {
     'in': ('Внедряю к себе', "(survey LIKE '%Внедрить%' OR survey LIKE '%И то, и другое%')"),
     'earn': ('Зарабатываю', "(survey LIKE '%Зарабатывать%' OR survey LIKE '%И то, и другое%')"),
     'none': ('Не прошли опрос', "survey IS NULL"),
+    'avto': ('Новые из автовеба', "funnel=1"),
+    'old': ('Участники интенсива (без автовеба)', "COALESCE(funnel,0)=0"),
 }
+
+def max_where(seg):
+    # в MAX автовеба нет: «новые из автовеба» туда не шлём, «участники интенсива» там все
+    return {'avto': None, 'old': '1=1'}.get(seg, SEGMENTS.get(seg, SEGMENTS['all'])[1])
 
 def seg_count(seg):
     return q(f"SELECT COUNT(*) FROM users WHERE blocked=0 AND {SEGMENTS[seg][1]}").fetchone()[0]
@@ -549,7 +557,8 @@ async def bc_go(c: CallbackQuery):
     if c.data.startswith('bc:seg:'):
         seg = c.data[7:]
         set_setting('bc_seg', seg)
-        mx = f' + в MAX {MX.seg_count(SEGMENTS[seg][1])}' if MX else ''
+        mxw = max_where(seg)
+        mx = f' + в MAX {MX.seg_count(mxw)}' if MX and mxw else ''
         return await c.message.edit_text(f'Аудитория: <b>{SEGMENTS[seg][0]}</b>. В Telegram {seg_count(seg)}{mx}. Отправляем?',
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🧪 Сначала себе', callback_data='bc:me')],
                 [InlineKeyboardButton(text='✅ Да, отправить', callback_data='bc:go'), InlineKeyboardButton(text='Отмена', callback_data='bc:no')]]))
@@ -568,9 +577,9 @@ async def bc_go(c: CallbackQuery):
             if 'blocked' in str(e) or 'deactivated' in str(e): q('UPDATE users SET blocked=1 WHERE id=?', r['id'])
         await asyncio.sleep(0.05)
     await bot.send_message(c.from_user.id, f'✅ Доставлено в Telegram: {ok}')
-    if MX and c.data == 'bc:go':
+    if MX and c.data == 'bc:go' and max_where(seg):
         if setting('bc_text'):
-            n = await MX.broadcast(setting('bc_text'), where)
+            n = await MX.broadcast(setting('bc_text'), max_where(seg))
             await bot.send_message(c.from_user.id, f'✅ Доставлено в MAX: {n}')
         else:
             await bot.send_message(c.from_user.id, 'В MAX рассылаю только текст: в этом сообщении его нет, поэтому в MAX не отправила.')
@@ -862,9 +871,11 @@ async def main():
     global bot, BOT_USERNAME
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
     me = await bot.get_me(); BOT_USERNAME = me.username
-    dp = Dispatcher(); dp.include_router(router)
+    avto.init(sys.modules[__name__])
+    dp = Dispatcher(); dp.include_router(avto.router); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
+    avto.setup_web(app)
     global MX
     if MAX_TOKEN and PUBLIC_URL:
         MX = MaxBot(MAX_TOKEN, db, links, SHEET_URL, PUBLIC_URL)
@@ -872,6 +883,7 @@ async def main():
     runner = web.AppRunner(app); await runner.setup()
     await web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080))).start()
     asyncio.create_task(scheduler())
+    asyncio.create_task(avto.scheduler())
     if MX: asyncio.create_task(MX.run())
     log.info('started as @%s', BOT_USERNAME)
     await dp.start_polling(bot, allowed_updates=['message', 'callback_query', 'my_chat_member'])
