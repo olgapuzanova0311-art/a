@@ -876,6 +876,13 @@ async def main():
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
     avto.setup_web(app)
+    # WEBHOOK=1: Telegram сам присылает обновления на PUBLIC_URL (так работает сервер на Timeweb);
+    # копия бота, которая ещё опрашивает Telegram по старинке, в это время сообщений не получает
+    hook = os.environ.get('WEBHOOK') == '1' and PUBLIC_URL
+    if hook:
+        from aiogram.webhook.aiohttp_server import SimpleRequestHandler
+        secret = hashlib.sha256(('hook' + BOT_TOKEN).encode()).hexdigest()[:32]
+        SimpleRequestHandler(dp, bot, secret_token=secret).register(app, path='/tg/' + secret[:12])
     global MX
     if MAX_TOKEN and PUBLIC_URL:
         MX = MaxBot(MAX_TOKEN, db, links, SHEET_URL, PUBLIC_URL)
@@ -886,7 +893,12 @@ async def main():
     asyncio.create_task(avto.scheduler())
     if MX: asyncio.create_task(MX.run())
     log.info('started as @%s', BOT_USERNAME)
-    await dp.start_polling(bot, allowed_updates=['message', 'callback_query', 'my_chat_member'])
+    updates = ['message', 'callback_query', 'my_chat_member']
+    if hook:
+        await bot.set_webhook(PUBLIC_URL + '/tg/' + secret[:12], secret_token=secret, allowed_updates=updates)
+        log.info('webhook on %s', PUBLIC_URL)
+        await asyncio.Event().wait()
+    await dp.start_polling(bot, allowed_updates=updates)
 
 if __name__ == '__main__':
     asyncio.run(main())
