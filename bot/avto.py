@@ -78,7 +78,7 @@ def web_link(u):
     day = cur_day(u)
     h = dt(u['slot2'] if day == 2 else u['slot']).hour
     p = 'avto_web2' if day == 2 else 'avto_web'
-    return setting(f'{p}{h}') or setting(p)
+    return setting(f'{p}{h}') or setting(p) or (A.WEB2 if day == 2 else A.WEB1)
 
 def sig(uid):
     return hmac.new(M.BOT_TOKEN.encode(), f'go{uid}'.encode(), hashlib.sha256).hexdigest()[:12]
@@ -467,7 +467,7 @@ async def stats(m, a):
         text += f'{label(dt(r["slot"]))}: {r["n"]} чел.\n'
     text += '\n<b>Источники</b>\n' + '\n'.join(f'{escape(r["source"] or "-")}: {r["n"]}' for r in
                                              q('SELECT source, COUNT(*) n FROM users WHERE funnel=1 GROUP BY source ORDER BY n DESC LIMIT 15').fetchall())
-    links = [(k, setting('avto_' + k)) for k in ('web', 'web12', 'web19', 'web2', 'web212', 'web219', 'consult')]
+    links = [(k, setting('avto_' + k) or {'web': A.WEB1, 'web2': A.WEB2}.get(k, '')) for k in ('web', 'web12', 'web19', 'web2', 'web212', 'web219', 'consult')]
     text += '\n\n<b>Ссылки</b>\n' + '\n'.join(f'{k}: {escape(v)}' for k, v in links if v) if any(v for _, v in links) else '\n\n⚠️ Ссылка на эфир не задана: /web https://...'
     await m.answer(text, disable_web_page_preview=True)
 

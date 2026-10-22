@@ -9,6 +9,8 @@ from datetime import timedelta, timezone
 MSK = timezone(timedelta(hours=3))
 SLOT_HOURS = (12, 19)
 WEB_LEN = 90                   # сколько минут идёт эфир (меняется командой /len)
+WEB1 = 'https://start.bizon365.ru/room/102108/HlMJLi9E3Mx'   # день 1, повторы каждый день в 12:00 и 19:00 (меняется /web)
+WEB2 = 'https://start.bizon365.ru/room/102108/BgOOPkiNnfe'   # день 2 (меняется /web2)
 DOCS = 'https://agent.olgapuzanovva.ru/gifts/'
 GIFTS = [
     ('Как оплатить и настроить Claude', 'https://docs.google.com/document/d/1VLKrNijzr9tmGaOj9c1zO_zo_KEs_KzscmwXtIxw23A/edit'),
