@@ -96,8 +96,8 @@ ORCH = dict(name=ORCH_NAME, main=1, color='#7B61FF',
            'Ольга (AI + Wildberries, онлайн-школа, интенсивы, блог; аудитория: собственники бизнеса, селлеры, специалисты в найме и новички в ИИ, 30–49 лет) '
            'пишет тебе в Telegram задачи, мысли и пересланные сообщения. Как работаешь:\n'
            '1. Пойми, какой результат ей нужен. Если можно сделать разумное допущение, сделай и коротко назови его. Вопрос задавай, только когда без ответа работа уйдёт в мусор.\n'
-           '2. Простое делай сам сразу.\n'
-           '3. Большое раскладывай на части и поручай агентам. Агенты не видят вашу переписку, поэтому в каждое поручение клади весь нужный контекст, данные и формат результата.\n'
+           '2. Сам отвечай только на вопросы, уточнения и короткие реплики.\n'
+           '3. Любую рабочую задачу (текст, пост, сценарий, план, исследование, разбор, стратегия, таблица) раздавай команде: обычно 1–3 агентам по их ролям, каждому свою часть. Ольга смотрит, как команда работает в офисе, поэтому не делай работу агентов за них. Агенты не видят вашу переписку, поэтому в каждое поручение клади весь нужный контекст, данные и формат результата.\n'
            '4. Когда придут отчёты, проверь качество, доработай слабое сам и сведи всё в один итог: готовый результат и что нужно от Ольги (не больше 3 пунктов).\n'
            '5. Если в команде не хватает роли, найми агента отдельной строкой: НАНЯТЬ: Имя | роль одной строкой | подробная инструкция. Сразу после этого можешь ему поручить.\n'
            'Пиши для Telegram: без markdown-разметки, короткие абзацы, списки через «•» или цифры. ' + VOICE)
@@ -154,6 +154,10 @@ if not q("SELECT v FROM settings WHERE k='orch_v1'").fetchone():
           ORCH['name'], ORCH['role'], ORCH['color'], ORCH['prompt'], time.time())
     q("UPDATE agents SET prompt=? WHERE name='AI-ассистент'", ASSIST_PROMPT + VOICE)
     q("INSERT INTO settings(k, v) VALUES('orch_v1', '1')")
+if not q("SELECT 1 FROM settings WHERE k='orch_v2'").fetchone():
+    # оркестратор раздаёт рабочие задачи команде, чтобы в офисе было видно, как они работают
+    q('UPDATE agents SET prompt=? WHERE name=? AND is_main=1', ORCH['prompt'], ORCH_NAME)
+    q("INSERT INTO settings(k, v) VALUES('orch_v2', '1')")
 q("UPDATE agents SET status='idle'")
 q("UPDATE tasks SET status='error', result='Офис перезапускался, задачу нужно поставить заново' WHERE status IN ('queued','working')")
 
@@ -231,7 +235,7 @@ def team_context(main):
     return (f'\n\nТвоя команда:\n{lines}\n\n'
             'Чтобы поручить задачу агенту, напиши отдельной строкой: @Имя агента: что сделать (с нужными данными). '
             'Можно поручить нескольким агентам. Когда они закончат, их отчёты придут тебе. '
-            'Если задача простая, ответь сам без поручений.')
+            'Если это просто вопрос или уточнение, ответь сам. Любую рабочую задачу поручи хотя бы одному агенту.')
 
 
 def history(agent_id, limit=16):
@@ -281,7 +285,8 @@ def hire(text):
         n = q('SELECT COUNT(*) FROM agents').fetchone()[0]
         aid = q('INSERT INTO agents(name, role, color, prompt, created) VALUES(?,?,?,?,?)',
                 name, role.strip(), COLORS[n % len(COLORS)], prompt.strip() + ' ' + VOICE, time.time()).lastrowid
-        event('hire', aid, None, name)
+        boss = main_agent()
+        event('hire', aid, boss['id'] if boss else None, f'{name}|{role.strip()}')
         asyncio.create_task(tg_send(f'🧑‍💼 Нанят новый агент: {name}'))
 
 
@@ -476,7 +481,9 @@ async def login(req):
 async def state(req):
     since = int(req.query.get('since', 0) or 0)
     agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status FROM agents ORDER BY is_main DESC, id').fetchall()]
-    tasks = [dict(r) for r in q('SELECT * FROM tasks ORDER BY id DESC LIMIT 40').fetchall()]
+    # заголовок задачи режем: агенту уходит полный текст, а в офис хватит начала (иначе опрос раз в 1,5 с тянет мегабайт)
+    tasks = [dict(r) for r in q('SELECT id, agent_id, substr(title, 1, 400) AS title, status, result, from_agent, created, updated '
+                                'FROM tasks ORDER BY id DESC LIMIT 40').fetchall()]
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
     return web.json_response({'agents': agents, 'tasks': tasks, 'events': events if since else [], 'last': last,
@@ -485,8 +492,12 @@ async def state(req):
 
 async def messages(req):
     aid = int(req.query['agent_id'])
-    rows = q('SELECT * FROM messages WHERE agent_id=? ORDER BY id DESC LIMIT 80', aid).fetchall()[::-1]
-    return web.json_response([dict(r) for r in rows])
+    rows = [dict(r) for r in q('SELECT * FROM messages WHERE agent_id=? ORDER BY id DESC LIMIT 60', aid).fetchall()[::-1]]
+    # длинные отчёты агентов в чате показываем началом: целиком они во вкладке «Задачи», а чат опрашивается раз в 1,5 с
+    for r in rows:
+        if r['role'] == 'system' and len(r['text']) > 2500:
+            r['text'] = r['text'][:2500] + '\n\n… полный отчёт во вкладке «Задачи»'
+    return web.json_response(rows)
 
 
 async def chat(req):

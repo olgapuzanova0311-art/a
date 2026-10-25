@@ -31,6 +31,9 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var
 .team{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
 .card{flex:none;display:flex;gap:10px;align-items:center;padding:8px 12px 8px 8px;border-radius:16px;border:1.5px solid var(--ink);background:var(--white);cursor:pointer;min-width:190px}
 .card.sel{background:var(--yellow)}
+.card.new{animation:hired 1s ease-in-out 6}
+@keyframes hired{50%{box-shadow:0 0 0 4px var(--yellow)}}
+@media (prefers-reduced-motion:reduce){.card.new{animation:none;box-shadow:0 0 0 3px var(--yellow)}}
 .av{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;border:1.5px solid var(--ink)}
 .card b{display:block;font-size:14px;line-height:1.2}.card small{font-size:12px;color:var(--ink2)}
 .st{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B8B8C0;margin-right:5px;vertical-align:1px}
@@ -262,9 +265,23 @@ function nextVisit(ra){
     (function hold(){ if (tick < wait) return requestAnimationFrame(hold); nextVisit(ra); })();
   });
 }
+// найм: новый робот входит в дверь, главный идёт знакомиться, сверху плашка, карточка в команде мигает
+var banner = null;
+function hired(e){
+  var parts = String(e.text || '').split('|'), name = parts[0], role = parts[1] || '';
+  var a = agent(e.a), r = robots[e.a];
+  banner = {title: '🧑‍💼 Новый сотрудник: ' + name, sub: role, until: tick + 420};
+  S.fresh = S.fresh || {}; S.fresh[e.a] = Date.now() + 8000; renderTeam();
+  if (!r) return;
+  r.x = r.tx = 24; r.y = r.ty = 120; r.plan = null; r.busyUntil = tick + 100000;
+  say(e.a, 'Привет! Я ' + name + ' 👋', 260);
+  var boss = e.b || (S.agents.filter(function(x){ return x.is_main; })[0] || {}).id;
+  if (boss && boss !== e.a) talk(boss, e.a, '🤝 Добро пожаловать в команду!');
+  setTimeout(function(){ r.busyUntil = 0; if (a) { var s = seat(agent(e.a) || a); goTo(r, s.x, s.y); } }, 5200);
+}
 function onEvent(e){
   if (e.type === 'talk') talk(e.a, e.b, e.text);
-  else if (e.type === 'hire') { var r = robots[e.a]; if (r) { r.x = 6; r.y = 120; } say(e.a, 'Привет! 👋', 200); }
+  else if (e.type === 'hire') hired(e);
 }
 
 function resize(){
@@ -296,6 +313,15 @@ function frame(){
     ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
     ctx.fillStyle = '#141414'; ctx.fillText(t, X, Y + 1);
   });
+  if (banner && banner.until > tick) {
+    var bs = Math.max(13, Math.round(4.4 * v.s)), bw = Math.min(cv.width * .9, Math.max(ctx.measureText(banner.title).width, 10) + 60 * dpr);
+    ctx.font = '800 ' + bs + 'px Onest, sans-serif'; bw = Math.min(cv.width * .9, Math.max(ctx.measureText(banner.title).width, banner.sub ? ctx.measureText(banner.sub).width * .8 : 0) + 40 * dpr);
+    var bx = cv.width / 2, by = v.oy + bs * 2.2, bh = banner.sub ? bs * 3.1 : bs * 2;
+    ctx.fillStyle = '#FFBA09'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 2 * dpr;
+    roundRect(bx - bw / 2, by - bs, bw, bh, bs * .6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#141414'; ctx.fillText(banner.title, bx, by, bw - 20 * dpr);
+    if (banner.sub) { ctx.font = '600 ' + Math.round(bs * .75) + 'px Onest, sans-serif'; ctx.fillText(banner.sub, bx, by + bs * 1.15, bw - 20 * dpr); }
+  }
   bubbles = bubbles.filter(function(b){ return b.until > tick; });
   bubbles.forEach(function(b){
     var r = robots[b.id]; if (!r) return;
@@ -320,7 +346,7 @@ window.addEventListener('resize', resize);
 /* ================= панели ================= */
 function renderTeam(){
   $('team').innerHTML = S.agents.map(function(a){
-    return '<div class="card' + (S.sel === a.id ? ' sel' : '') + '" data-id="' + a.id + '"><span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><span><b>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</b><small><span class="st ' + esc(a.status) + '"></span>' + (a.status === 'working' ? 'работает' : 'свободен') + '</small></span></div>';
+    return '<div class="card' + (S.sel === a.id ? ' sel' : '') + (S.fresh && S.fresh[a.id] > Date.now() ? ' new' : '') + '" data-id="' + a.id + '"><span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><span><b>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</b><small><span class="st ' + esc(a.status) + '"></span>' + (a.status === 'working' ? 'работает' : 'свободен') + '</small></span></div>';
   }).join('');
 }
 $('team').addEventListener('click', function(e){ var c = e.target.closest('.card'); if (c) select(+c.dataset.id); });
@@ -411,7 +437,7 @@ $('loginForm').addEventListener('submit', function(e){
 var polling = false;
 function poll(){
   return api('/api/state?since=' + S.last).then(function(d){
-    var first = !S.last;
+    var first = !S.polled; S.polled = true;
     S.agents = d.agents; S.tasks = d.tasks;
     if (!first) { syncRobots(); d.events.filter(function(e){ return e.ts > Date.now() / 1000 - 180; }).forEach(onEvent); }
     // при первом открытии проигрываем недавние события, чтобы было видно, как раздавались задачи
