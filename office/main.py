@@ -478,6 +478,11 @@ async def login(req):
     return r
 
 
+def dumps_ru(o):
+    # кириллица без \uXXXX: ответ в несколько раз меньше, а офис опрашивает его раз в 1,5 с
+    return json.dumps(o, ensure_ascii=False)
+
+
 async def state(req):
     since = int(req.query.get('since', 0) or 0)
     agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status FROM agents ORDER BY is_main DESC, id').fetchall()]
@@ -487,7 +492,7 @@ async def state(req):
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
     return web.json_response({'agents': agents, 'tasks': tasks, 'events': events if since else [], 'last': last,
-                              'brain': bool(CLAUDE_KEY or API_KEY), 'model': CLAUDE_MODEL if CLAUDE_KEY else MODEL})
+                              'brain': bool(CLAUDE_KEY or API_KEY), 'model': CLAUDE_MODEL if CLAUDE_KEY else MODEL}, dumps=dumps_ru)
 
 
 async def messages(req):
@@ -497,7 +502,7 @@ async def messages(req):
     for r in rows:
         if r['role'] == 'system' and len(r['text']) > 2500:
             r['text'] = r['text'][:2500] + '\n\n… полный отчёт во вкладке «Задачи»'
-    return web.json_response(rows)
+    return web.json_response(rows, dumps=dumps_ru)
 
 
 async def chat(req):
