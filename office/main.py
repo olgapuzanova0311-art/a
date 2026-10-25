@@ -34,6 +34,10 @@ TG_TOKEN = os.environ.get('TG_TOKEN', '')
 TG_OWNERS = {int(x) for x in re.findall(r'-?\d+', os.environ.get('TG_OWNERS', '749890854'))}
 OFFICE_URL = os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app')
 claude = anthropic.AsyncAnthropic(api_key=CLAUDE_KEY, timeout=300.0) if CLAUDE_KEY else None
+# мозг агентов на подписке Ольги: офис отправляет запрос сервису agent (Claude Code с подпиской) по внутренней сети Railway.
+# SUBSCRIPTION_URL='' отключает, тогда работает ключ API
+SUBSCRIPTION_URL = os.environ.get('SUBSCRIPTION_URL', 'http://agent.railway.internal:8080/office-llm')
+SUB_SECRET = hmac.new(PASSWORD.encode(), b'office-llm', hashlib.sha256).hexdigest()
 HERE = Path(__file__).parent
 COOKIE = 'office_s'
 TOKEN = hmac.new(b'ii-office', PASSWORD.encode(), hashlib.sha256).hexdigest()
@@ -180,6 +184,10 @@ SEM = asyncio.Semaphore(3)
 
 
 async def llm(messages, model=None):
+    if SUBSCRIPTION_URL and PASSWORD:
+        text = await llm_subscription(messages, model)
+        if text is not None or not CLAUDE_KEY:
+            return text or '⚠️ Подписка Claude не ответила. Проверь, что сервис agent работает.'
     if CLAUDE_KEY:
         return await llm_claude(messages, model)
     if not API_KEY:
@@ -202,6 +210,25 @@ async def llm(messages, model=None):
         except Exception as e:
             log.exception('llm')
             return f'⚠️ Не получилось связаться с нейросетью: {e}'
+
+
+async def llm_subscription(messages, model=None):
+    """Запрос через Claude Code на подписке. None, если сервис agent недоступен (тогда пробуем ключ API)."""
+    system = '\n\n'.join(m['content'] for m in messages if m['role'] == 'system')
+    convo = [m for m in messages if m['role'] != 'system'] or [{'role': 'user', 'content': 'Начни.'}]
+    use_model = model if (model or '').startswith('claude-') else CLAUDE_MODEL
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.post(SUBSCRIPTION_URL, json={'secret': SUB_SECRET, 'system': system, 'messages': convo, 'model': use_model},
+                              timeout=aiohttp.ClientTimeout(total=960)) as r:
+                d = await r.json(content_type=None)
+    except Exception as e:
+        log.warning('subscription: %s', e)
+        return None
+    if d.get('error'):
+        log.warning('subscription error: %s', d['error'])
+        return '⚠️ Claude на подписке не ответил: ' + str(d['error'])[:300]
+    return (d.get('text') or '').strip() or '…'
 
 
 async def llm_claude(messages, model=None):
@@ -492,7 +519,8 @@ async def state(req):
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
     return web.json_response({'agents': agents, 'tasks': tasks, 'events': events if since else [], 'last': last,
-                              'brain': bool(CLAUDE_KEY or API_KEY), 'model': CLAUDE_MODEL if CLAUDE_KEY else MODEL}, dumps=dumps_ru)
+                              'brain': bool(CLAUDE_KEY or API_KEY or SUBSCRIPTION_URL),
+                              'model': (CLAUDE_MODEL + ' · подписка') if SUBSCRIPTION_URL and PASSWORD else (CLAUDE_MODEL if CLAUDE_KEY else MODEL)}, dumps=dumps_ru)
 
 
 async def messages(req):

@@ -351,13 +351,62 @@ async def poll():
             await asyncio.sleep(5)
 
 
+def office_llm_secret():
+    import hashlib, hmac
+    return hmac.new(PASSWORD.encode(), b'office-llm', hashlib.sha256).hexdigest()
+
+
+LLM_SEM = asyncio.Semaphore(3)
+
+
+async def office_llm(req):
+    """Мозг агентов ИИ-офиса на подписке Ольги: офис присылает инструкцию агента и переписку, Claude Code отвечает текстом.
+    Инструменты отключены, работа в пустой папке: здесь агент только пишет ответ, как раньше через API."""
+    from aiohttp import web
+    import hmac
+    d = await req.json()
+    if not PASSWORD or not hmac.compare_digest(str(d.get('secret', '')), office_llm_secret()):
+        return web.json_response({'error': 'auth'}, status=403)
+    msgs = d.get('messages') or []
+    *past, last = msgs or [{'role': 'user', 'content': 'Начни.'}]
+    prompt = ''
+    if past:
+        prompt = 'Переписка до этого:\n\n' + '\n\n'.join(
+            f"{'Ольга' if m['role'] == 'user' else 'Ты'}: {m['content']}" for m in past) + '\n\nНовое сообщение:\n\n'
+    prompt += last['content']
+    model = d.get('model') or MODEL
+    room = DATA / 'office-llm'
+    room.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, HOME=str(DATA / 'home'), CLAUDE_CODE_DISABLE_AUTOUPDATER='1')
+    env.pop('TG_TOKEN', None)
+    args = ['claude', '-p', prompt, '--output-format', 'json', '--model', model,
+            '--append-system-prompt', d.get('system') or '', '--tools', '']
+    async with LLM_SEM:
+        try:
+            proc = await asyncio.create_subprocess_exec(*args, cwd=room, env=env, stdout=asyncio.subprocess.PIPE,
+                                                        stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024)
+            out, err = await asyncio.wait_for(proc.communicate(), timeout=900)
+        except asyncio.TimeoutError:
+            proc.kill()
+            return web.json_response({'error': 'Не уложился в 15 минут'})
+    try:
+        r = json.loads(out)
+        if r.get('is_error'):
+            return web.json_response({'error': (r.get('result') or 'ошибка Claude Code')[:500]})
+        return web.json_response({'text': r.get('result') or ''})
+    except Exception:
+        return web.json_response({'error': (err or out).decode(errors='ignore')[-500:]})
+
+
 async def health_server():
     from aiohttp import web
-    app = web.Application()
+    app = web.Application(client_max_size=8 * 1024 * 1024)
     app.router.add_get('/', lambda r: web.Response(text='ok'))
+    app.router.add_post('/office-llm', office_llm)
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, '0.0.0.0', PORT).start()
+    # '::' слушает и IPv6: по нему офис достаёт агента во внутренней сети Railway (agent.railway.internal)
+    await web.TCPSite(runner, '::', PORT).start()
 
 
 def prepare_workspace():
