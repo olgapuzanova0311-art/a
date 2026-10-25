@@ -1,0 +1,158 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ольга Пузанова · ИИ для вашего бизнеса: услуги и условия</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#1009F6;--y:#FFBA09;--ink:#141414;--mut:#5E5E66;--bg:#F6F6FA;--line:#E4E4EE}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0d0d12;font-family:Montserrat,sans-serif;color:var(--ink);overflow:hidden}
+.stage{position:fixed;inset:0;display:grid;place-items:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center}
+.s{position:absolute;inset:0;background:#fff;padding:64px 80px;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;transform:translateX(30px);overflow:hidden}
+.s.on{opacity:1;pointer-events:auto;transform:none}
+.s.blue{background:var(--blue);color:#fff}.s.dark{background:var(--ink);color:#fff}
+h1{font-size:68px;line-height:1.05;margin:0 0 24px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:46px;line-height:1.1;margin:0 0 32px;font-weight:800;letter-spacing:-.02em}
+mark{background:var(--y);color:var(--ink);padding:0 .15em;border-radius:10px}
+.k{font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:18px}
+.blue .k,.dark .k{color:var(--y)}
+p,li{font-size:22px;line-height:1.5}
+.lead{font-size:26px;opacity:.9;max-width:900px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.c{background:var(--bg);border-radius:24px;padding:28px}
+.dark .c,.blue .c{background:rgba(255,255,255,.08)}
+.c b{display:block;font-size:24px;margin-bottom:10px}.c b::before{content:"";display:block;width:34px;height:6px;border-radius:3px;background:var(--y);margin-bottom:14px}.c span{font-size:18px;color:var(--mut);line-height:1.45;display:block}
+.dark .c span,.blue .c span{color:#cfd0dc}
+.big{font-size:52px;font-weight:800;color:var(--blue);line-height:1}.dark .big,.blue .big{color:var(--y)}
+.tar{border:2px solid var(--line);border-radius:24px;padding:28px;display:flex;flex-direction:column}
+.tar.hot{border-color:var(--blue);box-shadow:0 20px 40px -20px rgba(16,9,246,.5)}
+.tar h3{margin:0 0 6px;font-size:26px}.tar .pr{font-size:32px;font-weight:800;color:var(--blue);margin:8px 0 14px}
+.tar ul{padding-left:20px;margin:0}.tar li{font-size:17px;margin:5px 0}
+.tag{display:inline-block;background:var(--y);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700;margin-bottom:12px;align-self:flex-start}
+.foot{position:absolute;left:80px;right:80px;bottom:30px;display:flex;justify-content:space-between;font-size:14px;opacity:.5}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:n}
+.st{counter-increment:n;border-top:5px solid var(--y);padding-top:18px}
+.st::before{content:"0" counter(n);font-weight:800;font-size:18px;color:var(--blue);display:block;margin-bottom:8px}
+.st b{display:block;font-size:22px;margin-bottom:8px}.st span{font-size:17px;color:var(--mut)}
+.ph{background:linear-gradient(160deg,#2a24ff,#0b06b5);border-radius:28px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:18px;color:#fff;font-size:15px}
+.ph::before{content:"";position:absolute;right:-25%;bottom:-25%;width:75%;aspect-ratio:1;border-radius:50%;background:var(--y)}
+.ph span{position:relative;background:rgba(0,0,0,.25);padding:6px 12px;border-radius:99px}
+.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:5;color:#fff;font-size:14px}
+.nav button{width:46px;height:46px;border-radius:50%;border:0;background:#ffffff22;color:#fff;font-size:20px;cursor:pointer}
+.nav button:hover{background:var(--y);color:var(--ink)}
+@media print{
+ @page{size:1280px 720px;margin:0}
+ html,body{overflow:visible;height:auto;background:#fff}
+ .stage{position:static;display:block}.deck{transform:none!important;width:1280px;height:auto}
+ .s{position:relative;opacity:1;transform:none;width:1280px;height:720px;page-break-after:always;break-after:page}
+ .nav{display:none}
+}
+</style></head><body>
+<div class="stage"><div class="deck" id="deck">
+
+<section class="s blue on">
+ <div class="k">Ольга Пузанова · эксперт по ИИ для бизнеса</div>
+ <h1 style="margin-top:60px">ИИ-команда<br>для вашего бизнеса:<br><mark>услуги и условия</mark></h1>
+ <p class="lead">Внедряю нейросети и ИИ-агентов так, чтобы они экономили часы, возвращали заявки и работали без меня.</p>
+ <div class="foot"><span>agent.olgapuzanovva.ru</span><span>Telegram: @puzanovateam</span></div>
+</section>
+
+<section class="s">
+ <div class="k">Обо мне</div>
+ <div style="display:grid;grid-template-columns:1.3fr .7fr;gap:50px;flex:1">
+  <div><h2>Предприниматель, который внедряет ИИ в свой бизнес каждый день</h2>
+   <div class="g2" style="margin-top:10px">
+    <div><div class="big">1 000 000+</div><p style="color:var(--mut);font-size:18px">проданных товаров на маркетплейсах</p></div>
+    <div><div class="big">13 000+</div><p style="color:var(--mut);font-size:18px">участников моих программ</p></div>
+    <div><div class="big">×3</div><p style="color:var(--mut);font-size:18px">прибыль: 250 → 750 тыс. ₽ за месяц после переделки карточек через ИИ</p></div>
+    <div><div class="big">Спикер</div><p style="color:var(--mut);font-size:18px">Ozon, MarketGuru Conf, Пятый канал</p></div>
+   </div></div>
+  <div class="ph"><span>[фото Ольги]</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Знакомо?</div>
+ <h2>Где бизнес теряет деньги без ИИ</h2>
+ <div class="g3">
+  <div class="c"><b>Заявки остаются без ответа</b><span>Вечером и в выходные клиент пишет, ответ приходит утром. За это время он уже купил у конкурента.</span></div>
+  <div class="c"><b>Всё держится на собственнике</b><span>Отчёты, контроль, ответы команде. Отпуск невозможен: без вас процессы встают.</span></div>
+  <div class="c"><b>Контент делается рывками</b><span>Нет времени снимать и писать. Соцсети молчат неделями, заявок из них нет.</span></div>
+ </div>
+ <p style="margin-top:34px;font-size:24px"><b>Часы рутины × стоимость часа</b> = сумма, которую бизнес платит каждый месяц, откладывая ИИ.</p>
+</section>
+
+<section class="s">
+ <div class="k">Что внедряю</div>
+ <h2>ИИ-решения под размер вашего бизнеса</h2>
+ <div class="g4">
+  <div class="c"><b>Агент-администратор</b><span>Отвечает клиентам 24/7, записывает, передаёт заявки в CRM.</span></div>
+  <div class="c"><b>Сайт за вечер</b><span>Лендинг с формой, которая сразу падает агенту и менеджеру.</span></div>
+  <div class="c"><b>Контент-завод</b><span>Посты, ролики и фото на месяц вперёд в голосе вашей компании.</span></div>
+  <div class="c"><b>Отзывы и репутация</b><span>Ответы на отзывы, сбор оценок после покупки, негатив сразу вам.</span></div>
+  <div class="c"><b>Сводка в Telegram</b><span>Каждый вечер: заявки, продажи, что требует решения.</span></div>
+  <div class="c"><b>База знаний</b><span>Агент отвечает сотрудникам «как у нас принято».</span></div>
+  <div class="c"><b>Для селлеров</b><span>Карточки, SEO, инфографика, аналитика и поиск ниш.</span></div>
+  <div class="c"><b>ИИ-ассистент</b><span>Почта, сообщения, календарь: вам приходит только важное.</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Форматы и условия</div>
+ <h2 style="margin-bottom:24px">Выберите, как работаем</h2>
+ <div class="g3" style="flex:1">
+  <div class="tar"><span class="tag">Старт</span><h3>Разбор бизнеса</h3><div class="pr">Бесплатно</div><ul><li>30 минут онлайн</li><li>Карта потерь в часах и рублях</li><li>3 решения на ИИ под ваши задачи</li><li>План на неделю</li></ul></div>
+  <div class="tar hot"><span class="tag">Популярный</span><h3>Внедрение с командой</h3><div class="pr">от [44 990] ₽</div><ul><li>3 недели: 2 пары живых выходных + неделя передачи</li><li>5 работающих ИИ-систем</li><li>Собираете вы и ваш сотрудник</li><li>Инструкции и 30 дней поддержки</li></ul></div>
+  <div class="tar"><span class="tag">Под ключ</span><h3>Внедрение с куратором</h3><div class="pr">от [119 990] ₽</div><ul><li>Личный куратор, 2 созвона в неделю</li><li>Сложные интеграции: CRM, сайт, боты</li><li>Доступы остаются у вас</li><li>60 дней поддержки</li></ul></div>
+ </div>
+ <p style="font-size:16px;color:var(--mut);margin-top:16px">Обучение для команды и для тех, кто хочет новую профессию: «Точка опоры» и ВАЙБкодер. Цены в [скобках] уточняются при созвоне.</p>
+</section>
+
+<section class="s">
+ <div class="k">Как работаем</div>
+ <h2>От заявки до работающей системы</h2>
+ <div class="steps" style="margin-top:20px">
+  <div class="st"><b>Разбор</b><span>Смотрим процессы, считаем потери, выбираем 3 решения.</span></div>
+  <div class="st"><b>Договор и паспорт</b><span>Фиксируем, что входит, метрики «до» и цель на 30-й день.</span></div>
+  <div class="st"><b>Сборка</b><span>Собираем решения на ваших данных вместе с командой.</span></div>
+  <div class="st"><b>Передача</b><span>Инструкции, ответственные и «тест отпуска»: работает без вас.</span></div>
+ </div>
+ <div class="g3" style="margin-top:44px">
+  <div class="c"><b>Без подрядчика</b><span>Команда сама управляет решением и правит его.</span></div>
+  <div class="c"><b>Честно про ИИ</b><span>Говорим, где он ошибается, и ставим проверку человеком.</span></div>
+  <div class="c"><b>Результат в цифрах</b><span>Замер «до» и «после»: часы, скорость ответа, заявки.</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Условия сотрудничества</div>
+ <h2>Прозрачно с первого дня</h2>
+ <div class="g2">
+  <div class="c"><b>Оплата</b><span>Предоплата 50%, остаток после первой недели. Рассрочка от школы. Работаем с ИП и ООО по договору.</span></div>
+  <div class="c"><b>Что входит</b><span>Список решений фиксируем в договоре. Доработки сверх списка обсуждаем отдельно.</span></div>
+  <div class="c"><b>Данные</b><span>Аккаунты и доступы оформляются на вашу компанию. Персональные данные обезличиваем по 152-ФЗ.</span></div>
+  <div class="c"><b>Гарантия</b><span>Если решение из договора не работает к концу проекта, доделываем бесплатно в течение 14 дней.</span></div>
+ </div>
+ <p style="font-size:16px;color:var(--mut);margin-top:18px">[Условия оплаты и гарантии сверьте с вашей офертой перед отправкой клиенту.]</p>
+</section>
+
+<section class="s dark">
+ <div class="k">Следующий шаг</div>
+ <h1 style="margin-top:40px">Начнём с бесплатного<br><mark>разбора на 30 минут</mark></h1>
+ <p class="lead">Найдём 3 места, где ИИ сэкономит вам часы уже на этой неделе. Решение о работе принимаете после разбора.</p>
+ <div class="g3" style="margin-top:30px">
+  <div class="c"><b>Запись</b><span>agent.olgapuzanovva.ru/sites/razbor.html</span></div>
+  <div class="c"><b>Telegram</b><span>@puzanovateam</span></div>
+  <div class="c"><b>Канал</b><span>@aivwb · ИИ на простом</span></div>
+ </div>
+</section>
+
+</div></div>
+<div class="nav"><button id="prev" aria-label="Предыдущий слайд">←</button><span id="cnt"></span><button id="next" aria-label="Следующий слайд">→</button></div>
+<script>
+const S=[...document.querySelectorAll('.s')];let i=0;
+function go(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));cnt.textContent=(i+1)+' / '+S.length}
+next.onclick=()=>go(i+1);prev.onclick=()=>go(i-1);
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1)});
+let x0=null;addEventListener('touchstart',e=>x0=e.touches[0].clientX);addEventListener('touchend',e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>40)go(i+(d<0?1:-1));x0=null});
+function fit(){const k=Math.min(innerWidth/1280,(innerHeight-70)/720);deck.style.transform=`scale(${k})`}
+addEventListener('resize',fit);fit();go(0);
+</script></body></html>
