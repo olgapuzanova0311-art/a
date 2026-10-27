@@ -12,18 +12,19 @@
 html,body{margin:0;height:100%;background:var(--cream);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer}
 [hidden]{display:none!important}
-.app{display:grid;grid-template-rows:auto 1fr;height:100dvh}
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--white);border-bottom:1.5px solid var(--ink)}
+.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;height:100dvh}
+header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;background:var(--white);border-bottom:1.5px solid var(--ink)}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;white-space:nowrap}
 .logo i{width:32px;height:32px;border-radius:10px;background:var(--blue);display:grid;place-items:center;color:var(--yellow);font-style:normal;font-size:16px}
-.brain{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--cream);white-space:nowrap}
+.brain{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--cream);white-space:nowrap}
 .brain.on{background:#DDF6E8;color:#11653A}.brain.off{background:#FFE9C7;color:#8A5A00}
 .sp{flex:1}
+.stats{font-size:12.5px;font-weight:700;color:var(--ink2);white-space:nowrap}.stats .g{color:#2BB673}
 .btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--ink);background:var(--white);font-weight:700;font-size:14px;white-space:nowrap}
 .btn.y{background:var(--yellow)}.btn.b{background:var(--blue);color:#fff;border-color:var(--blue)}
 .btn.sm{height:34px;padding:0 12px;font-size:13px}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0;overflow:hidden}
-.stage{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;padding:16px;gap:12px}
+.stage{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;padding:16px;gap:12px}
 .room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;min-height:240px;box-shadow:6px 6px 0 var(--yellow)}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
 @media (max-width:600px){.hint{display:none}}
@@ -42,6 +43,7 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var
 aside{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;border-left:1.5px solid var(--ink);background:var(--white);min-height:0;overflow:hidden}
 .ah{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1.5px solid var(--line)}
 .ah .av{width:44px;height:44px;font-size:18px}
+.ah>div{min-width:0}
 .ah h2{margin:0;font-size:17px;line-height:1.2}.ah p{margin:2px 0 0;font-size:12.5px;color:var(--ink2)}
 .tabs{display:flex;gap:6px;padding:10px 16px;border-bottom:1.5px solid var(--line)}
 .tab{border:1.5px solid var(--line);background:var(--white);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
@@ -88,6 +90,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
   <header>
     <div class="logo"><i>◆</i><span>ИИ-офис</span></div>
     <span class="brain" id="brain">…</span>
+    <span class="stats hide-m" id="stats"></span>
     <span class="sp"></span>
     <button class="btn sm hide-m" id="btnTasks">📋 Задачи</button>
     <button class="btn y sm" id="btnHire">+ Нанять агента</button>
@@ -125,6 +128,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
     <div class="form" style="padding:0">
       <label>Имя<input id="fName" maxlength="40" placeholder="Например: Аналитик продаж"></label>
       <label>Чем занимается<input id="fRole" maxlength="120" placeholder="Коротко, одной строкой"></label>
+      <label>Отдел<select id="fDept"></select></label>
       <label>Инструкция: роль, материалы, правила, результат<textarea id="fPrompt" rows="7" placeholder="Ты … Материалы: … Правила: … Результат: …"></textarea></label>
       <label>Цвет робота<div class="colors" id="fColors"></div></label>
       <label>Модель (необязательно)<input id="fModel" placeholder="по умолчанию из настроек офиса"></label>
@@ -151,13 +155,46 @@ function agent(id){ for (var i = 0; i < S.agents.length; i++) if (S.agents[i].id
 function initials(n){ return (n || '?').trim().charAt(0).toUpperCase(); }
 
 /* ================= пиксельный офис ================= */
-var W = 384, H = 224, cv = $('cv'), ctx = cv.getContext('2d');
+var W = 512, H = 320, cv = $('cv'), ctx = cv.getContext('2d');
 var off = document.createElement('canvas'); off.width = W; off.height = H; var px = off.getContext('2d');
 var robots = {}, bubbles = [], tick = 0;
-var DESKS = [{x:300,y:58,boss:true}];
-[[34,74],[98,74],[162,74],[226,74],[34,134],[98,134],[162,134],[226,134],[34,188],[98,188]].forEach(function(p){ DESKS.push({x:p[0],y:p[1]}); });
-var LOUNGE = [{x:300,y:150},{x:330,y:170},{x:355,y:150},{x:300,y:200},{x:350,y:200},{x:180,y:200},{x:260,y:200},{x:140,y:110}];
-var COFFEE = {x:360,y:118};
+// отделы: комнаты 3×3, последняя клетка — лаунж (кофе, диван, места для новеньких без отдела)
+var DEPT_ORDER = ['lead','marketing','studio','sales','analytics','edu','tech','reception'];
+var DEPT_ICON = {lead:'👑', marketing:'📣', studio:'🎬', sales:'💰', analytics:'📊', edu:'🎓', tech:'⚙️', reception:'📅', lounge:'☕'};
+var DEPT_TINT = {lead:'#EFE6FF', marketing:'#FFE6EE', studio:'#E6F4FF', sales:'#E3F7EC', analytics:'#E8EAF6', edu:'#FFF4D6', tech:'#E6F0FF', reception:'#F1EEE5', lounge:'#DCE8F7'};
+var ZONES = [];
+(function(){
+  var keys = DEPT_ORDER.concat(['lounge']);
+  keys.forEach(function(k, i){
+    var c = i % 3, r = (i / 3) | 0, z = {key: k, x: 6 + c * 170, y: 34 + r * 96, w: 164, h: 90, desks: []};
+    var n = k === 'lounge' ? 2 : 4;
+    for (var j = 0; j < n; j++) z.desks.push({x: z.x + 24 + j * 38, y: z.y + 48, boss: k === 'lead' && j === 0, zone: k});
+    ZONES.push(z);
+  });
+})();
+var ZL = ZONES[8], COFFEE = {x: ZL.x + 150, y: ZL.y + 40};
+var LOUNGE = [{x: ZL.x + 100, y: ZL.y + 70}, {x: ZL.x + 120, y: ZL.y + 78}, {x: ZL.x + 140, y: ZL.y + 70}, {x: ZL.x + 110, y: ZL.y + 56}];
+var ENTRY = {x: ZONES[7].x + 82, y: H - 6};
+function zone(k){ for (var i = 0; i < ZONES.length; i++) if (ZONES[i].key === k) return ZONES[i]; return ZL; }
+function deptOf(a){ return a.is_main ? 'lead' : (DEPT_ORDER.indexOf(a.dept) >= 0 ? a.dept : 'lounge'); }
+// рассадка: по порядку внутри отдела; кому не хватило стола в своей комнате, садится в лаунж
+var SEATING = {key: '', map: {}, used: []};
+function seating(){
+  var key = S.agents.map(function(a){ return a.id + ':' + a.dept + ':' + a.is_main; }).join(',');
+  if (key === SEATING.key) return SEATING;
+  var map = {}, used = [], free = {}, spare = ZL.desks.slice();
+  ZONES.forEach(function(z){ free[z.key] = z.desks.slice(); });
+  var list = S.agents.slice().sort(function(a, b){ return (b.is_main - a.is_main) || (a.id - b.id); });
+  list.forEach(function(a){
+    var d = (free[deptOf(a)] || []).shift() || spare.shift();
+    if (!d) d = ZL.desks[a.id % ZL.desks.length];
+    if (free.lounge.indexOf(d) >= 0) free.lounge.splice(free.lounge.indexOf(d), 1);
+    if (spare.indexOf(d) >= 0) spare.splice(spare.indexOf(d), 1);
+    map[a.id] = d; used.push([d, a]);
+  });
+  SEATING = {key: key, map: map, used: used};
+  return SEATING;
+}
 
 function rect(x,y,w,h,c){ px.fillStyle = c; px.fillRect(x|0, y|0, w, h); }
 function shade(hex, k){
@@ -165,26 +202,35 @@ function shade(hex, k){
   function f(v){ return Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); }
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
+function plant(x, y){ rect(x, y + 8, 8, 8, '#B5651D'); rect(x - 2, y, 12, 9, '#2BB673'); rect(x + 1, y - 3, 6, 4, '#3DBE8B'); }
 function drawRoom(){
-  for (var y = 32; y < H; y += 16) for (var x = 0; x < W; x += 16) rect(x, y, 16, 16, ((x + y) / 16) % 2 ? '#E9E6DC' : '#F1EEE5');
-  rect(0, 0, W, 32, '#C9D6F2'); rect(0, 30, W, 3, '#141414');
-  [[24,6],[120,6],[216,6]].forEach(function(w){ rect(w[0], w[1], 56, 20, '#141414'); rect(w[0]+2, w[1]+2, 52, 16, '#9CC9FF'); rect(w[0]+28, w[1]+2, 1, 16, '#141414'); rect(w[0]+4, w[1]+4, 10, 2, '#E8F3FF'); });
-  rect(282, 5, 64, 22, '#1009F6'); rect(282, 5, 64, 1, '#141414'); rect(282, 26, 64, 1, '#141414');
-  px.fillStyle = '#FFBA09'; px.font = '8px "Press Start 2P", monospace'; px.fillText('ИИ-ОФИС', 287, 20);
-  // зона отдыха
-  rect(286, 140, 92, 76, '#DCE8F7'); rect(286, 140, 92, 1, '#B6C6E6');
-  rect(300, 186, 56, 14, '#FF7A45'); rect(300, 182, 56, 6, '#E2602F'); rect(298, 184, 4, 16, '#C94F22'); rect(354, 184, 4, 16, '#C94F22');
+  rect(0, 0, W, H, '#2B2D42');
+  // окна с вечерним городом
+  rect(0, 0, W, 30, '#1C2541');
+  for (var i = 0; i < 12; i++) { var bx = 8 + i * 42, bh = 10 + (i * 7) % 14; rect(bx, 28 - bh, 26, bh, '#3A3F63'); for (var wy = 30 - bh; wy < 26; wy += 4) for (var wx = bx + 3; wx < bx + 24; wx += 5) if ((wx * 7 + wy * 3 + i) % 5 < 3) rect(wx, wy, 2, 2, '#FFD36B'); }
+  rect(0, 29, W, 3, '#141414');
+  ZONES.forEach(function(z){
+    var t = DEPT_TINT[z.key];
+    for (var y = z.y; y < z.y + z.h; y += 8) for (var x = z.x; x < z.x + z.w; x += 8) rect(x, y, 8, 8, ((x + y) / 8) % 2 ? t : shade(t, -.035));
+    rect(z.x - 2, z.y - 2, z.w + 4, 2, '#141414'); rect(z.x - 2, z.y + z.h, z.w + 4, 2, '#141414');
+    rect(z.x - 2, z.y - 2, 2, z.h + 4, '#141414'); rect(z.x + z.w, z.y - 2, 2, z.h + 4, '#141414');
+    rect(z.x + z.w / 2 - 10, z.y + z.h, 20, 2, t);  // дверь в коридор
+    plant(z.x + z.w - 12, z.y + z.h - 18);
+  });
+  // лаунж: диван, кофемашина, столик
+  rect(ZL.x + 92, ZL.y + 70, 56, 12, '#FF7A45'); rect(ZL.x + 92, ZL.y + 66, 56, 6, '#E2602F'); rect(ZL.x + 90, ZL.y + 68, 4, 14, '#C94F22'); rect(ZL.x + 146, ZL.y + 68, 4, 14, '#C94F22');
+  rect(ZL.x + 108, ZL.y + 50, 22, 8, '#B98B5E');
   rect(COFFEE.x - 6, COFFEE.y - 18, 14, 22, '#5B5F73'); rect(COFFEE.x - 4, COFFEE.y - 14, 10, 6, '#2B2D42'); rect(COFFEE.x - 2, COFFEE.y - 4, 4, 3, '#FFFFFF');
-  [[372,40],[6,40],[274,206],[6,206]].forEach(function(p){ rect(p[0], p[1]+8, 8, 8, '#B5651D'); rect(p[0]-2, p[1], 12, 9, '#2BB673'); rect(p[0]+1, p[1]-3, 6, 4, '#3DBE8B'); });
-  // переговорка
-  rect(150, 192, 60, 18, '#B98B5E'); rect(150, 192, 60, 2, '#8C6440');
+  // штаб: доска с графиком
+  var ZH = ZONES[0]; rect(ZH.x + 100, ZH.y + 20, 52, 18, '#141414'); rect(ZH.x + 102, ZH.y + 22, 48, 14, '#1009F6');
+  [4, 7, 5, 9, 12].forEach(function(v, i){ rect(ZH.x + 106 + i * 9, ZH.y + 34 - v, 5, v, '#FFBA09'); });
 }
 function drawDesk(d, a){
-  var w = d.boss ? 44 : 36;
-  rect(d.x - w/2, d.y - 6, w, 12, '#B98B5E'); rect(d.x - w/2, d.y - 6, w, 2, '#D4AA80'); rect(d.x - w/2 + 2, d.y + 6, 3, 8, '#8C6440'); rect(d.x + w/2 - 5, d.y + 6, 3, 8, '#8C6440');
+  var w = d.boss ? 40 : 32;
+  rect(d.x - w/2, d.y - 6, w, 11, '#B98B5E'); rect(d.x - w/2, d.y - 6, w, 2, '#D4AA80'); rect(d.x - w/2 + 2, d.y + 5, 3, 7, '#8C6440'); rect(d.x + w/2 - 5, d.y + 5, 3, 7, '#8C6440');
   rect(d.x - 8, d.y - 18, 16, 11, '#141414');
   var on = a && a.status === 'working';
-  rect(d.x - 7, d.y - 17, 14, 9, on ? (tick % 20 < 10 ? shade(a.color, .55) : shade(a.color, .35)) : '#3A3D55');
+  rect(d.x - 7, d.y - 17, 14, 9, on ? (tick % 20 < 10 ? shade(a.color, .55) : shade(a.color, .35)) : (a ? '#3A3D55' : '#2A2C3E'));
   if (on) for (var i = 0; i < 3; i++) rect(d.x - 5 + i * 4, d.y - 14 + ((tick / 6 + i) % 3 | 0), 2, 1, '#FFFFFF');
   rect(d.x - 2, d.y - 7, 4, 2, '#141414');
   if (d.boss) { rect(d.x + 10, d.y - 10, 6, 5, '#FFBA09'); rect(d.x + 12, d.y - 12, 2, 2, '#FFFFFF'); }
@@ -204,12 +250,7 @@ function drawRobot(r){
   if (S.sel === r.id) { rect(x - 7, y + 3, 14, 1, '#FFBA09'); }
 }
 
-function deskOf(a){
-  var idx = 0, i, list = S.agents.filter(function(x){ return !x.is_main; });
-  if (a.is_main) return DESKS[0];
-  for (i = 0; i < list.length; i++) if (list[i].id === a.id) idx = i;
-  return DESKS[1 + (idx % (DESKS.length - 1))];
-}
+function deskOf(a){ return seating().map[a.id] || ZL.desks[0]; }
 function seat(a){ var d = deskOf(a); return {x: d.x, y: d.y + 18}; }
 function syncRobots(){
   var seen = {};
@@ -226,10 +267,11 @@ function think(r){
   if (a.status === 'working') { var s = seat(a); goTo(r, s.x, s.y); return; }
   if (r.moving) return;
   if ((r.wait -= 1) > 0) return;
-  r.wait = 200 + Math.random() * 400;
+  r.wait = 300 + Math.random() * 500;
+  // в основном сидят у себя в отделе, иногда ходят за кофе или в лаунж
   var roll = Math.random();
-  if (roll < .45) { var s2 = seat(a); goTo(r, s2.x, s2.y); }
-  else if (roll < .6) goTo(r, COFFEE.x - 14, COFFEE.y + 10, function(){ say(r.id, '☕'); });
+  if (roll < .8) { var s2 = seat(a); goTo(r, s2.x + (Math.random() * 8 - 4), s2.y); }
+  else if (roll < .9) goTo(r, COFFEE.x - 14, COFFEE.y + 10, function(){ say(r.id, '☕'); });
   else { var p = LOUNGE[(Math.random() * LOUNGE.length) | 0]; goTo(r, p.x + (Math.random() * 16 - 8), p.y); }
 }
 function move(r){
@@ -273,7 +315,7 @@ function hired(e){
   banner = {title: '🧑‍💼 Новый сотрудник: ' + name, sub: role, until: tick + 420};
   S.fresh = S.fresh || {}; S.fresh[e.a] = Date.now() + 8000; renderTeam();
   if (!r) return;
-  r.x = r.tx = 24; r.y = r.ty = 120; r.plan = null; r.busyUntil = tick + 100000;
+  r.x = r.tx = ENTRY.x; r.y = r.ty = ENTRY.y; r.plan = null; r.busyUntil = tick + 100000;
   say(e.a, 'Привет! Я ' + name + ' 👋', 260);
   var boss = e.b || (S.agents.filter(function(x){ return x.is_main; })[0] || {}).id;
   if (boss && boss !== e.a) talk(boss, e.a, '🤝 Добро пожаловать в команду!');
@@ -296,20 +338,20 @@ function frame(){
   tick++;
   Object.keys(robots).forEach(function(k){ think(robots[k]); move(robots[k]); });
   drawRoom();
-  var occupied = {};
-  S.agents.forEach(function(a){ occupied[DESKS.indexOf(deskOf(a))] = a; });
-  DESKS.forEach(function(d, i){ drawDesk(d, occupied[i]); });
+  var occ = new Map(); seating().used.forEach(function(p){ occ.set(p[0], p[1]); });
+  ZONES.forEach(function(z){ z.desks.forEach(function(d){ drawDesk(d, occ.get(d)); }); });
   Object.keys(robots).map(function(k){ return robots[k]; }).sort(function(a, b){ return a.y - b.y; }).forEach(drawRobot);
   var v = view(), dpr = cv.width / cv.getBoundingClientRect().width || 1;
   ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#2b2d42'; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.drawImage(off, v.ox, v.oy, W * v.s, H * v.s);
   // подписи и облачка в полном разрешении
+  drawSigns(v, dpr);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   Object.keys(robots).forEach(function(k){
     var r = robots[k], a = agent(r.id); if (!a) return;
     var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(10, Math.round(3.6 * v.s));
     ctx.font = '700 ' + fs + 'px Onest, sans-serif';
-    var t = a.name.length > 16 ? a.name.slice(0, 15) + '…' : a.name, tw = ctx.measureText(t).width + 10 * dpr;
+    var nm = a.name.replace(/^AI-/, ''), t = nm.length > 14 ? nm.slice(0, 13) + '…' : nm, tw = ctx.measureText(t).width + 10 * dpr;
     ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
     ctx.fillStyle = '#141414'; ctx.fillText(t, X, Y + 1);
   });
@@ -334,6 +376,28 @@ function frame(){
   });
   requestAnimationFrame(frame);
 }
+// таблички отделов: иконка, название, число агентов (зелёная точка, если кто-то работает)
+function drawSigns(v, dpr){
+  var names = {}, counts = {}, busy = {};
+  (S.depts || []).forEach(function(d){ names[d[0]] = d[1]; });
+  names.lounge = 'Лаунж';
+  S.agents.forEach(function(a){ var k = deptOf(a); counts[k] = (counts[k] || 0) + 1; if (a.status === 'working') busy[k] = true; });
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  var fs = Math.max(10, Math.round(3.3 * v.s));
+  ZONES.forEach(function(z){
+    var label = (DEPT_ICON[z.key] || '') + ' ' + (names[z.key] || z.key), n = counts[z.key] || 0;
+    ctx.font = '800 ' + fs + 'px Onest, sans-serif';
+    var tw = ctx.measureText(label).width, cw = n ? ctx.measureText(String(n)).width + fs * 1.1 : 0;
+    var X = v.ox + (z.x + 4) * v.s, Y = v.oy + (z.y + 4) * v.s, w = tw + cw + fs * 1.4, h = fs * 1.8;
+    ctx.fillStyle = 'rgba(20,20,20,.86)'; roundRect(X, Y, w, h, h / 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.fillText(label, X + fs * .6, Y + h / 2 + 1);
+    if (n) {
+      var cx = X + fs * .6 + tw + fs * .5;
+      ctx.fillStyle = busy[z.key] ? '#2BB673' : '#FFBA09'; roundRect(cx, Y + h * .18, cw, h * .64, h * .32); ctx.fill();
+      ctx.fillStyle = '#141414'; ctx.fillText(String(n), cx + fs * .55, Y + h / 2 + 1);
+    }
+  });
+}
 function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 cv.addEventListener('click', function(ev){
   var b = cv.getBoundingClientRect(), dpr = cv.width / b.width, v = view();
@@ -344,9 +408,11 @@ cv.addEventListener('click', function(ev){
 window.addEventListener('resize', resize);
 
 /* ================= панели ================= */
+function deptName(a){ var k = deptOf(a), n = k === 'lounge' ? 'Без отдела' : k; (S.depts || []).forEach(function(d){ if (d[0] === k) n = d[1]; }); return n; }
 function renderTeam(){
-  $('team').innerHTML = S.agents.map(function(a){
-    return '<div class="card' + (S.sel === a.id ? ' sel' : '') + (S.fresh && S.fresh[a.id] > Date.now() ? ' new' : '') + '" data-id="' + a.id + '"><span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><span><b>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</b><small><span class="st ' + esc(a.status) + '"></span>' + (a.status === 'working' ? 'работает' : 'свободен') + '</small></span></div>';
+  var order = DEPT_ORDER.concat(['lounge']);
+  $('team').innerHTML = S.agents.slice().sort(function(a, b){ return (order.indexOf(deptOf(a)) - order.indexOf(deptOf(b))) || (b.is_main - a.is_main) || (a.id - b.id); }).map(function(a){
+    return '<div class="card' + (S.sel === a.id ? ' sel' : '') + (S.fresh && S.fresh[a.id] > Date.now() ? ' new' : '') + '" data-id="' + a.id + '"><span class="av" style="background:' + esc(a.color) + '">' + esc(initials(a.name)) + '</span><span><b>' + esc(a.name) + (a.is_main ? ' ★' : '') + '</b><small><span class="st ' + esc(a.status) + '"></span>' + (a.status === 'working' ? 'работает' : 'свободен') + ' · ' + esc(deptName(a)) + '</small></span></div>';
   }).join('');
 }
 $('team').addEventListener('click', function(e){ var c = e.target.closest('.card'); if (c) select(+c.dataset.id); });
@@ -412,6 +478,8 @@ function openHire(a){
   S.editId = a ? a.id : null;
   $('hireTitle').textContent = a ? 'Настройки агента' : 'Нанять агента';
   $('hireSave').textContent = a ? 'Сохранить' : 'Нанять';
+  $('fDept').innerHTML = '<option value="">Без отдела</option>' + (S.depts || []).map(function(d){ return '<option value="' + esc(d[0]) + '">' + esc(d[1]) + ' · ' + esc(d[2]) + '</option>'; }).join('');
+  $('fDept').value = a ? (a.dept || '') : '';
   $('fName').value = a ? a.name : ''; $('fRole').value = a ? a.role : ''; $('fPrompt').value = a ? a.prompt : ''; $('fModel').value = a ? (a.model || '') : '';
   S.color = a ? a.color : COLORS[(S.agents.length) % COLORS.length]; paintColors(); $('hireErr').textContent = '';
   $('tpls').parentNode.hidden = !!a;
@@ -419,11 +487,11 @@ function openHire(a){
 }
 function paintColors(){ $('fColors').innerHTML = COLORS.map(function(c){ return '<button type="button" data-c="' + c + '" class="' + (c === S.color ? 'on' : '') + '" style="background:' + c + '"></button>'; }).join(''); }
 $('fColors').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) { S.color = b.dataset.c; paintColors(); } });
-$('tpls').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var t = TPLS[+b.dataset.i]; $('fName').value = t.name; $('fRole').value = t.role; $('fPrompt').value = t.prompt; S.color = t.color; paintColors(); });
+$('tpls').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var t = TPLS[+b.dataset.i]; $('fName').value = t.name; $('fRole').value = t.role; $('fPrompt').value = t.prompt; $('fDept').value = t.dept || ''; S.color = t.color; paintColors(); });
 $('btnHire').onclick = function(){ openHire(null); };
 $('hireCancel').onclick = function(){ $('hire').hidden = true; };
 $('hireSave').onclick = function(){
-  var body = {id: S.editId, name: $('fName').value.trim(), role: $('fRole').value.trim(), prompt: $('fPrompt').value.trim(), color: S.color, model: $('fModel').value.trim()};
+  var body = {id: S.editId, name: $('fName').value.trim(), role: $('fRole').value.trim(), prompt: $('fPrompt').value.trim(), color: S.color, model: $('fModel').value.trim(), dept: $('fDept').value};
   if (!body.name) { $('hireErr').textContent = 'Дай агенту имя'; return; }
   if (!body.prompt) { $('hireErr').textContent = 'Напиши инструкцию: кто он, с чем работает и что выдаёт'; return; }
   api('/api/agents', body).then(function(r){ if (!r.ok) { $('hireErr').textContent = r.error || 'Не получилось'; return; } $('hire').hidden = true; poll().then(function(){ select(r.id); }); });
@@ -438,7 +506,9 @@ var polling = false;
 function poll(){
   return api('/api/state?since=' + S.last).then(function(d){
     var first = !S.polled; S.polled = true;
-    S.agents = d.agents; S.tasks = d.tasks;
+    S.agents = d.agents; S.tasks = d.tasks; S.depts = d.depts || S.depts;
+    var nw = d.agents.filter(function(a){ return a.status === 'working'; }).length;
+    $('stats').innerHTML = '<b class="g">●</b> ' + nw + ' в работе · ' + (d.agents.length - nw) + ' свободны · ' + (d.depts || []).length + ' отделов';
     if (!first) { syncRobots(); d.events.filter(function(e){ return e.ts > Date.now() / 1000 - 180; }).forEach(onEvent); }
     // при первом открытии проигрываем недавние события, чтобы было видно, как раздавались задачи
     S.last = first ? Math.max(0, d.last - 20) : d.last;

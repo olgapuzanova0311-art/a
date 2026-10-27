@@ -15,6 +15,8 @@
 import asyncio, hashlib, hmac, json, logging, os, re, sqlite3, time
 from pathlib import Path
 
+import departments as D
+
 import aiohttp
 import anthropic
 from aiohttp import web
@@ -162,6 +164,20 @@ if not q("SELECT 1 FROM settings WHERE k='orch_v2'").fetchone():
     # оркестратор раздаёт рабочие задачи команде, чтобы в офисе было видно, как они работают
     q('UPDATE agents SET prompt=? WHERE name=? AND is_main=1', ORCH['prompt'], ORCH_NAME)
     q("INSERT INTO settings(k, v) VALUES('orch_v2', '1')")
+try:
+    q('ALTER TABLE agents ADD COLUMN dept TEXT')
+except sqlite3.OperationalError:
+    pass
+if not q("SELECT 1 FROM settings WHERE k='depts_v1'").fetchone():
+    # отделы: рассаживаем команду по комнатам, нанимаем сильных агентов, старым инструкциям добавляем контекст бизнеса
+    for name, dept in D.DEPT_OF.items():
+        q('UPDATE agents SET dept=? WHERE name=?', dept, name)
+    q("UPDATE agents SET prompt = prompt || ? WHERE is_main=0 AND instr(prompt, 'Контекст бизнеса.') = 0", D.BRAND + D.CHECK)
+    for t in D.AGENTS:
+        if not q('SELECT 1 FROM agents WHERE lower(name)=lower(?)', t['name']).fetchone():
+            q('INSERT INTO agents(name, role, color, prompt, dept, created) VALUES(?,?,?,?,?,?)',
+              t['name'], t['role'], t['color'], t['prompt'] + ' ' + VOICE, t['dept'], time.time())
+    q("INSERT INTO settings(k, v) VALUES('depts_v1', '1')")
 q("UPDATE agents SET status='idle'")
 q("UPDATE tasks SET status='error', result='Офис перезапускался, задачу нужно поставить заново' WHERE status IN ('queued','working')")
 
@@ -257,9 +273,13 @@ async def llm_claude(messages, model=None):
 
 
 def team_context(main):
-    others = q('SELECT id, name, role FROM agents WHERE id != ? ORDER BY id', main['id']).fetchall()
-    lines = '\n'.join(f'- {a["name"]}: {a["role"]}' for a in others) or '- (пока никого)'
-    return (f'\n\nТвоя команда:\n{lines}\n\n'
+    others = q('SELECT id, name, role, dept FROM agents WHERE id != ? ORDER BY id', main['id']).fetchall()
+    groups = {}
+    for a in others:
+        groups.setdefault(a['dept'] if a['dept'] in D.DEPTS else '', []).append(f'- {a["name"]}: {a["role"]}')
+    lines = '\n'.join((f'{D.DEPTS[k][0]} ({D.DEPTS[k][1].lower()}):' if k else 'Без отдела:') + '\n' + '\n'.join(v)
+                      for k, v in sorted(groups.items(), key=lambda kv: list(D.DEPTS).index(kv[0]) if kv[0] else 99)) or '- (пока никого)'
+    return (f'\n\nТвоя команда по отделам:\n{lines}\n\n'
             'Чтобы поручить задачу агенту, напиши отдельной строкой: @Имя агента: что сделать (с нужными данными). '
             'Можно поручить нескольким агентам. Когда они закончат, их отчёты придут тебе. '
             'Если это просто вопрос или уточнение, ответь сам. Любую рабочую задачу поручи хотя бы одному агенту.')
@@ -310,8 +330,8 @@ def hire(text):
         if q('SELECT id FROM agents WHERE lower(name)=lower(?)', name).fetchone():
             continue
         n = q('SELECT COUNT(*) FROM agents').fetchone()[0]
-        aid = q('INSERT INTO agents(name, role, color, prompt, created) VALUES(?,?,?,?,?)',
-                name, role.strip(), COLORS[n % len(COLORS)], prompt.strip() + ' ' + VOICE, time.time()).lastrowid
+        aid = q('INSERT INTO agents(name, role, color, prompt, dept, created) VALUES(?,?,?,?,?,?)',
+                name, role.strip(), COLORS[n % len(COLORS)], prompt.strip() + ' ' + VOICE, D.guess_dept(name, role), time.time()).lastrowid
         boss = main_agent()
         event('hire', aid, boss['id'] if boss else None, f'{name}|{role.strip()}')
         asyncio.create_task(tg_send(f'🧑‍💼 Нанят новый агент: {name}'))
@@ -512,13 +532,13 @@ def dumps_ru(o):
 
 async def state(req):
     since = int(req.query.get('since', 0) or 0)
-    agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status FROM agents ORDER BY is_main DESC, id').fetchall()]
+    agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status, dept FROM agents ORDER BY is_main DESC, id').fetchall()]
     # заголовок задачи режем: агенту уходит полный текст, а в офис хватит начала (иначе опрос раз в 1,5 с тянет мегабайт)
     tasks = [dict(r) for r in q('SELECT id, agent_id, substr(title, 1, 400) AS title, status, result, from_agent, created, updated '
                                 'FROM tasks ORDER BY id DESC LIMIT 40').fetchall()]
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
-    return web.json_response({'agents': agents, 'tasks': tasks, 'events': events if since else [], 'last': last,
+    return web.json_response({'agents': agents, 'tasks': tasks, 'depts': [[k, v[0], v[1]] for k, v in D.DEPTS.items()], 'events': events if since else [], 'last': last,
                               'brain': bool(CLAUDE_KEY or API_KEY or SUBSCRIPTION_URL),
                               'model': (CLAUDE_MODEL + ' · подписка') if SUBSCRIPTION_URL and PASSWORD else (CLAUDE_MODEL if CLAUDE_KEY else MODEL)}, dumps=dumps_ru)
 
@@ -588,12 +608,13 @@ async def save_agent(req):
     name = str(d.get('name', '')).strip()[:40]
     if not name:
         return web.json_response({'ok': False, 'error': 'Нужно имя'}, status=400)
-    vals = (name, str(d.get('role', ''))[:120], str(d.get('color', '#1009F6'))[:9], str(d.get('prompt', ''))[:8000], str(d.get('model', ''))[:80])
+    dept = d.get('dept') if d.get('dept') in D.DEPTS else (None if d.get('id') else D.guess_dept(name, str(d.get('role', ''))))
+    vals = (name, str(d.get('role', ''))[:120], str(d.get('color', '#1009F6'))[:9], str(d.get('prompt', ''))[:8000], str(d.get('model', ''))[:80], dept)
     if d.get('id'):
-        q('UPDATE agents SET name=?, role=?, color=?, prompt=?, model=? WHERE id=?', *vals, int(d['id']))
+        q('UPDATE agents SET name=?, role=?, color=?, prompt=?, model=?, dept=COALESCE(?, dept) WHERE id=?', *vals, int(d['id']))
         aid = int(d['id'])
     else:
-        aid = q('INSERT INTO agents(name, role, color, prompt, model, created) VALUES(?,?,?,?,?,?)', *vals, time.time()).lastrowid
+        aid = q('INSERT INTO agents(name, role, color, prompt, model, dept, created) VALUES(?,?,?,?,?,?,?)', *vals, time.time()).lastrowid
         event('hire', aid, None, name)
     return web.json_response({'ok': True, 'id': aid})
 
@@ -610,7 +631,7 @@ async def delete_agent(req):
 
 
 async def templates(req):
-    return web.json_response(TEMPLATES)
+    return web.json_response(D.TEMPLATES + TEMPLATES, dumps=dumps_ru)
 
 
 def make_app():
