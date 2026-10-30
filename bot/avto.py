@@ -86,6 +86,11 @@ def sig(uid):
 def go_link(uid):
     return f'{M.PUBLIC_URL}/go/{uid}/{sig(uid)}'
 
+def tracking():
+    # 1: кнопка эфира идёт через бота и отмечает переход (/avtotrack on); иначе ссылка прямая и бот не знает, кто был на эфире
+    return setting('avto_track') == '1'
+
+
 def clicked(u, day):
     s = u['slot2'] if day == 2 else u['slot']
     if not s: return False
@@ -106,7 +111,8 @@ def kb(rows, u):
                 out += [[InlineKeyboardButton(text='📅 ' + label(x).capitalize(), callback_data=f'av:slot2:{int(x.timestamp())}')] for x in free_slots(after)]
             elif kind == 'web':
                 link = u and u['slot'] and web_link(u)
-                if link and M.PUBLIC_URL: r.append(InlineKeyboardButton(text=b[1], url=go_link(u['id'])))
+                # по умолчанию прямая ссылка в Бизон: адрес бота на Railway у части людей в России без VPN не открывается
+                if link and M.PUBLIC_URL and tracking(): r.append(InlineKeyboardButton(text=b[1], url=go_link(u['id'])))
                 elif link: r.append(InlineKeyboardButton(text=b[1], url=link))
                 else: r.append(InlineKeyboardButton(text=b[1], callback_data='av:noweb'))
             elif kind == 'consult':
@@ -351,6 +357,12 @@ def cond_ok(u, st):
     only = st.get('only')
     if not only: return True
     if only == 'nocons': return not u['consult']
+    if not tracking():
+        # кто был на эфире, неизвестно: сообщения «для пропустивших» уходят всем (тексты подходят и тем, кто смотрит),
+        # «спасибо» уходит всем с кнопкой другого времени, отдельные «ты пропустил» не шлём
+        if st['key'] in ('end_miss', 'd1_none'): return False
+        if only in ('c_nocons', 'any_nocons'): return not u['consult']
+        return True
     if only in ('any_nocons', 'none'):
         any_c = clicked(u, 1) or clicked(u, 2)
         return (any_c and not u['consult']) if only == 'any_nocons' else not any_c
@@ -416,6 +428,14 @@ def _setter(cmd, key, kind='url'):
         if kind == 'url' and not v.startswith('http'): return await m.answer(f'Пришли так: /{cmd} https://...')
         if kind == 'int' and not v.isdigit(): return await m.answer(f'Пришли число: /{cmd} 90')
         M.set_setting(key, v); await m.answer('✅ Сохранено:\n' + escape(v))
+
+@admin_cmd('avtotrack')
+async def track_cmd(m, a):
+    if a in ('on', 'off'):
+        M.set_setting('avto_track', '1' if a == 'on' else '0')
+    await m.answer('Отметка переходов на эфир: ' + ('включена (кнопка идёт через бота)' if tracking() else 'выключена (кнопка ведёт прямо в Бизон)')
+                   + '\nПереключить: /avtotrack on или /avtotrack off')
+
 
 for _c, _k, _t in (('web', 'avto_web', 'url'), ('web12', 'avto_web12', 'url'), ('web19', 'avto_web19', 'url'),
                    ('web2', 'avto_web2', 'url'), ('web2_12', 'avto_web212', 'url'), ('web2_19', 'avto_web219', 'url'),
