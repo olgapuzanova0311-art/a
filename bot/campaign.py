@@ -3,12 +3,12 @@
 """
 import asyncio, html, logging
 
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 
 log = logging.getLogger('campaign')
 
 KEY = 'dr_nov3'
-STAGE = 'test'                      # 'test' → только тест; 'all' → всем пользователям Telegram и MAX
+STAGE = 'test2'                     # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 PHOTO = 'dr3.jpg'                   # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
 PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/dr3.jpg'
@@ -20,9 +20,10 @@ TEXT = (
     'только честнее: итоги года с ошибками и выводами, мой план на 2027 и ИИ-сотрудники, которые работают у меня каждый день, на живом экране.\n\n'
     'А в конце будет сюрприз, который я делаю раз в год. Только для тех, кто в эфире, в записи его не будет 🤫\n\n'
     'Забери секретный билет, пока они есть 👇\n'
-    'https://olgapuzanova0311-art.github.io/perezagruzka/dr/\n'
     'У кого он будет, получат на эфире отдельный подарок 🎁'
 )
+LINK = 'https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
+BUTTON = '🎟 Забрать приглашение 🎟'
 
 
 def text_for(first_name):
@@ -33,7 +34,7 @@ def text_for(first_name):
 async def run(M):
     """M: модуль main (q, mark, bot, notify_admins, MX)."""
     try:
-        if STAGE == 'test':
+        if STAGE.startswith('test'):
             names = [n.lower() for n in TEST_USERNAMES]
             rows = [r for r in M.q('SELECT * FROM users WHERE blocked=0').fetchall() if (r['username'] or '').lower() in names]
         else:
@@ -41,7 +42,8 @@ async def run(M):
         log.info('campaign %s %s: matched %s users', KEY, STAGE, len(rows))
         mark_key = f'{KEY}:{STAGE}'
         # кто уже получил тест, второй раз то же сообщение не получает
-        todo = [r for r in rows if not M.q('SELECT 1 FROM sent WHERE user_id=? AND key IN (?, ?)', r['id'], mark_key, f'{KEY}:test').fetchone()]
+        done = "key = ?" if STAGE.startswith('test') else "(key = ? OR key LIKE '" + KEY + ":test%')"
+        todo = [r for r in rows if not M.q(f'SELECT 1 FROM sent WHERE user_id=? AND {done}', r['id'], mark_key).fetchone()]
         if not todo:
             return
         with open(M.os.path.join(M.os.path.dirname(__file__), PHOTO), 'rb') as f:
@@ -51,7 +53,8 @@ async def run(M):
             if not M.mark(r['id'], mark_key):
                 continue
             try:
-                m = await M.bot.send_photo(r['id'], photo, caption=text_for(r['first_name']))
+                m = await M.bot.send_photo(r['id'], photo, caption=text_for(r['first_name']), reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)]]))
                 photo = m.photo[-1].file_id  # дальше шлём уже загруженную картинку
                 ok += 1
             except Exception as e:
@@ -66,10 +69,11 @@ async def run(M):
                 if M.MX.q('SELECT 1 FROM max_sent WHERE user_id=? AND key=?', r['id'], mark_key).fetchone():
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
-                if await M.MX.send(r['id'], text_for(r['first_name']).replace('{', '{{').replace('}', '}}'), photo=PHOTO_URL):
+                if await M.MX.send(r['id'], text_for(r['first_name']).replace('{', '{{').replace('}', '}}'),
+                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]], photo=PHOTO_URL):
                     mx += 1
                 await asyncio.sleep(0.6)
-        what = 'Тест рассылки' if STAGE == 'test' else 'Рассылка'
+        what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
         log.info('campaign %s %s: ok=%s fail=%s max=%s', KEY, STAGE, ok, fail, mx)
         await M.notify_admins(f'📨 {what} «День рождения 3 ноября»: доставлено в Telegram {ok}, не доставлено {fail}'
                               + (f', в MAX {mx}' if STAGE == 'all' else '') + '.')
