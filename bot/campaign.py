@@ -8,7 +8,7 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 log = logging.getLogger('campaign')
 
 KEY = 'dr_nov3'
-STAGE = 'test2'                     # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX
+STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 PHOTO = 'dr3.jpg'                   # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
 PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/dr3.jpg'
