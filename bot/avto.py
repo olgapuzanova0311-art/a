@@ -8,6 +8,7 @@ asyncio.create_task(avto.scheduler()).
 import asyncio, csv, hashlib, hmac, io, logging, sqlite3, time
 from datetime import datetime, timedelta
 from html import escape
+from urllib.parse import quote
 
 from aiohttp import web
 from aiogram import F, Router
@@ -78,7 +79,30 @@ def web_link(u):
     day = cur_day(u)
     h = dt(u['slot2'] if day == 2 else u['slot']).hour
     p = 'avto_web2' if day == 2 else 'avto_web'
-    return setting(f'{p}{h}') or setting(p) or (A.WEB2 if day == 2 else A.WEB1)
+    link = setting(f'{p}{h}') or setting(p) or (A.WEB2 if day == 2 else A.WEB1)
+    # метка param1 (в отчёте поле p1): в отчёте Бизона видно, что это человек из бота (bizon.py по ней отмечает, кто был на эфире)
+    # имя (и телефон, если он есть в боте) уже подставлены в анкету комнаты; почту и телефон Бизон требует обязательно
+    q_ = f'param1={u["id"]}'
+    name = (u['first_name'] or '').strip()
+    if name:
+        q_ += '&username=' + quote(name[:40])
+    if u['phone']:
+        q_ += '&phone=' + quote(u['phone'])
+    return link + ('&' if '?' in link else '?') + q_
+
+
+def attended(u, day):
+    """Был ли человек на эфире этого дня по отчёту Бизона: True / False, None — отчёта ещё нет."""
+    s = u['slot2'] if day == 2 else u['slot']
+    if not s:
+        return None
+    room = M.bizon.ROOMS_BY_DAY[day]
+    try:
+        if not q('SELECT 1 FROM bizon_done WHERE start=? AND room=?', s, room).fetchone():
+            return None
+        return q('SELECT 1 FROM bizon_seen WHERE user_id=? AND start=? AND room=?', u['id'], s, room).fetchone() is not None
+    except Exception:
+        return None
 
 def sig(uid):
     return hmac.new(M.BOT_TOKEN.encode(), f'go{uid}'.encode(), hashlib.sha256).hexdigest()[:12]
@@ -358,6 +382,15 @@ def cond_ok(u, st):
     if not only: return True
     if only == 'nocons': return not u['consult']
     if not tracking():
+        # после эфира берём из отчёта Бизона, кто был (attended); пока отчёта нет — как раньше, сообщения для всех
+        a1, a2 = attended(u, 1), attended(u, 2)
+        if only in ('any_nocons', 'none') and a1 is not None and a2 is not None:
+            return (bool(a1 or a2) and not u['consult']) if only == 'any_nocons' else not (a1 or a2)
+        a = a1 if st['day'] == 1 else a2
+        if a is not None and st['when'][0] in ('end', 'next'):
+            if only == 'c': return a
+            if only == 'nc': return not a
+            if only == 'c_nocons': return a and not u['consult']
         # кто был на эфире, неизвестно: сообщения «для пропустивших» уходят всем (тексты подходят и тем, кто смотрит),
         # «спасибо» уходит всем с кнопкой другого времени, отдельные «ты пропустил» не шлём
         if st['key'] in ('end_miss', 'd1_none'): return False
@@ -504,7 +537,7 @@ async def chain(m, a):
     for i, st in enumerate(A.STEPS, 1):
         w = st['when']
         if w[0] == 'rel': when = f'за {-w[1]} мин до начала' if w[1] < 0 else (f'через {w[1]} мин после начала' if w[1] else 'в начале эфира')
-        elif w[0] == 'end': when = 'сразу после эфира' if not w[1] else f'через {w[1] // 60} ч после эфира'
+        elif w[0] == 'end': when = 'сразу после эфира' if not w[1] else (f'через {w[1]} мин после эфира' if w[1] < 60 else f'через {w[1] // 60} ч после эфира')
         elif w[0] == 'next': when = f'на следующий день в {w[1]}:00'
         else: when = names[w[0]]
         await m.answer(f'<i>#{i} · день {st["day"]} · {when} · {who_map.get(st.get("only"), "всем")} · ключ {st["day"]}_{st["key"]}</i>')

@@ -25,6 +25,7 @@ from aiogram.types import (BufferedInputFile, CallbackQuery, ChatMemberUpdated, 
 import texts as T
 import avto
 import campaign
+import bizon
 from max_bot import MaxBot
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -873,9 +874,10 @@ async def main():
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
     me = await bot.get_me(); BOT_USERNAME = me.username
     avto.init(sys.modules[__name__])
+    bizon.init(sys.modules[__name__])
     for a in re.findall(r'\d+', os.environ.get('ADMIN_IDS', '')):
         q('INSERT OR IGNORE INTO admins(id) VALUES(?)', int(a))
-    dp = Dispatcher(); dp.include_router(avto.router); dp.include_router(router)
+    dp = Dispatcher(); dp.include_router(avto.router); dp.include_router(bizon.router); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
     avto.setup_web(app)
@@ -894,6 +896,7 @@ async def main():
     await web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080))).start()
     asyncio.create_task(scheduler())
     asyncio.create_task(avto.scheduler())
+    asyncio.create_task(bizon.scheduler())
     asyncio.create_task(campaign.run(sys.modules[__name__]))
     if MX: asyncio.create_task(MX.run())
     log.info('started as @%s', BOT_USERNAME)
