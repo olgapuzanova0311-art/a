@@ -7,28 +7,27 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_nov3'
+KEY = 'dr_team'
+TITLE = 'Моя ИИ-команда (размытая)'
 STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = 'dr3.jpg'                   # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/dr3.jpg'
+PHOTO = 'team.jpg'                  # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/team.jpg'
 
 TEXT = (
-    '{hello} Это Оля, и это приглашение я отправляю один раз в год 💌\n\n'
-    '3 ноября у меня день рождения. В этом году я решила отметить его с теми, кто учится и растёт вместе со мной, '
-    'поэтому в 12:00 по Москве выйду в большой праздничный эфир. Там будет всё, о чём меня обычно спрашивают в личке, '
-    'только честнее: итоги года с ошибками и выводами, мой план на 2027 и ИИ-сотрудники, которые работают у меня каждый день, на живом экране.\n\n'
-    'А в конце будет сюрприз, который я делаю раз в год. Только для тех, кто в эфире, в записи его не будет 🤫\n\n'
-    'Забери секретный билет, пока они есть 👇\n'
-    'У кого он будет, получат на эфире отдельный подарок 🎁'
+    '{hello} 👀\n\n'
+    'Это моя ИИ-команда, пока размытая. Эти сотрудники пишут мои посты, отвечают клиентам, собирают отчёты и ни разу не просили отпуск 😅\n\n'
+    '3 ноября, в мой день рождения, в 12:00 открою схему целиком и покажу на живом экране, как всё работает. '
+    'Так подробно я это никому не показывала.\n\n'
+    '🎟 Билет на эфир: https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
 )
 LINK = 'https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
-BUTTON = '🎟 Забрать приглашение 🎟'
+BUTTON = '🎟 ЗАБРАТЬ БИЛЕТ 🎟'
 
 
 def text_for(first_name):
     name = (first_name or '').strip()
-    return TEXT.format(hello=f'{html.escape(name)}, привет!' if name else 'Привет!')
+    return TEXT.format(hello=f'{html.escape(name)}, смотри, что покажу' if name else 'Смотри, что покажу')
 
 
 async def run(M):
@@ -75,7 +74,7 @@ async def run(M):
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
         log.info('campaign %s %s: ok=%s fail=%s max=%s', KEY, STAGE, ok, fail, mx)
-        await M.notify_admins(f'📨 {what} «День рождения 3 ноября»: доставлено в Telegram {ok}, не доставлено {fail}'
+        await M.notify_admins(f'📨 {what} «{TITLE}»: доставлено в Telegram {ok}, не доставлено {fail}'
                               + (f', в MAX {mx}' if STAGE == 'all' else '') + '.')
     except Exception:
         log.exception('campaign')
