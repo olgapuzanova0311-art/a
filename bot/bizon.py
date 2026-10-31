@@ -25,6 +25,7 @@ SID_EXPIRES = int(os.environ.get('BIZON_SID_EXPIRES', '0') or 0)   # когда 
 BASE = f'https://start.bizon365.ru/admin/report/api/{GROUP}/'
 ROOMS = {f'{GROUP}:HlMJLi9E3Mx': 'День 1 · ИИ-агенты', f'{GROUP}:BgOOPkiNnfe': 'День 2 · Контент-завод'}
 ROOMS_BY_DAY = {1: f'{GROUP}:HlMJLi9E3Mx', 2: f'{GROUP}:BgOOPkiNnfe'}
+FIRST_DAY = datetime(2026, 10, 22)   # первый день автовеба
 END_MARGIN = 5 * 60   # досмотрел: был в эфире в последние 5 минут
 
 
@@ -154,8 +155,38 @@ def report_csv(rows):
     return ('﻿' + buf.getvalue()).encode('utf-8')
 
 
-async def send_report(day_from, chat_ids=None):
-    day_to = day_from + timedelta(days=1)
+def period_text(day_from, day_to, rows, sess):
+    """Сводка за несколько дней: по дню строка, итог и самые тёплые зрители (досмотрели или нажимали кнопки)."""
+    lines = [f'📊 <b>Автовеб с {day_from:%d.%m} по {(day_to - timedelta(days=1)):%d.%m}</b> (Бизон)\n',
+             '<b>По дням</b> (зашли · до конца · нажали кнопку)']
+    d = day_from
+    while d < day_to:
+        rs = [r for r in rows if d <= r['session']['start'] < d + timedelta(days=1)]
+        if any(d <= s['start'] < d + timedelta(days=1) for s in sess):
+            lines.append(f'{d:%d.%m}: {len(rs)} · {sum(r["finished"] for r in rs)} · {sum(1 for r in rs if r["buttons"])}')
+        d += timedelta(days=1)
+    for day in (1, 2):
+        rs = [r for r in rows if r['session']['room'] == ROOMS_BY_DAY[day]]
+        lines.append(f'\n<b>{ROOMS[ROOMS_BY_DAY[day]]}</b>: зашли {len(rs)}, до конца {sum(r["finished"] for r in rs)}, '
+                     f'нажали кнопку {sum(1 for r in rs if r["buttons"])}')
+    hot = sorted([r for r in rows if r['finished'] or r['buttons']], key=lambda r: (-r['finished'], -r['minutes']))
+    lines.append(f'\n<b>Итого:</b> {len(rows)} зрителей, до конца {sum(r["finished"] for r in rows)}, '
+                 f'нажали кнопку {sum(1 for r in rows if r["buttons"])}.')
+    if hot:
+        lines.append('\n🔥 <b>Тёплые: досмотрели или нажимали кнопки</b>')
+        for r in hot[:30]:
+            contact = ' · '.join(x for x in (r['phone'], r['email']) if x)
+            lines.append(f'• {r["session"]["start"]:%d.%m %H:%M} {escape(r["name"] or "без имени")}' + (f' ({escape(contact)})' if contact else '')
+                         + f' · {r["minutes"]} мин' + (' · ✅' if r['finished'] else '')
+                         + (f' · 🔘 {escape(", ".join(dict.fromkeys(r["buttons"])))}' if r['buttons'] else ''))
+    lines.append('\nВсе зрители по дням в файле 👇')
+    text = '\n'.join(lines)
+    return text if len(text) < 3900 else text[:3800] + '\n…\nПолный список в файле 👇'
+
+
+async def send_report(day_from, chat_ids=None, day_to=None):
+    period = day_to is not None
+    day_to = day_to or day_from + timedelta(days=1)
     ids = chat_ids or [r['id'] for r in M.q('SELECT id FROM admins').fetchall()]
     try:
         rows, sess = await collect(day_from, day_to)
@@ -169,12 +200,12 @@ async def send_report(day_from, chat_ids=None):
             await M.bot.send_message(cid, f'⚠️ Не получилось собрать отчёт Бизона: {escape(str(e))[:300]}')
         return
     remember(rows, sess)
-    text = report_text(day_from, rows, sess)
+    text = period_text(day_from, day_to, rows, sess) if period else report_text(day_from, rows, sess)
     for cid in ids:
         try:
             await M.bot.send_message(cid, text, disable_web_page_preview=True)
             if rows:
-                await M.bot.send_document(cid, BufferedInputFile(report_csv(rows), filename=f'avtoveb_{day_from:%Y-%m-%d}.csv'))
+                await M.bot.send_document(cid, BufferedInputFile(report_csv(rows), filename=f'avtoveb_{day_from:%Y-%m-%d}' + (f'_{(day_to - timedelta(days=1)):%Y-%m-%d}' if period else '') + '.csv'))
         except Exception as e:
             log.warning('bizon send %s: %s', cid, e)
 
@@ -184,6 +215,9 @@ async def scheduler():
         try:
             now = datetime.now(M.T.MSK)
             day = now.strftime('%Y%m%d')
+            if SID and not M.setting('bizon_all_v1'):
+                M.set_setting('bizon_all_v1', '1')
+                await send_report(FIRST_DAY.replace(tzinfo=M.T.MSK), None, now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1))
             if SID and now.hour == 10 and M.setting('bizon_last') != day:
                 M.set_setting('bizon_last', day)
                 y = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -215,9 +249,12 @@ async def bizon_cmd(m: Message, command: CommandObject):
         return await m.answer('Бизон не подключён: нет BIZON_SID в настройках сервера.')
     arg = (command.args or '').strip().lower()
     now = datetime.now(M.T.MSK).replace(hour=0, minute=0, second=0, microsecond=0)
+    if arg in ('все', 'всё', 'all'):
+        await m.answer('⏳ Собираю отчёт за все дни автовеба…')
+        return await send_report(FIRST_DAY.replace(tzinfo=M.T.MSK), [m.chat.id], now + timedelta(days=1))
     try:
         day = now if arg in ('сегодня', 'today') else (datetime.strptime(arg, '%Y-%m-%d').replace(tzinfo=M.T.MSK) if arg else now - timedelta(days=1))
     except ValueError:
-        return await m.answer('Пришли так: /bizon (вчера), /bizon сегодня или /bizon 2026-10-30')
+        return await m.answer('Пришли так: /bizon (вчера), /bizon сегодня, /bizon 2026-10-30 или /bizon все')
     await m.answer('⏳ Собираю отчёт из Бизона…')
     await send_report(day, [m.chat.id])
