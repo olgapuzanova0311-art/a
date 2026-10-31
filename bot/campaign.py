@@ -9,7 +9,7 @@ log = logging.getLogger('campaign')
 
 KEY = 'dr_team'
 TITLE = 'Моя ИИ-команда (размытая)'
-STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX
+STAGE = 'done'                      # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 PHOTO = 'team.jpg'                  # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
 PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/team.jpg'
@@ -32,6 +32,8 @@ def text_for(first_name):
 
 async def run(M):
     """M: модуль main (q, mark, bot, notify_admins, MX)."""
+    if STAGE not in ('all',) and not STAGE.startswith('test'):
+        return  # рассылка закончена: новые люди в боте её не получают
     try:
         if STAGE.startswith('test'):
             names = [n.lower() for n in TEST_USERNAMES]
