@@ -7,33 +7,39 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_team'
-TITLE = 'Моя ИИ-команда (размытая)'
-STAGE = 'done'                      # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
+KEY = 'dr_wish'
+TITLE = 'Твоё желание исполнено (план на 2027)'
+STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
+UNTIL = 1793696400                  # 03.11.2026 12:00 МСК: после начала эфира рассылка не уходит (и новым людям в боте тоже)
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = 'team.jpg'                  # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/team.jpg'
+PHOTO = None                        # без картинки
+PHOTO_URL = None
 
 TEXT = (
-    '{hello} 👀\n\n'
-    'Это моя ИИ-команда, пока размытая. Эти сотрудники пишут мои посты, отвечают клиентам, собирают отчёты и ни разу не просили отпуск 😅\n\n'
-    '3 ноября, в мой день рождения, в 12:00 открою схему целиком и покажу на живом экране, как всё работает. '
-    'Так подробно я это никому не показывала.\n\n'
-    '🎟 Билет на эфир: https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
+    'Твоё желание исполнено ☑️ …ну почти 😉\n\n'
+    '{hello} спрашивала, что бы вы хотели на свой день рождения: время для себя, рост дохода или просто выспаться. '
+    'И поняла, что могу немного помочь 😄\n\n'
+    '3 ноября в 12:00, в мой день рождения, покажу на эфире, как сама вернула себе и время, и сон с помощью ИИ. '
+    'А ещё расскажу 23 вывода, которые поняла к 23 годам.\n\n'
+    'Подарок уже сейчас: мой шаблон плана на 2027, чтобы желание сбылось быстрее. Всё считается само 👇\n'
+    'https://olgapuzanova0311-art.github.io/perezagruzka/dr/plan/\n\n'
+    'До встречи на эфире 💙'
 )
 LINK = 'https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
-BUTTON = '🎟 ЗАБРАТЬ БИЛЕТ 🎟'
+BUTTON = '🎟 ЗАБРАТЬ ПРИГЛАШЕНИЕ 🎟'
 
 
 def text_for(first_name):
     name = (first_name or '').strip()
-    return TEXT.format(hello=f'{html.escape(name)}, смотри, что покажу' if name else 'Смотри, что покажу')
+    return TEXT.format(hello=f'{html.escape(name)}, я тут' if name else 'Я тут')
 
 
 async def run(M):
     """M: модуль main (q, mark, bot, notify_admins, MX)."""
     if STAGE not in ('all',) and not STAGE.startswith('test'):
         return  # рассылка закончена: новые люди в боте её не получают
+    if UNTIL and M.time.time() > UNTIL:
+        return  # событие уже прошло
     try:
         if STAGE.startswith('test'):
             names = [n.lower() for n in TEST_USERNAMES]
@@ -47,16 +53,21 @@ async def run(M):
         todo = [r for r in rows if not M.q(f'SELECT 1 FROM sent WHERE user_id=? AND {done}', r['id'], mark_key).fetchone()]
         if not todo:
             return
-        with open(M.os.path.join(M.os.path.dirname(__file__), PHOTO), 'rb') as f:
-            photo = BufferedInputFile(f.read(), filename=PHOTO)
+        photo = None
+        if PHOTO:
+            with open(M.os.path.join(M.os.path.dirname(__file__), PHOTO), 'rb') as f:
+                photo = BufferedInputFile(f.read(), filename=PHOTO)
         ok = fail = 0
         for r in todo:
             if not M.mark(r['id'], mark_key):
                 continue
             try:
-                m = await M.bot.send_photo(r['id'], photo, caption=text_for(r['first_name']), reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)]]))
-                photo = m.photo[-1].file_id  # дальше шлём уже загруженную картинку
+                kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)]])
+                if photo:
+                    m = await M.bot.send_photo(r['id'], photo, caption=text_for(r['first_name']), reply_markup=kb)
+                    photo = m.photo[-1].file_id  # дальше шлём уже загруженную картинку
+                else:
+                    await M.bot.send_message(r['id'], text_for(r['first_name']), reply_markup=kb, disable_web_page_preview=True)
                 ok += 1
             except Exception as e:
                 fail += 1
@@ -71,7 +82,7 @@ async def run(M):
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
                 if await M.MX.send(r['id'], text_for(r['first_name']).replace('{', '{{').replace('}', '}}'),
-                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]], photo=PHOTO_URL):
+                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]], photo=PHOTO_URL or None):
                     mx += 1
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
