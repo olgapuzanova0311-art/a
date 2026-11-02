@@ -1,0 +1,178 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Корпоративное обучение нейросетям · Ольга Пузанова</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#1009F6;--y:#FFBA09;--ink:#141414;--mut:#5E5E66;--bg:#F6F6FA;--line:#E4E4EE}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0d0d12;font-family:Montserrat,sans-serif;color:var(--ink);overflow:hidden}
+.stage{position:fixed;inset:0;display:grid;place-items:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center}
+.s{position:absolute;inset:0;background:#fff;padding:64px 80px;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;transform:translateX(30px);overflow:hidden}
+.s.on{opacity:1;pointer-events:auto;transform:none}
+.s.blue{background:var(--blue);color:#fff}.s.dark{background:var(--ink);color:#fff}
+h1{font-size:68px;line-height:1.05;margin:0 0 24px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:46px;line-height:1.1;margin:0 0 32px;font-weight:800;letter-spacing:-.02em}
+mark{background:var(--y);color:var(--ink);padding:0 .15em;border-radius:10px}
+.k{font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:18px}
+.blue .k,.dark .k{color:var(--y)}
+p,li{font-size:22px;line-height:1.5}
+.lead{font-size:26px;opacity:.9;max-width:900px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.c{background:var(--bg);border-radius:24px;padding:28px}
+.dark .c,.blue .c{background:rgba(255,255,255,.08)}
+.c b{display:block;font-size:24px;margin-bottom:10px}.c b::before{content:"";display:block;width:34px;height:6px;border-radius:3px;background:var(--y);margin-bottom:14px}.c span{font-size:18px;color:var(--mut);line-height:1.45;display:block}
+.dark .c span,.blue .c span{color:#cfd0dc}
+.big{font-size:52px;font-weight:800;color:var(--blue);line-height:1}.dark .big,.blue .big{color:var(--y)}
+.tar{border:2px solid var(--line);border-radius:24px;padding:28px;display:flex;flex-direction:column}
+.tar.hot{border-color:var(--blue);box-shadow:0 20px 40px -20px rgba(16,9,246,.5)}
+.tar h3{margin:0 0 6px;font-size:26px}.tar .pr{font-size:32px;font-weight:800;color:var(--blue);margin:8px 0 14px}
+.tar ul{padding-left:20px;margin:0}.tar li{font-size:17px;margin:5px 0}
+.tag{display:inline-block;background:var(--y);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700;margin-bottom:12px;align-self:flex-start}
+.foot{position:absolute;left:80px;right:80px;bottom:30px;display:flex;justify-content:space-between;font-size:14px;opacity:.5}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:n}
+.st{counter-increment:n;border-top:5px solid var(--y);padding-top:18px}
+.st::before{content:"0" counter(n);font-weight:800;font-size:18px;color:var(--blue);display:block;margin-bottom:8px}
+.st b{display:block;font-size:22px;margin-bottom:8px}.st span{font-size:17px;color:var(--mut)}
+.ph{background:linear-gradient(160deg,#2a24ff,#0b06b5);border-radius:28px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:18px;color:#fff;font-size:15px}
+.ph::before{content:"";position:absolute;right:-25%;bottom:-25%;width:75%;aspect-ratio:1;border-radius:50%;background:var(--y)}
+.ph span{position:relative;background:rgba(0,0,0,.25);padding:6px 12px;border-radius:99px}
+.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:5;color:#fff;font-size:14px}
+.nav button{width:46px;height:46px;border-radius:50%;border:0;background:#ffffff22;color:#fff;font-size:20px;cursor:pointer}
+.nav button:hover{background:var(--y);color:var(--ink)}
+@media print{
+ @page{size:1280px 720px;margin:0}
+ html,body{overflow:visible;height:auto;background:#fff}
+ .stage{position:static;display:block}.deck{transform:none!important;width:1280px;height:auto}
+ .s{position:relative;opacity:1;transform:none;width:1280px;height:720px;page-break-after:always;break-after:page}
+ .nav{display:none}
+}
+.mods{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.mod{background:var(--bg);border-radius:20px;padding:28px 24px;min-height:250px}
+.mod i{font-style:normal;font-weight:800;color:var(--blue);font-size:15px;display:block;margin-bottom:6px}
+.mod b{display:block;font-size:22px;line-height:1.25;margin-bottom:8px}
+.mod span{font-size:17px;color:var(--mut);line-height:1.4;display:block}
+.dep{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.dep .c b{font-size:21px}.dep .c span{font-size:16px}
+</style></head><body>
+<div class="stage"><div class="deck" id="deck">
+
+<section class="s blue on">
+ <div class="k">Ольга Пузанова · корпоративное обучение</div>
+ <h1 style="margin-top:50px">Нейросети<br>в каждом отделе<br><mark>за 4 недели</mark></h1>
+ <p class="lead">Учим команду работать с ИИ на её реальных задачах. На выходе 3 внедрённых процесса, библиотека промптов для каждой роли и регламент ИИ в компании.</p>
+ <div class="foot"><span>agent.olgapuzanovva.ru</span><span>Telegram: @puzanovateam</span></div>
+</section>
+
+<section class="s">
+ <div class="k">Почему сейчас</div>
+ <h2>Сотрудники уже пользуются ИИ. Вопрос, как</h2>
+ <div class="g3">
+  <div class="c"><b>Каждый сам по себе</b><span>Кто-то открывает ChatGPT раз в неделю, кто-то не открывает вовсе. Эффект для компании близок к нулю.</span></div>
+  <div class="c"><b>Риск для данных</b><span>Клиентские базы и договоры улетают в публичные нейросети. Нет правил, что можно, а что нельзя.</span></div>
+  <div class="c"><b>Рутина съедает часы</b><span>Письма, отчёты, КП и ответы клиентам занимают до трети рабочего дня. ИИ забирает большую часть.</span></div>
+ </div>
+ <p style="margin-top:34px;font-size:24px"><b>Часы рутины × стоимость часа × число сотрудников</b> = сумма, которую компания теряет каждый месяц.</p>
+</section>
+
+<section class="s">
+ <div class="k">Результат обучения</div>
+ <h2>С чем компания выходит через 4 недели</h2>
+ <div class="g2">
+  <div class="c"><b>3 процесса работают с ИИ</b><span>Выбираем на диагностике самые затратные по часам и доводим до ежедневного использования.</span></div>
+  <div class="c"><b>Библиотека промптов</b><span>30+ проверенных промптов под каждую роль: продажи, маркетинг, HR, финансы, руководители.</span></div>
+  <div class="c"><b>Регламент ИИ в компании</b><span>Какие сервисы разрешены, какие данные можно загружать, кто проверяет результат.</span></div>
+  <div class="c"><b>Замер «до» и «после»</b><span>Считаем сэкономленные часы по каждому процессу. Руководитель видит эффект в цифрах.</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Программа · 8 модулей</div>
+ <h2 style="margin-bottom:22px">4 недели, 2 занятия в неделю</h2>
+ <div class="mods">
+  <div class="mod"><i>Модуль 1</i><b>Основы и безопасность</b><span>Как думает нейросеть, где ошибается, формула промпта, 152-ФЗ и коммерческая тайна</span></div>
+  <div class="mod"><i>Модуль 2</i><b>Тексты и коммуникации</b><span>Письма, КП, ответы клиентам, регламенты и протоколы встреч</span></div>
+  <div class="mod"><i>Модуль 3</i><b>Таблицы и аналитика</b><span>Отчёты, формулы, разбор выгрузок, выводы для руководителя</span></div>
+  <div class="mod"><i>Модуль 4</i><b>Маркетинг и контент</b><span>Контент-план, тексты, изображения и короткие видео с ИИ</span></div>
+  <div class="mod"><i>Модуль 5</i><b>Продажи и сервис</b><span>Скрипты, разбор звонков, возражения, бот-администратор</span></div>
+  <div class="mod"><i>Модуль 6</i><b>HR и операции</b><span>Вакансии, разбор откликов, онбординг, база знаний компании</span></div>
+  <div class="mod"><i>Модуль 7</i><b>ИИ-агенты</b><span>Агент на базе знаний, автоматизации, связка с CRM и Telegram</span></div>
+  <div class="mod"><i>Модуль 8</i><b>Защита проектов</b><span>Команды показывают внедрённые процессы, замер эффекта, регламент</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Под каждый отдел</div>
+ <h2>Практика на задачах вашей команды</h2>
+ <div class="dep">
+  <div class="c"><b>Продажи</b><span>КП за 10 минут, письма-дожимы, разбор звонков, подготовка к встрече</span></div>
+  <div class="c"><b>Маркетинг</b><span>Контент на месяц за вечер, баннеры и фото, анализ конкурентов</span></div>
+  <div class="c"><b>HR</b><span>Вакансии, разбор 100 откликов за 15 минут, адаптация новичков</span></div>
+  <div class="c"><b>Финансы</b><span>Сводные отчёты, проверка таблиц, пояснения к цифрам</span></div>
+  <div class="c"><b>Сервис</b><span>Ответы клиентам и на отзывы, база типовых вопросов, бот 24/7</span></div>
+  <div class="c"><b>Руководители</b><span>Сводка дня, протоколы, подготовка решений, контроль задач</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Как проходит</div>
+ <h2>От диагностики до защиты проектов</h2>
+ <div class="steps" style="margin-top:16px">
+  <div class="st"><b>Диагностика</b><span>Анкета сотрудников и интервью с руководителем. Карта задач и выбор 3 процессов.</span></div>
+  <div class="st"><b>Занятия</b><span>Живые онлайн или офлайн по 2 часа: демо на ваших данных, практика, разбор.</span></div>
+  <div class="st"><b>Практика</b><span>Задание между занятиями на реальной задаче. Проверка куратором и ИИ-ассистентом.</span></div>
+  <div class="st"><b>Защита</b><span>Каждая команда показывает процесс «до» и «после». Регламент и план на 90 дней.</span></div>
+ </div>
+ <div class="g3" style="margin-top:40px">
+  <div class="c"><b>Свои данные</b><span>Работаем на задачах компании, а не на учебных примерах.</span></div>
+  <div class="c"><b>Честно про ИИ</b><span>Показываем, где он ошибается, и ставим проверку человеком.</span></div>
+  <div class="c"><b>Без технарей</b><span>Всё настраивается словами, программировать не нужно.</span></div>
+ </div>
+</section>
+
+<section class="s">
+ <div class="k">Форматы и стоимость</div>
+ <h2 style="margin-bottom:24px">Выберите глубину</h2>
+ <div class="g3" style="flex:1">
+  <div class="tar"><span class="tag">Знакомство</span><h3>Экспресс-день</h3><div class="pr">[цена] ₽</div><ul><li>1 день, 4 часа</li><li>Основы, безопасность, промпты</li><li>Практика на задачах отделов</li><li>Библиотека 30 промптов</li><li>До 30 сотрудников</li></ul></div>
+  <div class="tar hot"><span class="tag">Рекомендуем</span><h3>Программа 4 недели</h3><div class="pr">[цена] ₽</div><ul><li>8 занятий по 2 часа</li><li>Диагностика и карта задач</li><li>3 внедрённых процесса</li><li>Регламент ИИ в компании</li><li>Группа до 25 человек</li></ul></div>
+  <div class="tar"><span class="tag">Под ключ</span><h3>Обучение + внедрение</h3><div class="pr">[цена] ₽</div><ul><li>Всё из программы 4 недели</li><li>ИИ-агенты для отделов</li><li>Связка с CRM и Telegram</li><li>Куратор и 30 дней поддержки</li><li>Замер эффекта через месяц</li></ul></div>
+ </div>
+ <p style="font-size:16px;color:var(--mut);margin-top:14px">Стоимость зависит от числа сотрудников и формата: онлайн или в вашем офисе. Работаем по договору с ИП и ООО.</p>
+</section>
+
+<section class="s">
+ <div class="k">Кто ведёт</div>
+ <div style="display:grid;grid-template-columns:1.3fr .7fr;gap:50px;flex:1">
+  <div><h2>Ольга Пузанова</h2>
+   <p style="font-size:22px;color:var(--mut);margin-top:-14px">Предприниматель с 2021 года. Внедряю ИИ в свой бизнес каждый день и учу этому других.</p>
+   <div class="g2" style="margin-top:20px">
+    <div><div class="big">13 000+</div><p style="color:var(--mut);font-size:18px">участников программ</p></div>
+    <div><div class="big">500+</div><p style="color:var(--mut);font-size:18px">студентов</p></div>
+    <div><div class="big">×3</div><p style="color:var(--mut);font-size:18px">прибыль своего бизнеса после внедрения ИИ</p></div>
+    <div><div class="big">Спикер</div><p style="color:var(--mut);font-size:18px">Ozon, MarketGuru Conf, Пятый канал</p></div>
+   </div></div>
+  <div class="ph"><span>[фото Ольги]</span></div>
+ </div>
+</section>
+
+<section class="s dark">
+ <div class="k">Следующий шаг</div>
+ <h1 style="margin-top:40px">Начнём с бесплатной<br><mark>диагностики команды</mark></h1>
+ <p class="lead">30 минут с руководителем: найдём 3 процесса, где ИИ сэкономит больше всего часов, и подберём формат обучения.</p>
+ <div class="g3" style="margin-top:30px">
+  <div class="c"><b>Telegram</b><span>@puzanovateam</span></div>
+  <div class="c"><b>Сайт</b><span>agent.olgapuzanovva.ru</span></div>
+  <div class="c"><b>Канал</b><span>@aivwb · ИИ на простом</span></div>
+ </div>
+</section>
+
+</div></div>
+<div class="nav"><button id="prev" aria-label="Предыдущий слайд">←</button><span id="cnt"></span><button id="next" aria-label="Следующий слайд">→</button></div>
+<script>
+const S=[...document.querySelectorAll('.s')];let i=0;
+function go(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));cnt.textContent=(i+1)+' / '+S.length}
+next.onclick=()=>go(i+1);prev.onclick=()=>go(i-1);
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1)});
+let x0=null;addEventListener('touchstart',e=>x0=e.touches[0].clientX);addEventListener('touchend',e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>40)go(i+(d<0?1:-1));x0=null});
+function fit(){const k=Math.min(innerWidth/1280,(innerHeight-70)/720);deck.style.transform=`scale(${k})`}
+addEventListener('resize',fit);fit();go(0);
+</script></body></html>
