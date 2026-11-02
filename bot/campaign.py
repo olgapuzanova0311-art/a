@@ -7,23 +7,25 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_wish'
-TITLE = 'Твоё желание исполнено (план на 2027)'
+KEY = 'dr_tomorrow'
+TITLE = 'Завтра в 12:00 (подарки забираешь ты)'
 STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
 UNTIL = 1793696400                  # 03.11.2026 12:00 МСК: после начала эфира рассылка не уходит (и новым людям в боте тоже)
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = None                        # без картинки
-PHOTO_URL = None
+PHOTO = 'tomorrow.jpg'              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/tomorrow.jpg'
 
 TEXT = (
-    'Твоё желание исполнено ☑️ …ну почти 😉\n\n'
-    '{hello} спрашивала, что бы вы хотели на свой день рождения: время для себя, рост дохода или просто выспаться. '
-    'И поняла, что могу немного помочь 😄\n\n'
-    '3 ноября в 12:00, в мой день рождения, покажу на эфире, как сама вернула себе и время, и сон с помощью ИИ. '
-    'А ещё расскажу 23 вывода, которые поняла к 23 годам.\n\n'
-    'Подарок уже сейчас: мой шаблон плана на 2027, чтобы желание сбылось быстрее. Всё считается само 👇\n'
-    'https://olgapuzanova0311-art.github.io/perezagruzka/dr/plan/\n\n'
-    'До встречи на эфире 💙'
+    '{hello}, а подарки, как обычно, забираешь ты 🎁\n\n'
+    'Завтра в 12:00 по Москве жду тебя в канале @aivwb. Что там будет:\n\n'
+    '💙 23 вывода, которые я поняла к 23 годам, и самая дорогая ошибка этого года\n'
+    '🤖 мой ИИ-офис на живом экране: пишу одно сообщение, через 4 минуты готовая презентация\n'
+    '❓ ответы на вопросы из приглашения: что отдать ИИ первым и что делать, если он пишет дичь\n'
+    '🎁 розыгрыш месяца в Клубе ИИ среди тех, у кого секретный билет, и сюрприз, который бывает раз в год\n\n'
+    'Я знаю, как бывает с записями: сохраняешь «на потом», а потом так и не наступает 😄 '
+    'Так что поставь будильник на 11:50 и приходи вживую ⏰\n\n'
+    '📢 https://t.me/aivwb\n'
+    '🎟 Билет, если ещё нет: https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
 )
 LINK = 'https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
 BUTTON = '🎟 ЗАБРАТЬ ПРИГЛАШЕНИЕ 🎟'
@@ -31,7 +33,7 @@ BUTTON = '🎟 ЗАБРАТЬ ПРИГЛАШЕНИЕ 🎟'
 
 def text_for(first_name):
     name = (first_name or '').strip()
-    return TEXT.format(hello=f'{html.escape(name)}, я тут' if name else 'Я тут')
+    return TEXT.format(hello=f'{html.escape(name)}, день рождения у меня' if name else 'День рождения у меня')
 
 
 async def run(M):
