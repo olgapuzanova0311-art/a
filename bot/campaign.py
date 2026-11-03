@@ -29,6 +29,21 @@ CAMPAIGNS = [
         BUTTON='▶️ Подключиться в 18:00',
     ),
     dict(
+        KEY='dr_replay2',
+        TITLE='Начинаем последний повтор',
+        STAGE='all',
+        START=1793717700,               # 03.11.2026 17:55 МСК
+        UNTIL=1793719800,               # 03.11.2026 18:30 МСК: позже не отправляем
+        PHOTO='mne23.jpg',
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
+        TEXT=('Начинаем последний повтор эфира «Мне 23» 🔥\n\n'
+              'Больше показов не будет. Подключайся 👇\n'
+              'https://start.bizon365.ru/room/olgapuzanova/mne23'),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/olgapuzanova/mne23',
+        BUTTON='▶️ Подключиться',
+    ),
+    dict(
         KEY='dr_lots',
         TITLE='Подарки уже разбирают',
         STAGE='all',
