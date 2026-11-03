@@ -7,17 +7,18 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_today'
-TITLE = 'Сегодня, мне 23'
+KEY = 'dr_live'
+TITLE = 'Мы начали эфир'
 STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
-UNTIL = 1793699700                  # 03.11.2026 12:55 МСК: позже не отправляем (эфир идёт с 12:00)
+START = 1793696520                  # 03.11.2026 12:02 МСК: раньше не отправляем, бот ждёт этого времени
+UNTIL = 1793700000                  # 03.11.2026 13:00 МСК: позже не отправляем
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = 'today.jpg'                 # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/today.jpg'
+PHOTO = 'mne23.jpg'                 # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/mne23.jpg'
 
-TEXT = 'Сегодня тот самый день 🎉 Мне 23, и в 12:00 по Москве большой эфир. Жду тебя: https://t.me/aivwb'
-LINK = 'https://t.me/aivwb'
-BUTTON = '📢 Перейти в канал'
+TEXT = 'Ребята, мы начали большой праздничный эфир!!!\nВСЕХ ЖДУ 🚀🚀🚀\n\nhttps://start.bizon365.ru/room/olgapuzanova/mne23'
+LINK = 'https://start.bizon365.ru/room/olgapuzanova/mne23'
+BUTTON = '🚀 Зайти на эфир'
 
 
 def text_for(first_name):
@@ -30,6 +31,9 @@ async def run(M):
         return  # рассылка закончена: новые люди в боте её не получают
     if UNTIL and M.time.time() > UNTIL:
         return  # событие уже прошло
+    if START and M.time.time() < START:
+        log.info('campaign %s: ждём до %s', KEY, START)
+        await asyncio.sleep(START - M.time.time())
     try:
         if STAGE.startswith('test'):
             names = [n.lower() for n in TEST_USERNAMES]
