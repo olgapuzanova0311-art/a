@@ -7,32 +7,28 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_replay'
-TITLE = 'Повтор эфира в 15:00 и 18:00'
+KEY = 'dr_last'
+TITLE = 'Последний показ в 18:00'
 STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
-START = 1793703600                  # 03.11.2026 14:00 МСК: раньше не отправляем, бот ждёт этого времени
-UNTIL = 1793709000                  # 03.11.2026 15:30 МСК: позже не отправляем
+START = 1793712900                  # 03.11.2026 16:35 МСК: раньше не отправляем, бот ждёт этого времени
+UNTIL = 1793718000                  # 03.11.2026 18:00 МСК: позже не отправляем
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 PHOTO = 'mne23.jpg'                 # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
 PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/mne23.jpg'
 
 TEXT = (
-    '{hello} если не успел(а) на мой эфир, у меня супер новости 🎉\n\n'
-    'Делаю повтор сегодня в 15:00 и в 18:00. Там всё целиком: 23 вывода к 23 годам, '
-    'мой ИИ-офис на живом экране и подарки, которые бывают раз в год. '
-    'Они сгорают сегодня в 23:23, так что повтор это последний шанс.\n\n'
-    'Ссылка на повтор 👉 https://start.bizon365.ru/room/olgapuzanova/mne23'
+    '🎂 Сегодня у Ольги день рождения, и в 18:00 по Москве последний показ праздничного эфира «Мне 23»\n\n'
+    'Ольга делится 23 выводами, которые поняла к своим 23 годам, и показывает изнутри свой ИИ-офис '
+    'и контент-завод. А в конце открывает тайный лот для тех, кто досидит до конца.\n\n'
+    'Подключайтесь в 18:00:\n'
+    'https://start.bizon365.ru/room/102108/mne23'
 )
-LINK = 'https://start.bizon365.ru/room/olgapuzanova/mne23'
-BUTTON = '▶️ Смотреть повтор'
+LINK = 'https://start.bizon365.ru/room/102108/mne23'
+BUTTON = '▶️ Подключиться в 18:00'
 
 
 def text_for(first_name):
-    name = (first_name or '').strip()
-    if name:
-        return TEXT.format(hello=f'{html.escape(name)},')
-    t = TEXT.format(hello='')
-    return t[1].upper() + t[2:]
+    return TEXT
 
 
 async def run(M):
