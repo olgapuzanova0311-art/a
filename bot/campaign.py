@@ -7,32 +7,79 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_last'
-TITLE = 'Последний показ в 18:00'
-STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
-START = 1793712900                  # 03.11.2026 16:35 МСК: раньше не отправляем, бот ждёт этого времени
-UNTIL = 1793718000                  # 03.11.2026 18:00 МСК: позже не отправляем
+# Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
+CAMPAIGNS = [
+    dict(
+        KEY='dr_last',
+        TITLE='Последний показ в 18:00',
+        STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
+        START=1793712900,               # 03.11.2026 16:35 МСК
+        UNTIL=1793718000,               # 03.11.2026 18:00 МСК: позже не отправляем
+        PHOTO='mne23.jpg',              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
+        TEXT=(
+            '🎂 Сегодня у Ольги день рождения, и в 18:00 по Москве последний показ праздничного эфира «Мне 23»\n\n'
+            'Ольга делится 23 выводами, которые поняла к своим 23 годам, и показывает изнутри свой ИИ-офис '
+            'и контент-завод. А в конце открывает тайный лот для тех, кто досидит до конца.\n\n'
+            'Подключайтесь в 18:00:\n'
+            'https://start.bizon365.ru/room/102108/mne23'
+        ),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/102108/mne23',
+        BUTTON='▶️ Подключиться в 18:00',
+    ),
+    dict(
+        KEY='dr_lots',
+        TITLE='Подарки уже разбирают',
+        STAGE='all',
+        START=1793721600,               # 03.11.2026 19:00 МСК
+        UNTIL=1793734980,               # 03.11.2026 23:23 МСК: лоты сгорают
+        PHOTO='mne23.jpg',
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
+        TEXT=(
+            '{hello}одарки дня рождения уже разбирают 🔥\n\n'
+            'Царь лот: весь 2027 год всех моих курсов с кураторами за 73 323 ₽ или 6 111 ₽ в месяц, '
+            'мест всего 23. И ещё 7 лотов, от тайной коробки за 923 ₽ до года работы со мной.\n\n'
+            'К любому лоту бонус с колеса и инструкция, как собрать свой ИИ-офис. Всё действует до 23:23 👇\n'
+            'https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/'
+        ),
+        NAMED=True,                     # «Имя, подарки…» / без имени «Подарки…»
+        LINK='https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/',
+        BUTTON='🎁 Забрать подарок',
+    ),
+    dict(
+        KEY='dr_hour',
+        TITLE='Остался час',
+        STAGE='all',
+        START=1793733780,               # 03.11.2026 22:23 МСК
+        UNTIL=1793734980,               # 03.11.2026 23:23 МСК: лоты сгорают
+        PHOTO='mne23.jpg',
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
+        TEXT=('Остался час ⏰ В 23:23 лоты дня рождения сгорят до следующего года 👇 '
+              'https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/'),
+        NAMED=False,
+        LINK='https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/',
+        BUTTON='🎁 Забрать подарок',
+    ),
+]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = 'mne23.jpg'                 # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/mne23.jpg'
-
-TEXT = (
-    '🎂 Сегодня у Ольги день рождения, и в 18:00 по Москве последний показ праздничного эфира «Мне 23»\n\n'
-    'Ольга делится 23 выводами, которые поняла к своим 23 годам, и показывает изнутри свой ИИ-офис '
-    'и контент-завод. А в конце открывает тайный лот для тех, кто досидит до конца.\n\n'
-    'Подключайтесь в 18:00:\n'
-    'https://start.bizon365.ru/room/102108/mne23'
-)
-LINK = 'https://start.bizon365.ru/room/102108/mne23'
-BUTTON = '▶️ Подключиться в 18:00'
 
 
-def text_for(first_name):
-    return TEXT
+def text_for(c, first_name):
+    if not c['NAMED']:
+        return c['TEXT']
+    name = (first_name or '').strip()
+    return c['TEXT'].format(hello=f'{html.escape(name)}, п' if name else 'П')
 
 
 async def run(M):
     """M: модуль main (q, mark, bot, notify_admins, MX)."""
+    await asyncio.gather(*(run_one(M, c) for c in CAMPAIGNS))
+
+
+async def run_one(M, c):
+    KEY, TITLE, STAGE, START, UNTIL = c['KEY'], c['TITLE'], c['STAGE'], c['START'], c['UNTIL']
+    PHOTO, PHOTO_URL, LINK, BUTTON = c['PHOTO'], c['PHOTO_URL'], c['LINK'], c['BUTTON']
     if STAGE not in ('all',) and not STAGE.startswith('test'):
         return  # рассылка закончена: новые люди в боте её не получают
     if UNTIL and M.time.time() > UNTIL:
@@ -64,10 +111,10 @@ async def run(M):
             try:
                 kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)]])
                 if photo:
-                    m = await M.bot.send_photo(r['id'], photo, caption=text_for(r['first_name']), reply_markup=kb)
+                    m = await M.bot.send_photo(r['id'], photo, caption=text_for(c, r['first_name']), reply_markup=kb)
                     photo = m.photo[-1].file_id  # дальше шлём уже загруженную картинку
                 else:
-                    await M.bot.send_message(r['id'], text_for(r['first_name']), reply_markup=kb, disable_web_page_preview=True)
+                    await M.bot.send_message(r['id'], text_for(c, r['first_name']), reply_markup=kb, disable_web_page_preview=True)
                 ok += 1
             except Exception as e:
                 fail += 1
@@ -81,7 +128,7 @@ async def run(M):
                 if M.MX.q('SELECT 1 FROM max_sent WHERE user_id=? AND key=?', r['id'], mark_key).fetchone():
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
-                if await M.MX.send(r['id'], text_for(r['first_name']).replace('{', '{{').replace('}', '}}'),
+                if await M.MX.send(r['id'], text_for(c, r['first_name']).replace('{', '{{').replace('}', '}}'),
                                    [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]], photo=PHOTO_URL or None):
                     mx += 1
                 await asyncio.sleep(0.6)
