@@ -7,33 +7,21 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 
 log = logging.getLogger('campaign')
 
-KEY = 'dr_tomorrow'
-TITLE = 'Завтра в 12:00 (подарки забираешь ты)'
+KEY = 'dr_today'
+TITLE = 'Сегодня, мне 23'
 STAGE = 'all'                       # 'test…' → только тест; 'all' → всем пользователям Telegram и MAX; 'done' → рассылка закончена
-UNTIL = 1793696400                  # 03.11.2026 12:00 МСК: после начала эфира рассылка не уходит (и новым людям в боте тоже)
+UNTIL = 1793699700                  # 03.11.2026 12:55 МСК: позже не отправляем (эфир идёт с 12:00)
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
-PHOTO = 'tomorrow.jpg'              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/tomorrow.jpg'
+PHOTO = 'today.jpg'                 # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+PHOTO_URL = 'https://agent.olgapuzanovva.ru/img/today.jpg'
 
-TEXT = (
-    '{hello}, а подарки, как обычно, забираешь ты 🎁\n\n'
-    'Завтра в 12:00 по Москве жду тебя в канале @aivwb. Что там будет:\n\n'
-    '💙 23 вывода, которые я поняла к 23 годам, и самая дорогая ошибка этого года\n'
-    '🤖 мой ИИ-офис на живом экране: пишу одно сообщение, через 4 минуты готовая презентация\n'
-    '❓ ответы на вопросы из приглашения: что отдать ИИ первым и что делать, если он пишет дичь\n'
-    '🎁 розыгрыш месяца в Клубе ИИ среди тех, у кого секретный билет, и сюрприз, который бывает раз в год\n\n'
-    'Я знаю, как бывает с записями: сохраняешь «на потом», а потом так и не наступает 😄 '
-    'Так что поставь будильник на 11:50 и приходи вживую ⏰\n\n'
-    '📢 https://t.me/aivwb\n'
-    '🎟 Билет, если ещё нет: https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
-)
-LINK = 'https://olgapuzanova0311-art.github.io/perezagruzka/dr/'
-BUTTON = '🎟 ЗАБРАТЬ ПРИГЛАШЕНИЕ 🎟'
+TEXT = 'Сегодня тот самый день 🎉 Мне 23, и в 12:00 по Москве большой эфир. Жду тебя: https://t.me/aivwb'
+LINK = 'https://t.me/aivwb'
+BUTTON = '📢 Перейти в канал'
 
 
 def text_for(first_name):
-    name = (first_name or '').strip()
-    return TEXT.format(hello=f'{html.escape(name)}, день рождения у меня' if name else 'День рождения у меня')
+    return TEXT
 
 
 async def run(M):
