@@ -24,10 +24,10 @@ header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;ba
 .btn.y{background:var(--yellow)}.btn.b{background:var(--blue);color:#fff;border-color:var(--blue)}
 .btn.sm{height:34px;padding:0 12px;font-size:13px}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0;overflow:hidden}
-.stage{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;padding:16px;gap:12px}
+.stage{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto auto;min-height:0;padding:16px;gap:12px}
 .room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;min-height:240px;box-shadow:6px 6px 0 var(--yellow)}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
-@media (max-width:600px){.hint{display:none}}
+@media (max-width:600px){.hint,#feedHint{display:none}}
 .hint{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.92);border:1.5px solid var(--ink);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
 .team{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
 .card{flex:none;display:flex;gap:10px;align-items:center;padding:8px 12px 8px 8px;border-radius:16px;border:1.5px solid var(--ink);background:var(--white);cursor:pointer;min-width:190px}
@@ -40,6 +40,20 @@ header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;ba
 .st{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B8B8C0;margin-right:5px;vertical-align:1px}
 .st.working{background:#2BB673;animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.35}}
+.feed{border:1.5px solid var(--ink);border-radius:16px;background:var(--white);display:grid;grid-template-rows:auto minmax(0,1fr);height:190px;min-width:0}
+.feed h4{margin:0;padding:8px 12px;font-size:13px;font-weight:800;border-bottom:1.5px solid var(--line);display:flex;gap:8px;align-items:center}
+.feed h4 small{font-weight:600;color:var(--ink2)}
+.fl{overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
+.fi{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start;padding:5px 8px;border-radius:10px;font-size:13px;line-height:1.4;cursor:pointer}
+.fi:hover{background:var(--cream)}
+.fi time{font-size:11px;font-weight:700;color:var(--ink2);padding-top:2px;font-variant-numeric:tabular-nums}
+.fi b{font-weight:800}.fi .to{color:var(--ink2);font-weight:700}
+.fi .tx{color:var(--ink);overflow-wrap:anywhere}
+.fi.incoming{background:#FFF1C9;border:1.5px solid var(--yellow)}
+.fi.done .tx{color:#11653A}.fi.step{opacity:.75;font-size:12.5px}
+.fi.fresh{animation:fin .6s ease-out}
+@keyframes fin{from{transform:translateY(6px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.fi.fresh{animation:none}}
 aside{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;border-left:1.5px solid var(--ink);background:var(--white);min-height:0;overflow:hidden}
 .ah{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1.5px solid var(--line)}
 .ah .av{width:44px;height:44px;font-size:18px}
@@ -77,6 +91,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
 .modal h3{margin:0;font-size:22px}
 .err{color:#B42318;font-size:13px;font-weight:600;min-height:1em}
 @media (max-width:900px){
+  .feed{height:220px}
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
   .app{height:auto;min-height:100dvh}
   .room{height:58vw;min-height:220px}
@@ -98,6 +113,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
   <div class="main">
     <section class="stage">
       <div class="room"><canvas id="cv"></canvas><span class="hint">Нажми на робота, чтобы поговорить</span></div>
+      <div class="feed"><h4>📡 Что происходит в офисе <small id="feedHint">задачи и переговоры агентов</small></h4><div class="fl" id="feed"></div></div>
       <div class="team" id="team"></div>
     </section>
     <aside>
@@ -297,10 +313,11 @@ function nextVisit(ra){
   }
   var rb = robots[v.to]; if (!rb) return nextVisit(ra);
   ra.walking = true; ra.busyUntil = tick + 100000;
-  say(ra.id, v.text === 'готово' ? '✅ готово' : '📋 несу задачу', 160);
+  var ready = /^(готово|⚠️)/.test(v.text || '');
+  say(ra.id, ready ? '✅ несу отчёт' : '📋 несу задачу', 160);
   goTo(ra, rb.x + (rb.x > 200 ? -14 : 14), rb.y, function(){
     var t = v.text || '💬';
-    say(ra.id, t === 'готово' ? '✅ Готово, вот отчёт' : t.slice(0, 46) + (t.length > 46 ? '…' : ''), 220);
+    say(ra.id, ready ? '✅ Готово, вот отчёт' : t.slice(0, 46) + (t.length > 46 ? '…' : ''), 220);
     setTimeout(function(){ say(v.to, '👍', 120); }, 900);
     var wait = tick + 150;
     ra.plan = null;
@@ -321,10 +338,69 @@ function hired(e){
   if (boss && boss !== e.a) talk(boss, e.a, '🤝 Добро пожаловать в команду!');
   setTimeout(function(){ r.busyUntil = 0; if (a) { var s = seat(agent(e.a) || a); goTo(r, s.x, s.y); } }, 5200);
 }
+// задача упала: сверху плашка, из окна к столу оркестратора летит конверт
+var letters = [];
+function incoming(e){
+  var parts = String(e.text || '').split('|'), src = parts[0], text = parts.slice(1).join('|');
+  banner = {title: '📥 Новая задача ' + (src === 'Офис' ? 'в офисе' : 'из ' + src), sub: text.slice(0, 90) + (text.length > 90 ? '…' : ''), until: tick + 420};
+  var r = robots[e.a];
+  if (!r) return;
+  letters.push({x: r.x < W / 2 ? W - 30 : 30, y: 22, tx: r.x, ty: r.y - 24, t: 0, to: e.a});
+}
 function onEvent(e){
   if (e.type === 'talk') talk(e.a, e.b, e.text);
   else if (e.type === 'hire') hired(e);
+  else if (e.type === 'incoming') incoming(e);
+  else if (e.type === 'step') say(e.a, e.text, 200);
+  else if (e.type === 'reply') say(e.a, '💬 ответил Оле', 160);
 }
+function drawLetters(){
+  letters = letters.filter(function(l){ return l.t <= 1; });
+  letters.forEach(function(l){
+    l.t += 1 / 90;
+    var k = Math.min(1, l.t), e = 1 - Math.pow(1 - k, 3), x = l.x + (l.tx - l.x) * e, y = l.y + (l.ty - l.y) * e - Math.sin(k * Math.PI) * 30;
+    rect(x - 6, y - 4, 12, 8, '#FFFFFF'); rect(x - 6, y - 4, 12, 1, '#141414'); rect(x - 6, y + 3, 12, 1, '#141414');
+    rect(x - 6, y - 4, 1, 8, '#141414'); rect(x + 5, y - 4, 1, 8, '#141414');
+    rect(x - 4, y - 2, 2, 1, '#141414'); rect(x - 2, y - 1, 4, 1, '#141414'); rect(x + 2, y - 2, 2, 1, '#141414');
+    rect(x - 1, y, 2, 2, '#E8467C');
+    if (l.t > 1) say(l.to, 'Беру в работу 📥', 200);
+  });
+}
+
+/* ================= лента ================= */
+var FEED = [], FEED_SEEN = {};
+function hhmm(ts){ var d = new Date(ts * 1000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function nm(id){ var a = agent(id); return a ? a.name : 'агент'; }
+function feedHtml(e){
+  var t = String(e.text || ''), cls = e.type, who = '', tx = '';
+  if (e.type === 'incoming') { var p = t.split('|'); who = '📥 <b>Задача ' + (p[0] === 'Офис' ? 'в офисе' : 'из ' + esc(p[0])) + '</b> <span class="to">→ ' + esc(nm(e.a)) + '</span>'; tx = p.slice(1).join('|'); }
+  else if (e.type === 'talk') {
+    var rep = /^(готово|⚠️)/.test(t);
+    if (rep) { cls += ' done'; tx = t.replace(/^готово:?\s*/, ''); }
+    else tx = t;
+    who = (rep ? '✅ ' : '📋 ') + '<b>' + esc(nm(e.a)) + '</b> <span class="to">→ ' + esc(nm(e.b)) + (rep ? ', отчёт' : '') + '</span>';
+  }
+  else if (e.type === 'reply') { who = '💬 <b>' + esc(nm(e.a)) + '</b> <span class="to">→ Оля</span>'; tx = t; }
+  else if (e.type === 'step') { who = '<b>' + esc(nm(e.a)) + '</b>'; tx = t; }
+  else if (e.type === 'hire') { var h = t.split('|'); who = '🧑‍💼 <b>Нанят: ' + esc(h[0]) + '</b>'; tx = h[1] || ''; }
+  else return '';
+  return '<div class="fi ' + cls + '" data-a="' + (e.a || '') + '"><time>' + hhmm(e.ts) + '</time><div>' + who + (tx ? ': <span class="tx">' + esc(tx) + '</span>' : '') + '</div></div>';
+}
+function addFeed(list, fresh){
+  var box = $('feed'), atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40, added = '';
+  list.forEach(function(e){
+    if (FEED_SEEN[e.id] || ['incoming','talk','reply','step','hire'].indexOf(e.type) < 0) return;
+    FEED_SEEN[e.id] = 1; FEED.push(e);
+    var h = feedHtml(e); if (fresh) h = h.replace('class="fi ', 'class="fi fresh ');
+    added += h;
+  });
+  if (!added) { if (!FEED.length) box.innerHTML = '<p class="empty" style="margin:20px auto">Пока тихо. Дай задачу оркестратору здесь или в Telegram, и тут будет видно, кому он её раздал и что ответили агенты.</p>'; return; }
+  if (box.querySelector('.empty')) box.innerHTML = '';
+  box.insertAdjacentHTML('beforeend', added);
+  while (box.children.length > 120) box.removeChild(box.firstChild);
+  if (atBottom || !fresh) box.scrollTop = box.scrollHeight;
+}
+$('feed').addEventListener('click', function(e){ var f = e.target.closest('.fi'); if (f && +f.dataset.a) select(+f.dataset.a); });
 
 function resize(){
   var r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -341,6 +417,7 @@ function frame(){
   var occ = new Map(); seating().used.forEach(function(p){ occ.set(p[0], p[1]); });
   ZONES.forEach(function(z){ z.desks.forEach(function(d){ drawDesk(d, occ.get(d)); }); });
   Object.keys(robots).map(function(k){ return robots[k]; }).sort(function(a, b){ return a.y - b.y; }).forEach(drawRobot);
+  drawLetters();
   var v = view(), dpr = cv.width / cv.getBoundingClientRect().width || 1;
   ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#2b2d42'; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.drawImage(off, v.ox, v.oy, W * v.s, H * v.s);
@@ -509,7 +586,8 @@ function poll(){
     S.agents = d.agents; S.tasks = d.tasks; S.depts = d.depts || S.depts;
     var nw = d.agents.filter(function(a){ return a.status === 'working'; }).length;
     $('stats').innerHTML = '<b class="g">●</b> ' + nw + ' в работе · ' + (d.agents.length - nw) + ' свободны · ' + (d.depts || []).length + ' отделов';
-    if (!first) { syncRobots(); d.events.filter(function(e){ return e.ts > Date.now() / 1000 - 180; }).forEach(onEvent); }
+    if (!first) { syncRobots(); d.events.filter(function(e){ return e.ts > Date.now() / 1000 - 180; }).forEach(onEvent); addFeed(d.events, true); }
+    else addFeed(d.feed || [], false);
     // при первом открытии проигрываем недавние события, чтобы было видно, как раздавались задачи
     S.last = first ? Math.max(0, d.last - 20) : d.last;
     $('brain').textContent = d.brain ? '🧠 ' + d.model.split('/').pop() : '🔌 нейросеть не подключена';

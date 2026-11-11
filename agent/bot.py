@@ -169,8 +169,18 @@ def tool_line(name, inp):
     return f"{TOOL_RU.get(name, '🔧 ' + name)} {Path(target).name if '/' in str(target) else target}"[:80]
 
 
-async def run_claude(cid, prompt):
+async def office_inbox(data):
+    """Показать в ИИ-офисе: задача упала из Telegram, шаги работы, итог. Ошибки офиса работу не останавливают."""
+    try:
+        return await asyncio.to_thread(office_call, lambda o: o.call('/api/inbox', data)) or {}
+    except Exception as e:
+        log.warning('office inbox %s: %s', data.get('action'), e)
+        return {}
+
+
+async def run_claude(cid, prompt, office_tid=None):
     sid = state.get('sessions', {}).get(str(cid))
+    office_tid = office_tid or (await office_inbox({'action': 'start', 'text': prompt, 'source': 'Telegram'})).get('id')
     args = ['claude', '-p', prompt, '--output-format', 'stream-json', '--verbose', '--model', MODEL,
             '--permission-mode', 'bypassPermissions', '--append-system-prompt', SYSTEM]
     if sid:
@@ -196,6 +206,8 @@ async def run_claude(cid, prompt):
                 for b in ev.get('message', {}).get('content', []):
                     if b.get('type') == 'tool_use':
                         steps.append(tool_line(b.get('name', ''), b.get('input') or {}))
+                        if office_tid:
+                            asyncio.create_task(office_inbox({'action': 'step', 'id': office_tid, 'text': steps[-1]}))
                 if mid and steps and time.time() - last_edit > 4:
                     last_edit = time.time()
                     await tg('editMessageText', chat_id=cid, message_id=mid,
@@ -210,7 +222,7 @@ async def run_claude(cid, prompt):
         err = (await proc.stderr.read()).decode(errors='ignore')[-500:]
         if sid and 'session' in err.lower():
             state.setdefault('sessions', {}).pop(str(cid), None); save(state)
-            return await run_claude(cid, prompt)
+            return await run_claude(cid, prompt, office_tid)
         result, failed = f'⚠️ Не получилось: {err or "процесс остановлен"}', True
     if new_sid:
         state.setdefault('sessions', {})[str(cid)] = new_sid; save(state)
@@ -219,6 +231,8 @@ async def run_claude(cid, prompt):
                  text=('⚠️ Остановилась' if failed else '✅ Готово') + (f' · шагов: {len(steps)}' if steps else ''))
     await say(cid, result)
     await send_outbox(cid, started)
+    if office_tid:
+        await office_inbox({'action': 'done', 'id': office_tid, 'result': result, 'error': failed})
 
 
 async def send_file(cid, path: Path):

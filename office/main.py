@@ -183,7 +183,16 @@ q("UPDATE tasks SET status='error', result='Офис перезапускалс�
 
 
 def event(type_, a=None, b=None, text=''):
-    q('INSERT INTO events(type, a, b, text, ts) VALUES(?,?,?,?,?)', type_, a, b, text[:200], time.time())
+    q('INSERT INTO events(type, a, b, text, ts) VALUES(?,?,?,?,?)', type_, a, b, (text or '')[:400], time.time())
+
+
+def snip(text, n=300):
+    t = re.sub(r'\s+', ' ', str(text or '')).strip()
+    return t if len(t) <= n else t[:n - 1] + '…'
+
+
+# события для ленты «что происходит в офисе»
+FEED_TYPES = ('incoming', 'talk', 'reply', 'step', 'hire')
 
 
 def add_msg(agent_id, role, author, text):
@@ -318,6 +327,7 @@ async def agent_reply(agent_id, final=False):
     add_msg(agent_id, 'agent', a['name'], text)
     set_status(agent_id, 'idle')
     if a['is_main']:
+        event('reply', agent_id, None, snip(DELEGATE_RE.sub('', text) or text))
         await tg_send(text)
         if not final:
             hire(text)
@@ -346,7 +356,7 @@ async def delegate(main, text):
             continue
         tid = q('INSERT INTO tasks(agent_id, title, status, from_agent, created, updated) VALUES(?,?,?,?,?,?)',
                 target['id'], task.strip(), 'queued', main['id'], time.time(), time.time()).lastrowid
-        event('talk', main['id'], target['id'], task.strip())
+        event('talk', main['id'], target['id'], snip(task))
         jobs.append(run_task(tid))
         names.append(target['name'])
     if not jobs:
@@ -370,7 +380,7 @@ async def run_task(task_id):
     add_msg(a['id'], 'agent', a['name'], result)
     set_status(a['id'], 'idle')
     if t['from_agent']:
-        event('talk', a['id'], t['from_agent'], 'готово')
+        event('talk', a['id'], t['from_agent'], 'готово: ' + snip(result))
         add_msg(t['from_agent'], 'system', a['name'], f'Отчёт по задаче «{t["title"][:80]}»:\n\n{result}')
         await tg_send(f'✅ {a["name"]} закончил: {t["title"][:80]}')
 
@@ -454,6 +464,7 @@ async def tg_handle(msg):
         text = f'[Пересланное сообщение от {who}]\n{text}'
     m = main_agent()
     add_msg(m['id'], 'user', 'Оля', text[:8000])
+    event('incoming', m['id'], None, 'Telegram|' + snip(text))
     await tg_call('sendChatAction', chat_id=cid, action='typing')
     asyncio.create_task(agent_reply(m['id']))
 
@@ -538,7 +549,10 @@ async def state(req):
                                 'FROM tasks ORDER BY id DESC LIMIT 40').fetchall()]
     events = [dict(r) for r in q('SELECT * FROM events WHERE id > ? ORDER BY id LIMIT 200', since).fetchall()]
     last = q('SELECT COALESCE(MAX(id),0) FROM events').fetchone()[0]
-    return web.json_response({'agents': agents, 'tasks': tasks, 'depts': [[k, v[0], v[1]] for k, v in D.DEPTS.items()], 'events': events if since else [], 'last': last,
+    # при первом открытии отдаём историю ленты, дальше она пополняется из events
+    feed = [] if since else [dict(r) for r in q(
+        f"SELECT * FROM events WHERE type IN ({','.join('?' * len(FEED_TYPES))}) ORDER BY id DESC LIMIT 60", *FEED_TYPES).fetchall()][::-1]
+    return web.json_response({'feed': feed, 'agents': agents, 'tasks': tasks, 'depts': [[k, v[0], v[1]] for k, v in D.DEPTS.items()], 'events': events if 'since' in req.query else [], 'last': last,
                               'brain': bool(CLAUDE_KEY or API_KEY or SUBSCRIPTION_URL),
                               'model': (CLAUDE_MODEL + ' · подписка') if SUBSCRIPTION_URL and PASSWORD else (CLAUDE_MODEL if CLAUDE_KEY else MODEL)}, dumps=dumps_ru)
 
@@ -559,6 +573,7 @@ async def chat(req):
     if not text:
         return web.json_response({'ok': False})
     add_msg(aid, 'user', 'Оля', text[:8000])
+    event('incoming', aid, None, 'Офис|' + snip(text))
     asyncio.create_task(agent_reply(aid))
     return web.json_response({'ok': True})
 
@@ -573,7 +588,9 @@ async def new_task(req):
     tid = q('INSERT INTO tasks(agent_id, title, status, from_agent, created, updated) VALUES(?,?,?,?,?,?)',
             aid, title[:8000], 'queued', frm, time.time(), time.time()).lastrowid
     if frm:
-        event('talk', frm, aid, title[:200])
+        event('talk', frm, aid, snip(title))
+    elif not d.get('external'):
+        event('incoming', aid, None, 'Офис|' + snip(title))
     if d.get('external'):
         # задачу выполняет агент завода (Claude Code в Telegram), офис только показывает работу и отчёт
         q("UPDATE tasks SET status='working', updated=? WHERE id=?", time.time(), tid)
@@ -582,6 +599,39 @@ async def new_task(req):
     else:
         asyncio.create_task(run_task(tid))
     return web.json_response({'ok': True, 'id': tid})
+
+
+async def inbox(req):
+    """Задачи, которые Ольга даёт Claude Code в Telegram (сервис agent): офис показывает, что задача упала,
+    шаги работы и итог. action: start {text, source} → id, step {id, text}, done {id, result, error}."""
+    d = await req.json()
+    m = main_agent()
+    if not m:
+        return web.json_response({'ok': False})
+    act = d.get('action')
+    if act == 'start':
+        text = str(d.get('text', '')).strip()[:8000] or '(вложение)'
+        src = str(d.get('source') or 'Telegram')[:30]
+        tid = q('INSERT INTO tasks(agent_id, title, status, from_agent, created, updated) VALUES(?,?,?,?,?,?)',
+                m['id'], text, 'working', None, time.time(), time.time()).lastrowid
+        add_msg(m['id'], 'user', f'Оля ({src})', text)
+        event('incoming', m['id'], None, f'{src}|{snip(text)}')
+        set_status(m['id'], 'working')
+        return web.json_response({'ok': True, 'id': tid})
+    if act == 'step':
+        event('step', m['id'], None, snip(d.get('text', ''), 120))
+        return web.json_response({'ok': True})
+    if act == 'done':
+        tid = int(d.get('id') or 0)
+        result = str(d.get('result', ''))[:20000]
+        err = bool(d.get('error'))
+        q('UPDATE tasks SET status=?, result=?, updated=? WHERE id=? AND agent_id=?', 'error' if err else 'done', result, time.time(), tid, m['id'])
+        add_msg(m['id'], 'agent', m['name'], result or '…')
+        event('reply', m['id'], None, ('⚠️ ' if err else '') + snip(result))
+        if not q("SELECT 1 FROM tasks WHERE agent_id=? AND status='working'", m['id']).fetchone():
+            set_status(m['id'], 'idle')
+        return web.json_response({'ok': True})
+    return web.json_response({'ok': False}, status=400)
 
 
 async def finish_task(req):
@@ -598,7 +648,7 @@ async def finish_task(req):
         add_msg(a['id'], 'agent', a['name'], result)
         set_status(a['id'], 'idle')
         if t['from_agent']:
-            event('talk', a['id'], t['from_agent'], 'готово')
+            event('talk', a['id'], t['from_agent'], ('⚠️ ' if status == 'error' else 'готово: ') + snip(result))
             add_msg(t['from_agent'], 'system', a['name'], f'Отчёт по задаче «{t["title"][:80]}»:\n\n{result}')
     return web.json_response({'ok': True})
 
@@ -639,7 +689,7 @@ def make_app():
     app.add_routes([
         web.get('/', index), web.get('/health', health),
         web.post('/api/login', login), web.get('/api/state', state), web.get('/api/messages', messages),
-        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/agents', save_agent),
+        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/inbox', inbox), web.post('/api/agents', save_agent),
         web.delete('/api/agents/{id}', delete_agent), web.get('/api/templates', templates),
     ])
     app.on_startup.append(on_start)
