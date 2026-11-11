@@ -23,9 +23,12 @@ header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;ba
 .btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--ink);background:var(--white);font-weight:700;font-size:14px;white-space:nowrap}
 .btn.y{background:var(--yellow)}.btn.b{background:var(--blue);color:#fff;border-color:var(--blue)}
 .btn.sm{height:34px;padding:0 12px;font-size:13px}
-.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0;overflow:hidden}
-.stage{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto auto;min-height:0;padding:16px;gap:12px}
-.room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;min-height:240px;box-shadow:6px 6px 0 var(--yellow)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0;overflow:hidden}
+.app.wide .main{grid-template-columns:minmax(0,1fr)}
+.app.wide aside{display:none}
+.stage{min-width:0;display:grid;grid-template-rows:auto auto auto;align-content:start;min-height:0;overflow-y:auto;padding:16px;gap:12px}
+/* офис во всю ширину колонки, пропорции холста 512×320; ниже лента и команда, колонка прокручивается */
+.room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;width:100%;aspect-ratio:512/320;max-width:100%;box-shadow:6px 6px 0 var(--yellow)}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
 @media (max-width:600px){.hint,#feedHint{display:none}}
 .hint{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.92);border:1.5px solid var(--ink);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
@@ -94,7 +97,8 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
   .feed{height:220px}
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
   .app{height:auto;min-height:100dvh}
-  .room{height:58vw;min-height:220px}
+  .stage{overflow:visible}
+  .room{min-height:220px}
   aside{border-left:0;border-top:1.5px solid var(--ink);height:78dvh}
   header .hide-m{display:none}
 }
@@ -107,6 +111,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
     <span class="brain" id="brain">…</span>
     <span class="stats hide-m" id="stats"></span>
     <span class="sp"></span>
+    <button class="btn sm hide-m" id="btnWide" aria-pressed="false">⛶ Офис крупнее</button>
     <button class="btn sm hide-m" id="btnTasks">📋 Задачи</button>
     <button class="btn y sm" id="btnHire">+ Нанять агента</button>
   </header>
@@ -426,7 +431,7 @@ function frame(){
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   Object.keys(robots).forEach(function(k){
     var r = robots[k], a = agent(r.id); if (!a) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(10, Math.round(3.6 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(11, Math.round(4.6 * v.s));
     ctx.font = '700 ' + fs + 'px Onest, sans-serif';
     var nm = a.name.replace(/^AI-/, ''), t = nm.length > 14 ? nm.slice(0, 13) + '…' : nm, tw = ctx.measureText(t).width + 10 * dpr;
     ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
@@ -444,7 +449,7 @@ function frame(){
   bubbles = bubbles.filter(function(b){ return b.until > tick; });
   bubbles.forEach(function(b){
     var r = robots[b.id]; if (!r) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(11, Math.round(3.8 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(12, Math.round(4.8 * v.s));
     ctx.font = '600 ' + fs + 'px Onest, sans-serif';
     var tw = Math.min(ctx.measureText(b.text).width + 16 * dpr, cv.width * .6);
     ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5 * dpr;
@@ -460,7 +465,7 @@ function drawSigns(v, dpr){
   names.lounge = 'Лаунж';
   S.agents.forEach(function(a){ var k = deptOf(a); counts[k] = (counts[k] || 0) + 1; if (a.status === 'working') busy[k] = true; });
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  var fs = Math.max(10, Math.round(3.3 * v.s));
+  var fs = Math.max(11, Math.round(4.2 * v.s));
   ZONES.forEach(function(z){
     var label = (DEPT_ICON[z.key] || '') + ' ' + (names[z.key] || z.key), n = counts[z.key] || 0;
     ctx.font = '800 ' + fs + 'px Onest, sans-serif';
@@ -480,9 +485,10 @@ cv.addEventListener('click', function(ev){
   var b = cv.getBoundingClientRect(), dpr = cv.width / b.width, v = view();
   var x = ((ev.clientX - b.left) * dpr - v.ox) / v.s, y = ((ev.clientY - b.top) * dpr - v.oy) / v.s, best = null, bd = 14;
   Object.keys(robots).forEach(function(k){ var r = robots[k], d = Math.hypot(r.x - x, (r.y - 8) - y); if (d < bd) { bd = d; best = r.id; } });
-  if (best) select(best);
+  if (best) { if (document.querySelector('.app').classList.contains('wide')) setWide(false); select(best); }
 });
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
 
 /* ================= панели ================= */
 function deptName(a){ var k = deptOf(a), n = k === 'lounge' ? 'Без отдела' : k; (S.depts || []).forEach(function(d){ if (d[0] === k) n = d[1]; }); return n; }
@@ -547,7 +553,16 @@ function send(asTask){
 $('send').onclick = function(){ send(false); };
 $('task').onclick = function(){ send(true); };
 $('inp').addEventListener('keydown', function(e){ if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(false); });
-$('btnTasks').onclick = function(){ document.querySelector('.tab[data-tab="tasks"]').click(); };
+$('btnTasks').onclick = function(){ setWide(false); document.querySelector('.tab[data-tab="tasks"]').click(); };
+// «Офис крупнее»: прячем правую панель, офис на всю ширину; клик по роботу возвращает панель
+function setWide(on){
+  document.querySelector('.app').classList.toggle('wide', on);
+  $('btnWide').setAttribute('aria-pressed', on); $('btnWide').textContent = on ? '◧ Показать чат' : '⛶ Офис крупнее';
+  try { localStorage.setItem('office:wide', on ? '1' : ''); } catch (e) {}
+  setTimeout(resize, 0);
+}
+$('btnWide').onclick = function(){ setWide(!document.querySelector('.app').classList.contains('wide')); };
+try { if (localStorage.getItem('office:wide')) setWide(true); } catch (e) {}
 
 /* ================= найм ================= */
 var TPLS = [];
