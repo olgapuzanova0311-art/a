@@ -26,9 +26,14 @@ header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;ba
 .main{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0;overflow:hidden}
 .app.wide .main{grid-template-columns:minmax(0,1fr)}
 .app.wide aside{display:none}
-.stage{min-width:0;display:grid;grid-template-rows:auto auto auto;align-content:start;min-height:0;overflow-y:auto;padding:16px;gap:12px}
-/* офис во всю ширину колонки, пропорции холста 512×320; ниже лента и команда, колонка прокручивается */
-.room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;width:100%;aspect-ratio:512/320;max-width:100%;box-shadow:6px 6px 0 var(--yellow)}
+.stage{min-width:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;min-height:0;padding:16px;gap:12px}
+/* обычный режим: офис занимает всю свободную высоту, под ним лента и команда — всё на одном экране.
+   режим «Офис крупнее»: чат спрятан, лента встаёт колонкой справа от офиса */
+.app.wide .stage{grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr) auto}
+.app.wide .room{grid-column:1;grid-row:1}
+.app.wide .feed{grid-column:2;grid-row:1;height:auto;min-height:0}
+.app.wide .team{grid-column:1 / -1;grid-row:2}
+.room{position:relative;border:2px solid var(--ink);border-radius:20px;overflow:hidden;background:#2b2d42;min-height:240px;box-shadow:6px 6px 0 var(--yellow)}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
 @media (max-width:600px){.hint,#feedHint{display:none}}
 .hint{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.92);border:1.5px solid var(--ink);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
@@ -43,7 +48,7 @@ header{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 16px;ba
 .st{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B8B8C0;margin-right:5px;vertical-align:1px}
 .st.working{background:#2BB673;animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.35}}
-.feed{border:1.5px solid var(--ink);border-radius:16px;background:var(--white);display:grid;grid-template-rows:auto minmax(0,1fr);height:190px;min-width:0}
+.feed{border:1.5px solid var(--ink);border-radius:16px;background:var(--white);display:grid;grid-template-rows:auto minmax(0,1fr);height:170px;min-width:0}
 .feed h4{margin:0;padding:8px 12px;font-size:13px;font-weight:800;border-bottom:1.5px solid var(--line);display:flex;gap:8px;align-items:center}
 .feed h4 small{font-weight:600;color:var(--ink2)}
 .fl{overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
@@ -97,8 +102,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue);ba
   .feed{height:220px}
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
   .app{height:auto;min-height:100dvh}
-  .stage{overflow:visible}
-  .room{min-height:220px}
+  .room{height:62vw;min-height:220px}
   aside{border-left:0;border-top:1.5px solid var(--ink);height:78dvh}
   header .hide-m{display:none}
 }
@@ -431,7 +435,7 @@ function frame(){
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   Object.keys(robots).forEach(function(k){
     var r = robots[k], a = agent(r.id); if (!a) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(11, Math.round(4.6 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(8 * dpr, Math.round(4.6 * v.s));
     ctx.font = '700 ' + fs + 'px Onest, sans-serif';
     var nm = a.name.replace(/^AI-/, ''), t = nm.length > 14 ? nm.slice(0, 13) + '…' : nm, tw = ctx.measureText(t).width + 10 * dpr;
     ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
@@ -449,7 +453,7 @@ function frame(){
   bubbles = bubbles.filter(function(b){ return b.until > tick; });
   bubbles.forEach(function(b){
     var r = robots[b.id]; if (!r) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(12, Math.round(4.8 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(10 * dpr, Math.round(4.8 * v.s));
     ctx.font = '600 ' + fs + 'px Onest, sans-serif';
     var tw = Math.min(ctx.measureText(b.text).width + 16 * dpr, cv.width * .6);
     ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5 * dpr;
@@ -465,7 +469,7 @@ function drawSigns(v, dpr){
   names.lounge = 'Лаунж';
   S.agents.forEach(function(a){ var k = deptOf(a); counts[k] = (counts[k] || 0) + 1; if (a.status === 'working') busy[k] = true; });
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  var fs = Math.max(11, Math.round(4.2 * v.s));
+  var fs = Math.max(8 * dpr, Math.round(4.2 * v.s));
   ZONES.forEach(function(z){
     var label = (DEPT_ICON[z.key] || '') + ' ' + (names[z.key] || z.key), n = counts[z.key] || 0;
     ctx.font = '800 ' + fs + 'px Onest, sans-serif';
