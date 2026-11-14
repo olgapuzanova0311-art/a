@@ -224,6 +224,8 @@ async def access_kb(uid):
 
 def plan_funnel(uid, t0):
     exp = t0 + 48 * H
+    if is_night(exp):
+        exp = day_shift(exp)  # цена не дорожает ночью: держим 1 490 до 9:00
     db.run('UPDATE users SET started_at=?, expires_at=? WHERE id=?', t0, exp, uid)
     db.schedule(uid, 'm2', t0 + 4 * 60 / SCALE)
     db.schedule(uid, 'm3', t0 + 40 * 60 / SCALE)
@@ -247,6 +249,18 @@ def plan_funnel(uid, t0):
     db.schedule(uid, 'm10', day_shift(t0 + 50 * H))
     db.schedule(uid, 'm11', day_shift(t0 + 120 * H))
     db.schedule(uid, 'k', day_shift(t0 + 144 * H))
+    spread(uid)
+
+
+def spread(uid, gap=2 * 3600):
+    """Разносит дожимы, которые после переноса с ночи попали на одно время, минимум на 2 часа."""
+    prev = 0
+    for j in db.q("SELECT id, key, due FROM jobs WHERE user_id=? AND done=0 AND key NOT IN ('m2') ORDER BY due", uid):
+        due = j['due']
+        if prev and due < prev + gap / SCALE:
+            due = day_shift(prev + gap / SCALE)
+            db.run('UPDATE jobs SET due=? WHERE id=?', due, j['id'])
+        prev = due
 
 
 @router.message(CommandStart())
@@ -272,6 +286,13 @@ async def on_start(m: Message, command: CommandObject):
         if u['stopped']:
             db.run('UPDATE users SET stopped=0 WHERE id=?', uid)
             db.untag(uid, 'stop')
+        if u['paid_at']:
+            return await on_access(m)
+        if db.has(uid, 'club_branch'):
+            if arg.startswith('vibe'):  # клубник нажал урок в Instagram: сразу шлём урок
+                db.tag(uid, 'prompt_opened')
+                return await send_prompt(uid)
+            return await club_start(m, u, 'vclub')
         return await send_start(uid)
     reel = arg[5:] if arg.startswith('vibe_') else ''
     db.run('INSERT INTO users(id,name,username,src,reel) VALUES(?,?,?,?,?)',
@@ -315,15 +336,17 @@ async def send_photo(uid, file, caption, markup=None, key=''):
 
 def plan_club(uid, now):
     """Клубная ветка: сначала знакомство с клубом, цена и таймер только через сутки."""
-    db.schedule(uid, 'c1', now + H)
+    db.schedule(uid, 'c1', day_shift(now + H))
     if SCALE == 1:
         eve = msk(now).replace(hour=20, minute=0, second=0, microsecond=0).timestamp()
         db.schedule(uid, 'c2', eve if eve - now > 3 * H else day_shift(now + 5 * H))
     else:
         db.schedule(uid, 'c2', now + 5 * H)
     db.schedule(uid, 'c3', day_shift(now + 20 * H))
-    plan_funnel(uid, now + 24 * H - 40 * 60 / SCALE)  # m3 (оффер) ровно через сутки, дальше обычные дожимы
+    offer = day_shift(now + 24 * H)
+    plan_funnel(uid, offer - 40 * 60 / SCALE)  # m3 (оффер) через сутки, не ночью, дальше обычные дожимы
     db.run('UPDATE users SET started_at=? WHERE id=?', now, uid)
+    spread(uid)
 
 
 async def club_start(m, u, arg):
@@ -367,10 +390,14 @@ async def cb_club(c: CallbackQuery):
 async def club_offer(uid, key):
     u = db.user(uid)
     if u['paid_at']:
-        return await send(uid, 'Ты уже в клубе 🙌 Доступы по кнопке «🔑 МОИ ДОСТУПЫ»')
+        if u['club_active']:
+            return await send(uid, 'Ты уже в клубе 🙌 Доступы по кнопке «🔑 МОИ ДОСТУПЫ»')
+        return await send(uid, 'Мини-курс у тебя уже есть 🙌 А в клуб можно вернуться в любой момент'
+                          + ('' if CLUB_RETURN_URL else ', напиши мне сюда'),
+                          kb([('🧠 ВЕРНУТЬСЯ В КЛУБ', 'url', CLUB_RETURN_URL)]) if CLUB_RETURN_URL else None)
     left = None
-    if time.time() < (u['expires_at'] or 0) and db.has(uid, 'offer_seen'):
-        left = T.left_text(u['expires_at'] - time.time())
+    if price(u) == 1490 and (key == 'm3' or db.has(uid, 'offer_seen')):
+        left = T.left_text(max(u['expires_at'] or 0, u['second_until'] or 0) - time.time())
     if await send(uid, T.club_offer(u['name'], left), kb(
             [('🚀 ЗАБРАТЬ ЗА 1 490 ₽' if price(u) == 1490 else '🚀 ЗАБРАТЬ ЗА 1 990 ₽', 'url', link(uid, 'pay_' + key))],
             [('🤔 ЕЩЁ ВОПРОСЫ', 'cb', 'vc:faq')]), key):
@@ -415,7 +442,10 @@ async def cb_inside(c: CallbackQuery):
         return
     db.tag(uid, 'inside_seen')
     left = max(u['expires_at'] or 0, u['second_until'] or 0) - time.time()
-    await send(uid, T.inside_now(T.left_text(left)), pay_kb(uid, 'm6', '🚀 ЗАБРАТЬ ЗА 1 490 ₽'), 'm6')
+    if price(u) == 1490:
+        await send(uid, T.inside_now(f'1 490 ₽ {T.left_text(left)}'), pay_kb(uid, 'm6', '🚀 ЗАБРАТЬ ЗА 1 490 ₽'), 'm6')
+    else:
+        await send(uid, T.inside_now('Сейчас мини-курс + месяц клуба стоят 1 990 ₽'), pay_kb(uid, 'm6', '🚀 ЗАБРАТЬ ЗА 1 990 ₽'), 'm6')
 
 
 # ---------- плановые сообщения ----------
@@ -423,10 +453,12 @@ async def cb_inside(c: CallbackQuery):
 async def run_job(j):
     uid, key = j['user_id'], j['key']
     u = db.user(uid)
-    if not u or u['stopped']:
+    if not u:
         return
+    if u['stopped'] and key != 'club_off' and not key.startswith('p5'):
+        return  # отписался: продаж больше нет, но из клуба уберём и о списании предупредим
     name = u['name']
-    if key[0] in 'mc' and u['paid_at'] is not None:
+    if (key[0] == 'm' or key in ('c1', 'c2', 'c3')) and u['paid_at'] is not None:
         return
     club = db.has(uid, 'club_branch')
     if key == 'c1':
@@ -635,6 +667,7 @@ async def bind_email(m: Message, email):
     o = db.one("SELECT * FROM orders WHERE lower(email)=? AND (user_id IS NULL OR user_id=?) ORDER BY ts DESC", email, uid)
     if not o:
         who = f'@{m.from_user.username}' if m.from_user.username else uid
+        db.untag(uid, 'await_email')
         await team(f'⚠️ ВАЙБ: {who} просит доступ, почта {email}, оплаты по ней не вижу. Проверь в GetCourse')
         return await m.answer(T.EMAIL_NOT_FOUND)
     db.untag(uid, 'await_email')
@@ -807,12 +840,15 @@ async def on_text(m: Message):
     uid = m.from_user.id
     if not is_vibe(uid) or (m.text or '').startswith('/'):
         raise SkipHandler()
-    if M.user(uid) is not None and not db.has(uid, 'await_email'):
-        raise SkipHandler()  # кто есть и в автовебе, тот пишет команде через автовеб, как раньше
     txt = (m.text or m.caption or '').strip().lower()
+    bare = re.sub(r'[^a-zа-яё]', '', txt)
+    is_stop = bare in ('стоп', 'stop') or (txt.startswith(('стоп', 'stop')) and len(txt) < 30)
+    in_main = M.user(uid) is not None
+    if in_main and not db.has(uid, 'await_email') and not is_stop and 'вайбкодер' not in txt:
+        raise SkipHandler()  # кто есть и в автовебе, тот пишет команде через автовеб, как раньше
     if db.has(uid, 'await_email') and re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]{2,}', txt):
         return await bind_email(m, txt)
-    if txt in ('стоп', 'stop'):
+    if is_stop:
         db.run('UPDATE users SET stopped=1 WHERE id=?', uid)
         db.tag(uid, 'stop')
         return await m.answer(T.STOPPED)
@@ -940,7 +976,10 @@ async def r_getcourse(req: web.Request):
         cost = int(float(str(data.get('cost', '0')).replace(' ', '').replace(',', '.') or 0))
     except ValueError:
         cost = 0
-    log.info('getcourse %s', data)
+    if GC_SECRET_CLUB and req.match_info['secret'] == GC_SECRET_CLUB and GC_SECRET_CLUB != GC_SECRET \
+            and data.get('event') not in ('club_cancelled', 'club_failed'):
+        return web.Response(status=403)
+    log.info('getcourse %s', {k: (re.sub(r'(^.).*(@.*$)', r'\1***\2', v) if k == 'email' else v) for k, v in data.items()})
     email = (data.get('email') or '').strip().lower()
     if not uid and email and ev != 'paid':  # продление и отмена приходят без tg: ищем человека по почте из заказа
         o = db.one('SELECT user_id FROM orders WHERE lower(email)=? AND user_id IS NOT NULL ORDER BY ts DESC', email)
