@@ -563,6 +563,8 @@ async def c_help(m, a):
     await m.answer('🎁 <b>Воронка ВАЙБ</b>\n'
                    f'Ссылка для Instagram: t.me/{M.BOT_USERNAME}?start=vibe (или vibe_номеррилса)\n'
                    '/vibechannel · привязать канал курса, канал клуба или чат клуба\n'
+                   '/vibesetup · оформить канал мини-курса: аватарка, описание, программа в закрепе\n'
+                   '/vibecaptions · подписать видео уроков в канале после загрузки\n'
                    '/vibestats · цифры воронки\n'
                    '/vibepost · ответь на пост, бот будет присылать такие раз в 3 дня с 7-го дня\n'
                    '/vibemonth темы · темы следующего месяца для напоминания о продлении\n'
@@ -582,6 +584,54 @@ async def c_channel(m, a):
     db.set_setting('await_chat', f'{kind}:{time.time()}')
     await m.answer(f'Жду: добавь @{M.BOT_USERNAME} администратором в {CHAT_NAMES[kind]} '
                    '(права: приглашать по ссылкам и удалять участников). Я привяжу его и напишу сюда')
+
+
+@admin_cmd('vibesetup')
+async def c_setup(m, a):
+    """Оформляет канал мини-курса: аватарка, описание, закреп с программой."""
+    from aiogram.types import FSInputFile
+    ch = chat_id('course')
+    if not ch:
+        return await m.answer('Сначала привяжи канал: /vibechannel курс')
+    ch, out = int(ch), []
+    for name, coro in (
+            ('аватарка', bot().set_chat_photo(ch, FSInputFile(os.path.join(os.path.dirname(__file__), 'assets', 'vibe_course_avatar.png')))),
+            ('описание', bot().set_chat_description(ch, T.COURSE_DESC))):
+        try:
+            await coro
+            out.append(f'✅ {name}')
+        except Exception as e:
+            out.append(f'⚠️ {name}: {e}')
+    try:
+        msg = await bot().send_message(ch, T.course_toc(), protect_content=True, disable_web_page_preview=True)
+        await bot().pin_chat_message(ch, msg.message_id, disable_notification=True)
+        db.set_setting('course_toc_id', str(msg.message_id))
+        out.append(f'✅ программа в закрепе (сообщение {msg.message_id})')
+    except Exception as e:
+        out.append(f'⚠️ программа: {e}')
+    await m.answer('\n'.join(out) + '\n\nТеперь загрузи видео уроков в канал по порядку, потом напиши /vibecaptions')
+
+
+@admin_cmd('vibecaptions')
+async def c_captions(m, a):
+    """Подписывает видео уроков, которые идут в канале сразу после закрепа с программой."""
+    ch, first = chat_id('course'), int(a or 0) or int(db.setting('course_toc_id') or 0) + 1
+    if not ch or first < 2:
+        return await m.answer('Сначала /vibesetup')
+    ok, bad, mid = 0, [], first
+    for title in T.COURSE_LESSONS:
+        for _ in range(4):  # пропускаем служебные сообщения между видео
+            try:
+                await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption=f'<b>{title}</b>')
+                ok += 1
+                mid += 1
+                break
+            except TelegramBadRequest as e:
+                mid += 1
+                last = str(e)
+        else:
+            bad.append(title)
+    await m.answer(f'Подписала видео: {ok} из {len(T.COURSE_LESSONS)}' + (('\nНе нашла: ' + ', '.join(bad)) if bad else ''))
 
 
 @admin_cmd('vibestats')
