@@ -52,7 +52,14 @@ def _int(k):
 PAY_1490, PAY_1990 = _env('VIBE_PAY_1490'), _env('VIBE_PAY_1990')
 CANCEL_URL, CLUB_RETURN_URL = _env('VIBE_CANCEL_URL'), _env('VIBE_CLUB_RETURN_URL')
 GC_SECRET = _env('VIBE_GC_SECRET')
-COURSE_CHAT, CLUB_CHANNEL, CLUB_CHAT = _int('VIBE_COURSE_CHAT'), _int('VIBE_CLUB_CHANNEL'), _int('VIBE_CLUB_CHAT')
+CHAT_ENV = {'course': 'VIBE_COURSE_CHAT', 'club': 'VIBE_CLUB_CHANNEL', 'clubchat': 'VIBE_CLUB_CHAT'}
+CHAT_NAMES = {'course': 'канал мини-курса', 'club': 'канал клуба', 'clubchat': 'чат клуба'}
+
+
+def chat_id(kind):
+    """id канала: из переменной окружения или привязанный командой /vibechannel."""
+    v = _int(CHAT_ENV[kind]) or db.setting('chat_' + kind)
+    return int(v) if str(v).lstrip('-').isdigit() else 0
 TEAM_CHAT = _int('VIBE_TEAM_CHAT')
 POLICY_URL = _env('VIBE_POLICY_URL', 'https://puzanovva.tech/privacypolicy3')
 MINIAPP_URL = _env('VIBE_MINIAPP_URL', 'https://olgapuzanova0311-art.github.io/motion-reel/vibe-hours/')
@@ -198,11 +205,11 @@ async def invite(chat_id, uid):
 async def access_kb(uid):
     u = db.user(uid)
     rows = []
-    course = await invite(COURSE_CHAT, uid)
+    course = await invite(chat_id('course'), uid)
     if course:
         rows.append([('🎓 МИНИ-КУРС', 'url', course)])
     if u['club_active']:
-        ch, chat = await invite(CLUB_CHANNEL, uid), await invite(CLUB_CHAT, uid)
+        ch, chat = await invite(chat_id('club'), uid), await invite(chat_id('clubchat'), uid)
         if ch:
             rows.append([('🧠 КАНАЛ КЛУБА', 'url', ch)])
         if chat:
@@ -355,7 +362,7 @@ async def run_job(j):
         await send_content(u)
     elif key == 'p2':
         if not db.has(uid, 'course_joined'):
-            course = await invite(COURSE_CHAT, uid)
+            course = await invite(chat_id('course'), uid)
             await send(uid, T.p2(name), kb([('▶️ ОТКРЫТЬ УРОК 1', 'url', course)]) if course else None, key)
     elif key == 'p3':
         await send(uid, T.p3(), key=key)
@@ -454,7 +461,7 @@ async def club_off(uid):
 async def kick(uid):
     if admin(uid):
         return
-    for chat in (CLUB_CHANNEL, CLUB_CHAT):
+    for chat in (chat_id('club'), chat_id('clubchat')):
         if chat:
             try:
                 await bot().ban_chat_member(chat, uid)
@@ -493,9 +500,24 @@ async def bind_order(m: Message, deal):
     await mark_paid(uid, o['cost'] or 1490, deal)
 
 
+@router.my_chat_member()
+async def on_bot_added(e: ChatMemberUpdated):
+    """Бота добавили админом после /vibechannel: это канал воронки, основной бот его не трогает."""
+    wait = db.setting('await_chat')
+    kind, _, ts = wait.partition(':')
+    if not wait or e.new_chat_member.status != 'administrator' or time.time() - float(ts or 0) > 3600:
+        raise SkipHandler()
+    db.set_setting('chat_' + kind, str(e.chat.id))
+    db.set_setting('await_chat', '')
+    r = e.new_chat_member
+    ok = r.can_invite_users and (e.chat.type == 'channel' or r.can_restrict_members)
+    await team(f'✅ ВАЙБ: «{e.chat.title}» привязан как {CHAT_NAMES[kind]} (id {e.chat.id})'
+               + ('' if ok else '\n⚠️ Дай боту права приглашать и удалять участников'))
+
+
 @router.chat_member()
 async def on_member(e: ChatMemberUpdated):
-    if COURSE_CHAT and e.chat.id == COURSE_CHAT and e.new_chat_member.status in ('member', 'restricted'):
+    if chat_id('course') and e.chat.id == chat_id('course') and e.new_chat_member.status in ('member', 'restricted'):
         db.tag(e.new_chat_member.user.id, 'course_joined')
     raise SkipHandler()
 
@@ -522,6 +544,7 @@ def admin_cmd(name):
 async def c_help(m, a):
     await m.answer('🎁 <b>Воронка ВАЙБ</b>\n'
                    f'Ссылка для Instagram: t.me/{M.BOT_USERNAME}?start=vibe (или vibe_номеррилса)\n'
+                   '/vibechannel · привязать канал курса, канал клуба или чат клуба\n'
                    '/vibestats · цифры воронки\n'
                    '/vibepost · ответь на пост, бот будет присылать такие раз в 3 дня с 7-го дня\n'
                    '/vibemonth темы · темы следующего месяца для напоминания о продлении\n'
@@ -529,6 +552,18 @@ async def c_help(m, a):
                    '/vibereset · стереть себя из воронки для теста\n'
                    '/vibepaytest · имитировать свою оплату 1 490 ₽ без денег\n'
                    '/id · id чата, нужен для настройки каналов')
+
+
+@admin_cmd('vibechannel')
+async def c_channel(m, a):
+    kind = {'курс': 'course', 'course': 'course', 'клуб': 'club', 'club': 'club', 'чат': 'clubchat', 'clubchat': 'clubchat'}.get(a.lower())
+    if not kind:
+        now = '\n'.join(f'{CHAT_NAMES[k]}: {chat_id(k) or "не привязан"}' for k in CHAT_NAMES)
+        return await m.answer('Напиши /vibechannel курс, /vibechannel клуб или /vibechannel чат, '
+                              'потом в течение часа добавь бота администратором в этот канал или чат\n\n' + now)
+    db.set_setting('await_chat', f'{kind}:{time.time()}')
+    await m.answer(f'Жду: добавь @{M.BOT_USERNAME} администратором в {CHAT_NAMES[kind]} '
+                   '(права: приглашать по ссылкам и удалять участников). Я привяжу его и напишу сюда')
 
 
 @admin_cmd('vibestats')
@@ -665,7 +700,7 @@ async def daily():
     if d.hour >= 4 and db.setting('sync_day') != today:
         db.set_setting('sync_day', today)
         for u in db.q('SELECT id FROM users WHERE paid_at IS NOT NULL AND club_active=0'):
-            for chat in (CLUB_CHANNEL, CLUB_CHAT):
+            for chat in (chat_id('club'), chat_id('clubchat')):
                 if not chat or admin(u['id']):
                     continue
                 try:
