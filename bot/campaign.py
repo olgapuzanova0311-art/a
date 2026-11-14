@@ -10,71 +10,24 @@ log = logging.getLogger('campaign')
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
     dict(
-        KEY='dr_last',
-        TITLE='Последний показ в 18:00',
+        KEY='vechera10',
+        TITLE='10 вечеров, 10 ИИ-сотрудников',
         STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
-        START=1793712900,               # 03.11.2026 16:35 МСК
-        UNTIL=1793718000,               # 03.11.2026 18:00 МСК: позже не отправляем
-        PHOTO='mne23.jpg',              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
+        START=0,                        # 0 → сразу после выкладки
+        UNTIL=1794844800,               # 16.11.2026 19:00 МСК: после старта не отправляем
+        PHOTO='vechera.jpg',            # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/vechera.jpg',
         TEXT=(
-            '🎂 Сегодня у Ольги день рождения, и в 18:00 по Москве последний показ праздничного эфира «Мне 23»\n\n'
-            'Ольга делится 23 выводами, которые поняла к своим 23 годам, и показывает изнутри свой ИИ-офис '
-            'и контент-завод. А в конце открывает тайный лот для тех, кто досидит до конца.\n\n'
-            'Подключайтесь в 18:00:\n'
-            'https://start.bizon365.ru/room/102108/mne23'
+            '10 вечеров, 10 ИИ-сотрудников. Бесплатно 🖤\n\n'
+            'С 16 ноября я каждый день собираю себе одного ИИ-сотрудника и показываю всё на экране. '
+            'Он отвечает клиентам, пишет посты вашим голосом, разбирается с отзывами, собирает отчёты. '
+            'В 19:00 урок, где вы повторяете у себя.\n\n'
+            'Программировать не нужно, хватит ChatGPT или Claude. Каждый урок живёт 24 часа.\n\n'
+            '🎁 За вход сразу подарок: приложение, которое за минуту подскажет, каких ИИ-сотрудников нанять первыми именно вам'
         ),
         NAMED=False,
-        LINK='https://start.bizon365.ru/room/102108/mne23',
-        BUTTON='▶️ Подключиться в 18:00',
-    ),
-    dict(
-        KEY='dr_replay2',
-        TITLE='Начинаем последний повтор',
-        STAGE='all',
-        START=1793717700,               # 03.11.2026 17:55 МСК
-        UNTIL=1793719800,               # 03.11.2026 18:30 МСК: позже не отправляем
-        PHOTO='mne23.jpg',
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
-        TEXT=('Начинаем последний повтор эфира «Мне 23» 🔥\n\n'
-              'Больше показов не будет. Подключайся 👇\n'
-              'https://start.bizon365.ru/room/olgapuzanova/mne23'),
-        NAMED=False,
-        LINK='https://start.bizon365.ru/room/olgapuzanova/mne23',
-        BUTTON='▶️ Подключиться',
-    ),
-    dict(
-        KEY='dr_lots',
-        TITLE='Подарки уже разбирают',
-        STAGE='all',
-        START=1793721600,               # 03.11.2026 19:00 МСК
-        UNTIL=1793737380,               # 03.11.2026 23:23 МСК: лоты сгорают
-        PHOTO='mne23.jpg',
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
-        TEXT=(
-            '{hello}одарки дня рождения уже разбирают 🔥\n\n'
-            'Царь лот: весь 2027 год всех моих курсов с кураторами за 73 323 ₽ или 6 111 ₽ в месяц, '
-            'мест всего 23. И ещё 7 лотов, от тайной коробки за 923 ₽ до года работы со мной.\n\n'
-            'К любому лоту бонус с колеса и инструкция, как собрать свой ИИ-офис. Всё действует до 23:23 👇\n'
-            'https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/'
-        ),
-        NAMED=True,                     # «Имя, подарки…» / без имени «Подарки…»
-        LINK='https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/',
-        BUTTON='🎁 Забрать подарок',
-    ),
-    dict(
-        KEY='dr_hour',
-        TITLE='Остался час',
-        STAGE='all',
-        START=1793733780,               # 03.11.2026 22:23 МСК
-        UNTIL=1793737380,               # 03.11.2026 23:23 МСК: лоты сгорают
-        PHOTO='mne23.jpg',
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/mne23.jpg',
-        TEXT=('Остался час ⏰ В 23:23 лоты дня рождения сгорят до следующего года 👇 '
-              'https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/'),
-        NAMED=False,
-        LINK='https://olgapuzanova0311-art.github.io/perezagruzka/dr/lots-23x7/',
-        BUTTON='🎁 Забрать подарок',
+        LINK='https://t.me/+zhRmQVVPQIg1OTBi',
+        BUTTON='🎁 ЗАБРАТЬ ПОДАРОК',
     ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
