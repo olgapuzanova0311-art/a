@@ -52,6 +52,7 @@ def _int(k):
 PAY_1490, PAY_1990 = _env('VIBE_PAY_1490'), _env('VIBE_PAY_1990')
 CANCEL_URL, CLUB_RETURN_URL = _env('VIBE_CANCEL_URL'), _env('VIBE_CLUB_RETURN_URL')
 GC_SECRET = _env('VIBE_GC_SECRET')
+GC_SECRET_CLUB = os.environ.get('VIBE_GC_SECRET_CLUB', '')  # отдельный ключ для процесса «клуб закончился»
 CHAT_ENV = {'course': 'VIBE_COURSE_CHAT', 'club': 'VIBE_CLUB_CHANNEL', 'clubchat': 'VIBE_CLUB_CHAT'}
 CHAT_NAMES = {'course': 'канал мини-курса', 'club': 'канал клуба', 'clubchat': 'чат клуба'}
 
@@ -923,7 +924,7 @@ async def r_redirect(req: web.Request):
 
 
 async def r_getcourse(req: web.Request):
-    if not GC_SECRET or req.match_info['secret'] != GC_SECRET:
+    if req.match_info['secret'] not in {x for x in (GC_SECRET, GC_SECRET_CLUB) if x}:
         return web.Response(status=403)
     data = dict(req.query)
     if req.method == 'POST':
@@ -941,6 +942,9 @@ async def r_getcourse(req: web.Request):
         cost = 0
     log.info('getcourse %s', data)
     email = (data.get('email') or '').strip().lower()
+    if not uid and email and ev != 'paid':  # продление и отмена приходят без tg: ищем человека по почте из заказа
+        o = db.one('SELECT user_id FROM orders WHERE lower(email)=? AND user_id IS NOT NULL ORDER BY ts DESC', email)
+        uid = o['user_id'] if o else None
     if ev == 'paid' and uid and (db.user(uid) or {'paid_at': None})['paid_at'] and \
             (cost >= 2300 or 'продлен' in (data.get('offers') or '').lower()):
         ev = 'renewed'
@@ -969,7 +973,8 @@ async def r_getcourse(req: web.Request):
         u = db.user(uid)
         if u:
             db.cancel(uid, 'p5')
-            db.schedule(uid, 'club_off', max(time.time(), u['next_charge'] or 0))
+            when = time.time() if data.get('now') else max(time.time(), u['next_charge'] or 0)
+            db.schedule(uid, 'club_off', when)
     return web.json_response({'ok': True})
 
 
