@@ -255,7 +255,7 @@ async def on_start(m: Message, command: CommandObject):
     if arg.startswith('vorder_'):
         return await bind_order(m, arg[7:])
     in_main = M.user(uid) is not None  # уже в автовебе или интенсиве: обычный /start остаётся за ними
-    if not arg.startswith('vibe') and arg != 'vaccess' and not (u and (arg == 'vprompt' or (arg == '' and not in_main))):
+    if not arg.startswith(('vibe', 'vclub')) and arg != 'vaccess' and not (u and (arg == 'vprompt' or (arg == '' and not in_main))):
         raise SkipHandler()
     if u and arg == 'vprompt':
         db.tag(uid, 'prompt_opened')
@@ -265,6 +265,8 @@ async def on_start(m: Message, command: CommandObject):
             db.run('INSERT INTO users(id,name,username,src,started_at,expires_at) VALUES(?,?,?,?,?,?)',
                    uid, first_name(m.from_user), m.from_user.username, 'getcourse', time.time(), time.time())
         return await on_access(m)
+    if arg.startswith('vclub'):
+        return await club_start(m, u, arg)
     if u:
         if u['stopped']:
             db.run('UPDATE users SET stopped=0 WHERE id=?', uid)
@@ -277,6 +279,101 @@ async def on_start(m: Message, command: CommandObject):
     db.event(uid, 'start', reel)
     plan_funnel(uid, time.time())
     await send_start(uid)
+
+
+# ---------- ветка «мини-курс и клуб» ----------
+
+def club_menu(uid, join=True):
+    rows = [[('🎓 Программа мини-курса', 'cb', 'vc:course'), ('🏛 Что внутри клуба', 'cb', 'vc:inside')],
+            [('🗓 Эфиры и расписание', 'cb', 'vc:schedule'), ('🧭 Два трека', 'cb', 'vc:tracks')],
+            [('💼 Биржа заказов', 'cb', 'vc:birzha'), ('❓ Вопросы', 'cb', 'vc:faq')]]
+    if join:
+        rows.append([('🚀 Присоединиться', 'cb', 'vc:join')])
+    rows.append([('🎁 Бесплатный урок по сайтам', 'cb', 'vb:prompt')])
+    return kb(*rows)
+
+
+def asset(name):
+    from aiogram.types import FSInputFile
+    return FSInputFile(os.path.join(os.path.dirname(__file__), 'assets', name))
+
+
+async def send_photo(uid, file, caption, markup=None, key=''):
+    try:
+        await bot().send_photo(uid, asset(file), caption=caption, reply_markup=markup)
+        if key:
+            db.event(uid, 'sent', key)
+        return True
+    except TelegramForbiddenError:
+        db.run('UPDATE users SET stopped=1 WHERE id=?', uid)
+    except Exception as e:
+        log.warning('photo %s: %s', uid, e)
+        return await send(uid, caption, markup, key)
+    return False
+
+
+def plan_club(uid, now):
+    """Клубная ветка: сначала знакомство с клубом, цена и таймер только через сутки."""
+    db.schedule(uid, 'c1', now + H)
+    if SCALE == 1:
+        eve = msk(now).replace(hour=20, minute=0, second=0, microsecond=0).timestamp()
+        db.schedule(uid, 'c2', eve if eve - now > 3 * H else day_shift(now + 5 * H))
+    else:
+        db.schedule(uid, 'c2', now + 5 * H)
+    db.schedule(uid, 'c3', day_shift(now + 20 * H))
+    plan_funnel(uid, now + 24 * H - 40 * 60 / SCALE)  # m3 (оффер) ровно через сутки, дальше обычные дожимы
+    db.run('UPDATE users SET started_at=? WHERE id=?', now, uid)
+
+
+async def club_start(m, u, arg):
+    uid = m.from_user.id
+    if not u:
+        db.run('INSERT INTO users(id,name,username,src,reel) VALUES(?,?,?,?,?)',
+               uid, first_name(m.from_user), m.from_user.username, 'vibe_club', arg[6:])
+        db.tag(uid, 'vibe_start')
+        db.tag(uid, 'club_branch')
+        db.event(uid, 'start', 'club')
+        plan_club(uid, time.time())
+    elif u['stopped']:
+        db.run('UPDATE users SET stopped=0 WHERE id=?', uid)
+        db.untag(uid, 'stop')
+    db.event(uid, 'click', 'club_menu')
+    u = db.user(uid)
+    await send_photo(uid, 'club_app.jpg', T.club_welcome(u['name'], POLICY_URL), club_menu(uid, not u['paid_at']), 'c0')
+
+
+CLUB_SECTIONS = {'course': T.club_course, 'inside': T.club_inside, 'tracks': T.club_tracks,
+                 'birzha': T.club_birzha, 'faq': T.club_faq}
+
+
+@router.callback_query(F.data.startswith('vc:'))
+async def cb_club(c: CallbackQuery):
+    uid, part = c.from_user.id, c.data[3:]
+    await c.answer()
+    u = db.user(uid)
+    if not u:
+        return
+    db.tag(uid, 'club_' + part)
+    db.event(uid, 'click', 'club_' + part)
+    if part == 'join':
+        return await club_offer(uid, 'cjoin')
+    text = T.club_schedule(time.time()) if part == 'schedule' else CLUB_SECTIONS[part]()
+    if part == 'birzha':
+        return await send_photo(uid, 'club_app.jpg', text, club_menu(uid, not u['paid_at']))
+    await send(uid, text, club_menu(uid, not u['paid_at']))
+
+
+async def club_offer(uid, key):
+    u = db.user(uid)
+    if u['paid_at']:
+        return await send(uid, 'Ты уже в клубе 🙌 Доступы по кнопке «🔑 МОИ ДОСТУПЫ»')
+    left = None
+    if time.time() < (u['expires_at'] or 0) and db.has(uid, 'offer_seen'):
+        left = T.left_text(u['expires_at'] - time.time())
+    if await send(uid, T.club_offer(u['name'], left), kb(
+            [('🚀 ЗАБРАТЬ ЗА 1 490 ₽' if price(u) == 1490 else '🚀 ЗАБРАТЬ ЗА 1 990 ₽', 'url', link(uid, 'pay_' + key))],
+            [('🤔 ЕЩЁ ВОПРОСЫ', 'cb', 'vc:faq')]), key):
+        db.tag(uid, 'offer_seen')
 
 
 async def send_start(uid):
@@ -328,9 +425,20 @@ async def run_job(j):
     if not u or u['stopped']:
         return
     name = u['name']
-    if key.startswith('m') and u['paid_at'] is not None:
+    if key[0] in 'mc' and u['paid_at'] is not None:
         return
-    if key == 'm2':
+    club = db.has(uid, 'club_branch')
+    if key == 'c1':
+        await send_photo(uid, 'club_app.jpg', T.club_look(), club_menu(uid), key)
+    elif key == 'c2':
+        await send(uid, T.club_tracks() + T.STOP_LINE, club_menu(uid), key)
+    elif key == 'c3':
+        await send(uid, T.club_schedule(time.time()) + T.STOP_LINE, club_menu(uid), key)
+    elif club and key == 'm3':
+        await club_offer(uid, 'm3')
+    elif club and key in ('m2', 'm4'):
+        pass
+    elif key == 'm2':
         if not db.has(uid, 'prompt_sent'):
             await send_prompt(uid)
     elif key == 'm3':
@@ -744,6 +852,14 @@ def report():
         conv = f'{(p1 + p2) / st * 100:.1f}%' if st else '0%'
         lines.append(f'<b>{title}</b>\nЗашли в бота: {st}\nОткрыли подарок: {gift}\nУвидели оффер: {offer}\n'
                      f'Оплатили: 1 490 ₽ {p1}, 1 990 ₽ {p2} (конверсия {conv})\nПродлили клуб: {ren}\nОтписались: {stop}')
+    br = []
+    for src, name in (('vibe_ig', 'урок по сайтам'), ('vibe_club', 'сразу мини-курс и клуб')):
+        n = cnt('SELECT COUNT(*) c FROM users WHERE src=?', src)
+        paid = cnt('SELECT COUNT(*) c FROM users WHERE src=? AND paid_at IS NOT NULL', src)
+        br.append(f'{name}: зашли {n}, купили {paid}')
+    sec = [f"{k[5:]} {cnt('SELECT COUNT(DISTINCT user_id) c FROM events WHERE kind=? AND key=?', 'click', k)}"
+           for k in ('club_course', 'club_inside', 'club_schedule', 'club_tracks', 'club_birzha', 'club_faq', 'club_join')]
+    lines.append('<b>Ветки</b>\n' + '\n'.join(br) + '\nКлики по разделам клуба: ' + ', '.join(sec))
     by = {}
     for u in db.q('SELECT id, paid_at FROM users WHERE paid_at IS NOT NULL'):
         e = db.one("SELECT key FROM events WHERE user_id=? AND kind='sent' AND key LIKE 'm%' AND ts<=? "
@@ -751,7 +867,7 @@ def report():
         if e:
             by[e['key']] = by.get(e['key'], 0) + 1
     rows = []
-    for k in ('m3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm8n', 'm9', 'm10', 'm11'):
+    for k in ('cjoin', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm8n', 'm9', 'm10', 'm11'):
         sent = cnt("SELECT COUNT(*) c FROM events WHERE kind='sent' AND key=?", k)
         if sent:
             clicks = cnt("SELECT COUNT(DISTINCT user_id) c FROM events WHERE kind='click' AND key=?", 'pay_' + k)
