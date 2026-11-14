@@ -24,6 +24,7 @@ from aiogram.types import (BufferedInputFile, CallbackQuery, ChatMemberUpdated, 
 
 import texts as T
 import avto
+import vibe
 import campaign
 import bizon
 from max_bot import MaxBot
@@ -874,13 +875,15 @@ async def main():
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
     me = await bot.get_me(); BOT_USERNAME = me.username
     avto.init(sys.modules[__name__])
+    vibe.init(sys.modules[__name__])
     bizon.init(sys.modules[__name__])
     for a in re.findall(r'\d+', os.environ.get('ADMIN_IDS', '')):
         q('INSERT OR IGNORE INTO admins(id) VALUES(?)', int(a))
-    dp = Dispatcher(); dp.include_router(avto.router); dp.include_router(bizon.router); dp.include_router(router)
+    dp = Dispatcher(); dp.include_router(vibe.router); dp.include_router(avto.router); dp.include_router(bizon.router); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
     avto.setup_web(app)
+    vibe.setup_web(app)
     # WEBHOOK=1: Telegram сам присылает обновления на PUBLIC_URL (так работает сервер на Timeweb);
     # копия бота, которая ещё опрашивает Telegram по старинке, в это время сообщений не получает
     hook = os.environ.get('WEBHOOK') == '1' and PUBLIC_URL
@@ -896,11 +899,12 @@ async def main():
     await web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080))).start()
     asyncio.create_task(scheduler())
     asyncio.create_task(avto.scheduler())
+    asyncio.create_task(vibe.scheduler())
     asyncio.create_task(bizon.scheduler())
     asyncio.create_task(campaign.run(sys.modules[__name__]))
     if MX: asyncio.create_task(MX.run())
     log.info('started as @%s', BOT_USERNAME)
-    updates = ['message', 'callback_query', 'my_chat_member']
+    updates = ['message', 'callback_query', 'my_chat_member', 'chat_member']
     if hook:
         await bot.set_webhook(PUBLIC_URL + '/tg/' + secret[:12], secret_token=secret, allowed_updates=updates)
         log.info('webhook on %s', PUBLIC_URL)
