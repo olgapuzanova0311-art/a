@@ -282,12 +282,12 @@ async def on_start(m: Message, command: CommandObject):
 async def send_start(uid):
     u = db.user(uid)
     await send(uid, T.start(u['name'], POLICY_URL), kb(
-        [('🔥 ПОСЧИТАТЬ МОИ ЧАСЫ', 'url', link(uid, 'app'))],
-        [('⚡️ ХОЧУ ПРОМПТ СРАЗУ', 'cb', 'vb:prompt')]), 'm1')
+        [('▶️ ХОЧУ УРОК СРАЗУ', 'cb', 'vb:prompt')],
+        [('🔥 ПОСЧИТАТЬ МОИ ЧАСЫ', 'url', link(uid, 'app'))]), 'm1')
 
 
 async def send_prompt(uid):
-    if await send(uid, T.prompt_msg(), key='m2'):
+    if await send(uid, T.prompt_msg(), kb([('▶️ СМОТРЕТЬ УРОК', 'url', link(uid, 'lesson'))]), 'm2'):
         db.tag(uid, 'prompt_sent')
 
 
@@ -744,6 +744,10 @@ async def r_redirect(req: web.Request):
         if u:
             db.tag(uid, 'gift_opened')
         return web.HTTPFound(MINIAPP_URL + f'?bot={M.BOT_USERNAME}')
+    if key == 'lesson':
+        if u:
+            db.tag(uid, 'lesson_opened')
+        return web.HTTPFound(T.LESSON_URL)
     if key.startswith('pay') and u:
         if u['paid_at']:
             return web.HTTPFound(f'https://t.me/{M.BOT_USERNAME}?start=vaccess')
