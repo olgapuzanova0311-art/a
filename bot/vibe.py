@@ -255,12 +255,15 @@ async def on_start(m: Message, command: CommandObject):
     if arg.startswith('vorder_'):
         return await bind_order(m, arg[7:])
     in_main = M.user(uid) is not None  # уже в автовебе или интенсиве: обычный /start остаётся за ними
-    if not arg.startswith('vibe') and not (u and (arg in ('vprompt', 'vaccess') or (arg == '' and not in_main))):
+    if not arg.startswith('vibe') and arg != 'vaccess' and not (u and (arg == 'vprompt' or (arg == '' and not in_main))):
         raise SkipHandler()
     if u and arg == 'vprompt':
         db.tag(uid, 'prompt_opened')
         return await send_prompt(uid)
-    if u and arg == 'vaccess':
+    if arg == 'vaccess':
+        if not u:
+            db.run('INSERT INTO users(id,name,username,src,started_at,expires_at) VALUES(?,?,?,?,?,?)',
+                   uid, first_name(m.from_user), m.from_user.username, 'getcourse', time.time(), time.time())
         return await on_access(m)
     if u:
         if u['stopped']:
@@ -482,7 +485,9 @@ async def on_access_cmd(m: Message):
 async def on_access(m: Message):
     u = db.user(m.from_user.id)
     if not u or not u['paid_at']:
-        return await m.answer(T.ACCESS_NONE)
+        if u:
+            db.tag(u['id'], 'await_email')
+        return await m.answer(T.ASK_EMAIL)
     await m.answer(T.ACCESS, reply_markup=await access_kb(u['id']))
 
 
@@ -514,6 +519,18 @@ async def on_bot_added(e: ChatMemberUpdated):
     ok = r.can_invite_users and (e.chat.type == 'channel' or r.can_restrict_members)
     await team(f'✅ ВАЙБ: «{e.chat.title}» привязан как {CHAT_NAMES[kind]} (id {e.chat.id})'
                + ('' if ok else '\n⚠️ Дай боту права приглашать и удалять участников'))
+
+
+async def bind_email(m: Message, email):
+    uid = m.from_user.id
+    o = db.one("SELECT * FROM orders WHERE lower(email)=? AND (user_id IS NULL OR user_id=?) ORDER BY ts DESC", email, uid)
+    if not o:
+        who = f'@{m.from_user.username}' if m.from_user.username else uid
+        await team(f'⚠️ ВАЙБ: {who} просит доступ, почта {email}, оплаты по ней не вижу. Проверь в GetCourse')
+        return await m.answer(T.EMAIL_NOT_FOUND)
+    db.untag(uid, 'await_email')
+    db.run('UPDATE orders SET user_id=? WHERE deal=?', uid, o['deal'])
+    await mark_paid(uid, o['cost'] or 1490, o['deal'])
 
 
 @router.chat_member()
@@ -629,9 +646,13 @@ async def on_team_reply(m: Message):
 @router.message(F.chat.type == 'private')
 async def on_text(m: Message):
     uid = m.from_user.id
-    if not is_vibe(uid) or (m.text or '').startswith('/') or M.user(uid) is not None:
+    if not is_vibe(uid) or (m.text or '').startswith('/'):
+        raise SkipHandler()
+    if M.user(uid) is not None and not db.has(uid, 'await_email'):
         raise SkipHandler()  # кто есть и в автовебе, тот пишет команде через автовеб, как раньше
     txt = (m.text or m.caption or '').strip().lower()
+    if db.has(uid, 'await_email') and re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]{2,}', txt):
+        return await bind_email(m, txt)
     if txt in ('стоп', 'stop'):
         db.run('UPDATE users SET stopped=1 WHERE id=?', uid)
         db.tag(uid, 'stop')
@@ -749,10 +770,15 @@ async def r_getcourse(req: web.Request):
     except ValueError:
         cost = 0
     log.info('getcourse %s', data)
+    email = (data.get('email') or '').strip().lower()
+    if ev == 'paid' and uid and (db.user(uid) or {'paid_at': None})['paid_at'] and \
+            (cost >= 2300 or 'продлен' in (data.get('offers') or '').lower()):
+        ev = 'renewed'
     if ev == 'paid':
         if deal:
-            db.run('INSERT OR IGNORE INTO orders VALUES(?,?,?,?,?)', deal, uid, data.get('email', ''), cost, time.time())
+            db.run('INSERT OR IGNORE INTO orders VALUES(?,?,?,?,?)', deal, uid, email, cost, time.time())
         if uid:
+            db.run('UPDATE orders SET user_id=? WHERE deal=?', uid, deal)
             await mark_paid(uid, cost, deal)
     elif uid and ev == 'renewed':
         u = db.user(uid)
