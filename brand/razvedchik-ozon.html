@@ -1,0 +1,529 @@
+<title>Разведчик Ozon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Макет: узкая колонка-инструкция; сверху «экран телефона» со сводкой, дальше 6 метрик, источники данных, сборщик промпта и шаги */
+:root{
+  --bg:#F4F4F8; --surface:#FFFFFF; --ink:#16161D; --muted:#5B5B6B; --line:#DCDCE6;
+  --blue:#1009F6; --blue-soft:#E8E7FF; --yellow:#FFBA09; --yellow-soft:#FFF3D1;
+  --ok:#11804A; --ok-soft:#DDF6E8; --est:#9A5B00; --est-soft:#FFEBC7;
+  --tg:#E9F2FB; --tg-bubble:#FFFFFF;
+  --font:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101016; --surface:#1A1A23; --ink:#F1F1F6; --muted:#A3A3B5; --line:#2E2E3B;
+  --blue:#7C78FF; --blue-soft:#25234A; --yellow:#FFC53D; --yellow-soft:#3A2F12;
+  --ok:#5BD69A; --ok-soft:#163626; --est:#FFC46B; --est-soft:#3B2B10;
+  --tg:#17212B; --tg-bubble:#232E3C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101016; --surface:#1A1A23; --ink:#F1F1F6; --muted:#A3A3B5; --line:#2E2E3B;
+  --blue:#7C78FF; --blue-soft:#25234A; --yellow:#FFC53D; --yellow-soft:#3A2F12;
+  --ok:#5BD69A; --ok-soft:#163626; --est:#FFC46B; --est-soft:#3B2B10;
+  --tg:#17212B; --tg-bubble:#232E3C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px;display:grid;gap:56px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(32px,5.4vw,56px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.lead{font-size:18px;color:var(--muted);max-width:60ch}
+.sec{display:grid;gap:20px}
+.sec>header{display:grid;gap:8px;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--blue-soft);color:var(--ink);padding:1px 6px;border-radius:6px}
+a{color:var(--blue)}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:center}
+.hero-text{display:grid;gap:18px;min-width:0}
+.hero h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--surface);border:1.5px solid var(--line)}
+.who{font-size:14px;color:var(--muted)}
+.who b{color:var(--ink)}
+
+/* phone with report */
+.phone{background:var(--tg);border:2px solid var(--ink);border-radius:28px;padding:14px;max-width:380px;width:100%;justify-self:center;box-shadow:8px 8px 0 var(--blue);min-width:0}
+.phone-top{display:flex;align-items:center;gap:10px;padding:2px 4px 12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.bot-ava{width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.phone-top b{display:block;font-size:14.5px}.phone-top small{font-size:12px;color:var(--muted)}
+.msg{background:var(--tg-bubble);border-radius:16px 16px 16px 4px;padding:12px 14px;font-size:13.5px;line-height:1.5;display:grid;gap:8px}
+.msg .t{font-weight:800}
+.msg ul{margin:0;padding-left:0;list-style:none;display:grid;gap:4px}
+.msg .time{justify-self:end;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.up{color:var(--ok);font-weight:700}.down{color:#D2353B;font-weight:700}
+.sample{font-size:11.5px;font-weight:700;color:var(--muted);text-align:center;margin-top:10px}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:10px;align-content:start;text-align:left;min-width:0;transition:border-color .15s}
+.metric:hover{border-color:var(--ink)}
+.metric[aria-expanded="true"]{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue) inset}
+.metric .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.metric .ico{font-size:22px;line-height:1}
+.badge{font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}.badge.est{background:var(--est-soft);color:var(--est)}
+.metric p{font-size:14px;color:var(--muted)}
+.metric .how{font-size:13.5px;color:var(--ink);border-top:1px dashed var(--line);padding-top:10px}
+.metric .more{font-size:12.5px;font-weight:700;color:var(--blue)}
+.note{background:var(--yellow-soft);border-radius:16px;padding:14px 16px;font-size:14.5px;max-width:72ch}
+
+/* sources */
+.seg{display:inline-flex;background:var(--surface);border:1.5px solid var(--ink);border-radius:999px;padding:4px;gap:4px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14.5px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.src{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:10px;align-content:start;min-width:0}
+.card ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14.5px}
+.pm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-size:14px}
+.pm div{display:grid;gap:4px;align-content:start}
+.pm b{font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+.verdict{font-weight:700;font-size:15px}
+
+/* builder */
+.builder{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:16px;align-items:start}
+form.fields{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px}
+label{display:grid;gap:6px;font-size:13.5px;font-weight:700}
+label small{font-weight:500;color:var(--muted)}
+input,textarea,select{width:100%;font:15px/1.4 var(--font);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue)}
+.checks{display:grid;gap:6px}
+.checks label{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}
+.checks input{width:18px;height:18px;accent-color:var(--blue)}
+.out{background:var(--ink);color:var(--bg);border-radius:18px;padding:0;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.out-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px 12px 18px;border-bottom:1px solid color-mix(in srgb,var(--bg) 20%,transparent)}
+.out-head b{font-size:14px}
+.copy{background:var(--yellow);color:#16161D;border:0;border-radius:999px;padding:9px 16px;font-weight:800;font-size:14px;white-space:nowrap}
+.out pre{margin:0;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 var(--mono);max-height:560px;overflow:auto}
+.out pre mark{background:color-mix(in srgb,var(--yellow) 35%,transparent);color:inherit;border-radius:4px;padding:0 2px}
+
+/* steps */
+.steps{display:grid;gap:12px;counter-reset:s}
+.step{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:18px 18px 18px 64px;position:relative;display:grid;gap:8px}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:18px;top:18px;width:32px;height:32px;border-radius:10px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:800}
+.step.done{border-color:var(--ok)}
+.step.done::before{content:"✓";background:var(--ok)}
+.step .tick{justify-self:start;display:flex;gap:8px;align-items:center;font-size:13.5px;font-weight:700;color:var(--muted)}
+.step .tick input{width:18px;height:18px;accent-color:var(--ok)}
+.step ul,.step ol{margin:0;padding-left:20px;display:grid;gap:4px;font-size:15px}
+.vars{display:grid;gap:6px}
+.var{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:4px 12px;font-size:14px;align-items:baseline}
+.var code{white-space:nowrap}
+.progress{height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.cmds{display:grid;gap:8px}
+.cmd{display:flex;gap:10px;align-items:center;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14.5px}
+.cmd span{flex:1;min-width:0}
+.cmd button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+
+/* faq */
+details{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px 18px}
+details[open]{border-color:var(--ink)}
+summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";font-weight:800;color:var(--blue)}
+details[open] summary::after{content:"–"}
+details p{margin-top:10px;font-size:15px;color:var(--muted);max-width:70ch}
+.faq{display:grid;gap:10px}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted);border-top:1.5px solid var(--line);padding-top:20px}
+.cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.big{background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:14px 22px;font-weight:800;font-size:16px;box-shadow:4px 4px 0 var(--yellow)}
+.big:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--yellow)}
+.ghost{background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:12px 18px;font-weight:700;font-size:15px;color:var(--ink);text-decoration:none}
+.tech{background:var(--surface);border:2px solid var(--ink);border-radius:20px;display:grid;gap:0;overflow:hidden;box-shadow:6px 6px 0 var(--blue)}
+.tech-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1.5px solid var(--line)}
+.tech-head p{font-size:14px;color:var(--muted);max-width:56ch}
+.tech pre{margin:0;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.6 var(--mono);max-height:340px;overflow:auto;background:var(--bg)}
+.tech.open pre{max-height:none}
+.tech-foot{display:flex;justify-content:center;padding:10px;border-top:1.5px solid var(--line)}
+.tech-foot button{border:0;background:none;font-weight:700;color:var(--blue);font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;z-index:20}
+
+@media (max-width:820px){
+  .hero,.builder,.src{grid-template-columns:minmax(0,1fr)}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .out{position:static}
+}
+@media (max-width:520px){
+  .metrics{grid-template-columns:minmax(0,1fr)}
+  .pm{grid-template-columns:minmax(0,1fr)}
+  .step{padding-left:18px;padding-top:62px}
+  .var{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="hero-text">
+      <span class="eyebrow">Бонус от Ольги Пузановой</span>
+      <h1>Разведчик Ozon: <em>каждое утро</em> сводка по конкурентам</h1>
+      <p class="lead">Представь: 9:00, кофе, а в Telegram уже лежит отчёт. Кто снизил цену, кто сменил обложку, кто зашёл в акцию и у кого пошли продажи. Агента соберёт твой главный ИИ-агент, ты только заполнишь форму ниже и отправишь ему одно сообщение.</p>
+      <div class="chips">
+        <span class="chip">💰 цены</span><span class="chip">🖼 обложки</span><span class="chip">🆕 новинки</span>
+        <span class="chip">📣 реклама</span><span class="chip">🏷 акции</span><span class="chip">📈 продажи</span>
+      </div>
+      <div class="cta"><button class="big" type="button" id="copyAll">📋 Скопировать промпт для бота</button><a class="ghost" href="#tech">Посмотреть промпт</a></div>
+      <p class="who">Нужен ИИ-офис с главным агентом в Telegram по <a href="https://claude.ai/artifact/NBAfQzu1ERHBs5hJCxfBJZ" target="_blank" rel="noopener">инструкции «ИИ-офис»</a>. Сборка займёт <b>около 30 минут</b>, дальше агент работает сам.</p>
+    </div>
+
+    <div class="phone" aria-label="Пример сводки в Telegram">
+      <div class="phone-top"><span class="bot-ava">R</span><div><b>Разведчик Ozon</b><small>бот · сводки</small></div></div>
+      <div class="msg">
+        <span class="t">🕵️ Сводка по конкурентам · 12 ноября</span>
+        <span><b>Главное за сутки</b></span>
+        <ul>
+          <li>💰 «Дом Порядка» снизил цену на органайзер: 1 290 → 1 090 ₽ <span class="down">−15%</span></li>
+          <li>🖼 «Smart Box» сменил обложку на фото в интерьере</li>
+          <li>🏷 2 из 6 конкурентов зашли в акцию «Чёрная пятница»</li>
+        </ul>
+        <span><b>Продажи (оценка)</b></span>
+        <ul>
+          <li>📈 «Smart Box»: +38 отзывов за неделю <span class="up">↑ ×1,6</span></li>
+          <li>📣 По запросу «органайзер для косметики» в топ-12 4 карточки с продвижением, 2 из них «Дом Порядка»</li>
+        </ul>
+        <span><b>Что сделать сегодня</b></span>
+        <ul><li>1. Проверь цену на SKU 1734… против «Дом Порядка»</li><li>2. Протестируй обложку в интерьере</li></ul>
+        <span class="time">09:00</span>
+      </div>
+      <p class="sample">Пример сводки. Цифры условные.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="tech">
+    <header>
+      <span class="eyebrow">Самый быстрый путь</span>
+      <h2>Весь технический промпт одной кнопкой</h2>
+      <p class="lead">Скопируй и отправь своему главному агенту в Telegram. Он сам спросит магазин, конкурентов и запросы, соберёт разведчика, поставит его в ИИ-офис и пришлёт первую сводку. Если заполнишь поля в конструкторе ниже, они попадут в промпт сразу.</p>
+    </header>
+    <div class="tech" id="techBox">
+      <div class="tech-head"><div style="display:grid;gap:4px;min-width:0"><p>Промпт обновляется, когда ты заполняешь конструктор. Ключи в нём не нужны: агент возьмёт их из Railway.</p><p id="techLen" style="font-weight:700;font-size:13px"></p></div><button class="copy" type="button" id="copyTech">📋 Скопировать весь промпт</button></div>
+      <pre id="techText" tabindex="0"></pre>
+      <div class="tech-foot"><button type="button" id="techMore">Показать полностью</button></div>
+    </div>
+  </section>
+
+  <section class="sec" id="what">
+    <header>
+      <span class="eyebrow">Что он отслеживает</span>
+      <h2>6 сигналов, и честно про точность</h2>
+      <p class="lead">Нажми на карточку, чтобы увидеть, откуда агент берёт данные. Зелёная плашка: видно на витрине Ozon, значит точно. Жёлтая: чужих цифр нет ни у кого, агент даёт оценку.</p>
+    </header>
+    <div class="metrics" id="metrics"></div>
+    <p class="note">Точных рекламных расходов и продаж конкурента нет ни в API Ozon, ни в кабинете. Их видит только сам продавец. Любой сервис аналитики тоже показывает оценку. Агент так и пишет в отчёте, чтобы ты не принимала решения по выдуманным цифрам.</p>
+  </section>
+
+  <section class="sec" id="sources">
+    <header>
+      <span class="eyebrow">Откуда данные</span>
+      <h2>По API или через вход в кабинет</h2>
+      <p class="lead">Данные конкурентов агент берёт с открытой витрины Ozon. Твои данные нужны для сравнения «ты и они»: их можно брать по API или через вход в твой кабинет.</p>
+    </header>
+    <div class="seg" role="group" aria-label="Способ подключения">
+      <button type="button" data-src="api" aria-pressed="true">🔑 По API</button>
+      <button type="button" data-src="cab" aria-pressed="false">🖥 Вход в кабинет</button>
+    </div>
+    <div class="src" id="srcBox"></div>
+  </section>
+
+  <section class="sec" id="build">
+    <header>
+      <span class="eyebrow">Собери сообщение агенту</span>
+      <h2>Заполни поля, справа готовый текст</h2>
+      <p class="lead">Текст справа обновляется сам. Скопируй его и отправь своему главному агенту в Telegram, голосом не надо. Поля сохраняются в этом браузере.</p>
+    </header>
+    <div class="builder">
+      <form class="fields" id="f" autocomplete="off">
+        <label for="shop">Твой магазин и категория<input id="shop" placeholder="Например: «Уютный дом», органайзеры для хранения"></label>
+        <label for="mine">Твои товары для сравнения <small>артикулы SKU или ссылки, по одному в строке</small><textarea id="mine" rows="3" placeholder="https://www.ozon.ru/product/…"></textarea></label>
+        <label for="rivals">Конкуренты <small>ссылки на товары или магазины, 3–15 штук</small><textarea id="rivals" rows="4" placeholder="https://www.ozon.ru/seller/…&#10;https://www.ozon.ru/product/…"></textarea></label>
+        <label for="keys">Ключевые запросы <small>по ним агент смотрит выдачу и рекламу</small><textarea id="keys" rows="3" placeholder="органайзер для косметики&#10;коробка для хранения"></textarea></label>
+        <label for="when">Во сколько присылать (Москва)<select id="when"><option>08:00</option><option selected>09:00</option><option>10:00</option><option>12:00</option><option>18:00</option></select></label>
+        <div class="checks" role="group" aria-label="Дополнительно">
+          <label><input type="checkbox" id="useApi" checked> Ключи Ozon Seller API добавлены</label>
+          <label><input type="checkbox" id="usePerf"> Ключи Ozon Performance (моя реклама)</label>
+          <label><input type="checkbox" id="useMp"> Есть подписка на сервис аналитики с API</label>
+          <label><input type="checkbox" id="useCab"> Можно входить в мой кабинет через браузер</label>
+          <label><input type="checkbox" id="weekdays"> Только по будням</label>
+        </div>
+      </form>
+      <div class="out">
+        <div class="out-head"><b>Сообщение главному агенту</b><button class="copy" type="button" id="copy">Скопировать</button></div>
+        <pre id="prompt" tabindex="0"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="steps">
+    <header>
+      <span class="eyebrow">Запуск</span>
+      <h2>5 шагов до первой сводки</h2>
+      <p class="lead">Отмечай шаги галочками, прогресс сохранится.</p>
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    </header>
+    <div class="steps" id="stepList">
+      <div class="step" data-k="s1">
+        <h3>Сделай бота для сводок</h3>
+        <ol><li>В Telegram открой @BotFather → <code>/newbot</code>, придумай имя, например «Разведчик Ozon».</li><li>Сохрани токен, который пришлёт BotFather.</li><li>Открой нового бота и нажми «Старт». Так агент узнает, куда слать сводку.</li></ol>
+        <label class="tick"><input type="checkbox"> Готово</label>
+      </div>
+      <div class="step" data-k="s2">
+        <h3>Возьми ключи Ozon</h3>
+        <ul>
+          <li><b>Seller API:</b> кабинет продавца → Настройки → Seller API → создай ключ с правами на чтение. Понадобятся Client-Id и Api-Key.</li>
+          <li><b>Performance API</b> (необязательно, твоя реклама): кабинет Ozon Performance → раздел API → Client ID и Client Secret.</li>
+          <li><b>Сервис аналитики</b> (необязательно): токен API из личного кабинета сервиса, если у тебя есть подписка.</li>
+        </ul>
+        <label class="tick"><input type="checkbox"> Готово</label>
+      </div>
+      <div class="step" data-k="s3">
+        <h3>Положи ключи на сервер</h3>
+        <p>Railway → проект с ИИ-офисом → сервис <b>agent</b> → Variables. Добавь переменные, которые у тебя есть:</p>
+        <div class="vars">
+          <div class="var"><code>REPORT_BOT_TOKEN</code><span>токен бота для сводок из шага 1</span></div>
+          <div class="var"><code>OZON_CLIENT_ID</code><span>Client-Id из Seller API</span></div>
+          <div class="var"><code>OZON_API_KEY</code><span>Api-Key из Seller API</span></div>
+          <div class="var"><code>OZON_PERF_CLIENT_ID</code><span>Performance, если подключаешь</span></div>
+          <div class="var"><code>OZON_PERF_CLIENT_SECRET</code><span>Performance, если подключаешь</span></div>
+          <div class="var"><code>ANALYTICS_API_TOKEN</code><span>токен сервиса аналитики, если есть</span></div>
+          <div class="var"><code>OZON_LOGIN</code><span>телефон или почта кабинета, только для входа через браузер</span></div>
+        </div>
+        <p>Ключи не пиши в чат с агентом: в Railway они не попадут в переписку и в код. После сохранения Railway сам перезапустит агента.</p>
+        <label class="tick"><input type="checkbox"> Готово</label>
+      </div>
+      <div class="step" data-k="s4">
+        <h3>Отправь сообщение главному агенту</h3>
+        <p>Скопируй текст из блока «Сообщение главному агенту» выше и отправь в Telegram. Агент напишет роль разведчика, соберёт навык, создаст агента и сам сделает пробный запуск. Займёт 10–20 минут.</p>
+        <label class="tick"><input type="checkbox"> Готово</label>
+      </div>
+      <div class="step" data-k="s5">
+        <h3>Проверь первую сводку и поставь расписание</h3>
+        <ul><li>Пробная сводка придёт в бота из шага 1.</li><li>В ИИ-офисе появится новый робот «Разведчик Ozon»: видно, когда он работает, а отчёты лежат у него во вкладке «Задачи».</li><li>Если всё нравится, ответь агенту «ок, ставь на расписание».</li></ul>
+        <label class="tick"><input type="checkbox"> Готово</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="tune">
+    <header>
+      <span class="eyebrow">Правки словами</span>
+      <h2>Доработай разведчика за одно сообщение</h2>
+      <p class="lead">Первая версия всегда сырая, это нормально. Вот фразы, которые чаще всего пригождаются:</p>
+    </header>
+    <div class="cmds" id="cmds"></div>
+  </section>
+
+  <section class="sec" id="faq">
+    <header><span class="eyebrow">Вопросы</span><h2>Частые вопросы</h2></header>
+    <div class="faq">
+      <details><summary>Сколько это стоит?</summary><p>Агент работает на твоей подписке Claude, отдельно платить за него не нужно. Один запуск в день расходует часть лимита. Если конкурентов больше 15, раздели их на две группы и ставь запуски с разницей в час.</p></details>
+      <details><summary>Ozon не пускает агента на витрину. Что делать?</summary><p>Ozon защищается от роботов. Агент ходит один раз в день, с паузами и только по открытым страницам. Если страница не открылась, он повторит позже и напишет в сводке, что именно не удалось проверить. Самый устойчивый вариант: сервис аналитики с API, там данные уже собраны.</p></details>
+      <details><summary>Безопасно ли давать вход в кабинет?</summary><p>Безопаснее API: ключ можно выдать только на чтение и в любой момент отозвать. Вход через браузер требует код из SMS, сессия периодически слетает, и агент будет просить код заново. Подключай кабинет, только если нужного отчёта нет в API.</p></details>
+      <details><summary>А для Wildberries так можно?</summary><p>Да. В сообщении замени Ozon на Wildberries, а ключи Seller API на токен WB API из кабинета продавца (Настройки → Доступ к API). Логика сводки та же.</p></details>
+      <details><summary>Агент прислал странную цифру</summary><p>Напиши ему: «покажи, откуда взял эту цифру». Он покажет страницу или ответ API. Если ошибся, скажи, как правильно, и попроси записать правило в инструкцию разведчика.</p></details>
+    </div>
+  </section>
+
+  <footer><span>Ольга Пузанова · AI + маркетплейсы</span><span>Канал: <a href="https://t.me/aivwb" target="_blank" rel="noopener">t.me/aivwb</a></span></footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem('rzv:' + k)); localStorage.setItem('rzv:' + k, JSON.stringify(v)); } catch (e) { return null; } }
+function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+function toast(t){ var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function(){ el.hidden = true; }, 1800); }
+function copyText(text, el){
+  var done = function(){ toast('Скопировано'); };
+  try {
+    navigator.clipboard.writeText(text).then(done, function(){ select(el); });
+  } catch (e) { select(el); }
+}
+function select(el){ if (!el) return; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Выделено, нажми «Копировать»'); }
+
+/* метрики */
+var M = [
+  {i:'💰', t:'Цены', k:'ok', b:'точно', p:'Цена сейчас, с Ozon Картой и без, изменение к вчера в рублях и процентах.', h:'Открытая карточка товара на Ozon, раз в день. Твои цены для сравнения: Seller API.'},
+  {i:'🖼', t:'Смена обложки', k:'ok', b:'точно', p:'Сменилось ли главное фото. В сводке старая и новая картинка рядом.', h:'Агент сохраняет главное фото каждый день и сравнивает с вчерашним.'},
+  {i:'🆕', t:'Новинки', k:'ok', b:'точно', p:'Новые товары в магазинах конкурентов и в топе выдачи по твоим запросам.', h:'Страница магазина конкурента и поиск Ozon по твоим ключевым запросам.'},
+  {i:'🏷', t:'Акции', k:'ok', b:'точно', p:'Участие в акции, распродаже, зачёркнутая цена, купоны.', h:'Плашки и зачёркнутая цена на карточке. Твои акции: Seller API.'},
+  {i:'📈', t:'Рост продаж', k:'est', b:'оценка', p:'У кого пошли продажи: прирост отзывов и счётчика покупок за сутки и неделю.', h:'Прирост отзывов и «купили» с витрины. Точнее: сервис аналитики по API, если есть подписка.'},
+  {i:'📣', t:'Реклама', k:'est', b:'оценка', p:'Кто и как активно продвигается по твоим запросам, позиции в выдаче.', h:'Сколько карточек с пометкой продвижения в топе по твоим запросам. Твоя реклама: Performance API.'}
+];
+$('metrics').innerHTML = M.map(function(m, n){
+  return '<button type="button" class="metric" aria-expanded="false" data-n="' + n + '"><span class="top"><span class="ico" aria-hidden="true">' + m.i + '</span><span class="badge ' + m.k + '">' + m.b + '</span></span><h3>' + m.t + '</h3><p>' + m.p + '</p><span class="how" hidden>📍 ' + m.h + '</span><span class="more">Откуда данные →</span></button>';
+}).join('');
+$('metrics').addEventListener('click', function(e){
+  var b = e.target.closest('.metric'); if (!b) return;
+  var open = b.getAttribute('aria-expanded') !== 'true';
+  b.setAttribute('aria-expanded', open); b.querySelector('.how').hidden = !open; b.querySelector('.more').textContent = open ? 'Свернуть' : 'Откуда данные →';
+});
+
+/* источники */
+var SRC = {
+  api: '<div class="card"><h3>🔑 Ozon Seller API</h3><ul><li>Твои товары, цены, остатки, акции и продажи.</li><li>Ключ только на чтение, отзывается в один клик.</li><li>Работает стабильно, без кодов из SMS.</li></ul><div class="pm"><div><b>Плюсы</b>надёжно, быстро, безопасно</div><div><b>Минусы</b>только твои данные, чужих в API нет</div></div></div>' +
+       '<div class="card"><h3>🌐 Витрина Ozon + сервис аналитики</h3><ul><li>Конкурентов агент смотрит на открытой витрине: карточки, магазины, поиск.</li><li>Если есть подписка на сервис аналитики с API, агент возьмёт оттуда оценку продаж и истории цен.</li><li>Твою рекламу подтянет Ozon Performance API.</li></ul><p class="verdict">✅ Рекомендую начать с этого варианта.</p></div>',
+  cab: '<div class="card"><h3>🖥 Вход в кабинет через браузер</h3><ul><li>Агент открывает кабинет продавца как человек и читает нужные отчёты.</li><li>Подходит для отчётов, которых нет в API.</li><li>Логин хранится в Railway, пароль или код ты присылаешь агенту при входе.</li></ul><div class="pm"><div><b>Плюсы</b>видно всё, что видишь ты в кабинете</div><div><b>Минусы</b>код из SMS, сессия слетает, медленнее, Ozon может попросить подтверждение</div></div></div>' +
+       '<div class="card"><h3>⚖️ Как решить</h3><ul><li>Нужна сводка по конкурентам: хватит витрины и Seller API.</li><li>Нужны отчёты кабинета, которых нет в API: добавь вход через браузер.</li><li>Агент запомнит сессию и попросит код, только когда она слетит.</li></ul><p class="verdict">Кабинет удобно держать запасным способом.</p></div>'
+};
+function showSrc(k){
+  document.querySelectorAll('.seg button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.src === k); });
+  $('srcBox').innerHTML = SRC[k];
+}
+document.querySelector('.seg').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) showSrc(b.dataset.src); });
+showSrc('api');
+
+/* сборщик промпта */
+var F = ['shop','mine','rivals','keys','when','useApi','usePerf','useMp','useCab','weekdays'];
+var saved = store('form') || {};
+F.forEach(function(id){ var el = $(id); if (saved[id] === undefined) return; if (el.type === 'checkbox') el.checked = saved[id]; else el.value = saved[id]; });
+function v(id, ph){ var t = $(id).value.trim(); return t ? {t: t, real: true} : {t: ph, real: false}; }
+function lines(o){ return o.t.split(/\n+/).map(function(s){ return s.trim(); }).filter(Boolean).map(function(s){ return '• ' + s; }).join('\n'); }
+function mk(o){ return o.real ? esc(o.t) : '<mark>' + esc(o.t) + '</mark>'; }
+function mkLines(o){ return o.real ? esc(lines(o)) : '<mark>' + esc(o.t) + '</mark>'; }
+function build(){
+  var shop = v('shop', '[мой магазин, категория]'), mine = v('mine', '[мои SKU или ссылки на мои товары]'),
+      rivals = v('rivals', '[ссылки на товары или магазины конкурентов, по одной в строке]'), keys = v('keys', '[ключевые запросы, по одному в строке]'),
+      when = $('when').value, wd = $('weekdays').checked, api = $('useApi').checked, perf = $('usePerf').checked, mp = $('useMp').checked, cab = $('useCab').checked;
+  var hh = when.split(':')[0].replace(/^0/, ''), cron = '0 ' + hh + ' * * ' + (wd ? '1-5' : '*');
+  var data = [];
+  data.push('• Конкурентов смотри на открытой витрине Ozon через браузер (Playwright): карточки, страницы магазинов, поиск по моим запросам. Один проход в день, с паузами, только публичные страницы. Если страница не открылась, повтори позже и напиши в сводке, что не удалось проверить.');
+  if (api) data.push('• Мои товары, цены, акции и продажи бери из Ozon Seller API: ключи в переменных OZON_CLIENT_ID и OZON_API_KEY.');
+  if (perf) data.push('• Мою рекламу бери из Ozon Performance API: OZON_PERF_CLIENT_ID и OZON_PERF_CLIENT_SECRET.');
+  if (mp) data.push('• Оценку продаж и историю цен конкурентов дополнительно бери из сервиса аналитики по API: токен в ANALYTICS_API_TOKEN. Сначала проверь документацию сервиса и напиши мне, какие данные он отдаёт.');
+  if (cab) data.push('• Если нужного отчёта нет в API, заходи в мой кабинет продавца через браузер: логин в OZON_LOGIN, код из SMS спроси у меня в Telegram. Сессию сохраняй, чтобы не просить код каждый день.');
+  data.push('• Снимки каждого дня храни в work/ozon-spy/ (json + главные фото), чтобы сравнивать с прошлым днём.');
+  var html =
+'Собери агента завода «Разведчик Ozon». Он ' + (wd ? 'по будням' : 'каждый день') + ' в ' + when + ' по Москве присылает сводку по конкурентам в отдельного бота.\n\n' +
+'Мой магазин: ' + mk(shop) + '\n\n' +
+'Мои товары для сравнения:\n' + mkLines(mine) + '\n\n' +
+'Конкуренты:\n' + mkLines(rivals) + '\n\n' +
+'Ключевые запросы:\n' + mkLines(keys) + '\n\n' +
+'Что отслеживать:\n' +
+'1. Цены: сейчас, с Ozon Картой и без, изменение к прошлому дню в ₽ и %. Рядом моя цена.\n' +
+'2. Обложка: сменилось ли главное фото. Если да, пришли старое и новое.\n' +
+'3. Новинки: новые товары в магазинах конкурентов и в топ-36 выдачи по моим запросам.\n' +
+'4. Акции: участие в акциях и распродажах, зачёркнутая цена, купоны.\n' +
+'5. Рост продаж: прирост отзывов и счётчика покупок за сутки и 7 дней. Подпиши, что это оценка.\n' +
+'6. Реклама: позиции конкурентов по моим запросам и сколько их карточек с пометкой продвижения в топ-12. Подпиши, что это оценка.\n\n' +
+'Откуда данные:\n' + esc(data.join('\n')) + '\n\n' +
+'Сводка:\n' +
+'• Отправляй через бота с токеном из REPORT_BOT_TOKEN. Chat id найди сам через getUpdates (я уже нажала «Старт» в этом боте) и запиши в память.\n' +
+'• Формат для Telegram без таблиц: сверху 3 главных изменения дня, дальше коротко по каждому конкуренту, в конце «что сделать сегодня» из 1–3 пунктов.\n' +
+'• Если за сутки ничего не изменилось, пришли одну строку «Без изменений».\n' +
+'• Ничего не выдумывай: если данных нет, так и пиши.\n\n' +
+'Как собрать: напиши инструкцию разведчика в work/ozon-spy.md и навык .claude/skills/ozon-spy/SKILL.md, создай агента через factory.py (id ozon-spy, имя «Разведчик Ozon», роль «сводка по конкурентам Ozon»), сделай пробный запуск и покажи мне первую сводку. После моего «ок» поставь расписание: factory.py schedule ozon-spy "' + cron + '" "Сводка по конкурентам за сутки".\n' +
+'Ключи не пиши в код, файлы и сообщения.';
+  $('prompt').innerHTML = html;
+  var o = {}; F.forEach(function(id){ var el = $(id); o[id] = el.type === 'checkbox' ? el.checked : el.value; }); store('form', o);
+}
+/* полный технический промпт: всё, что нужно агенту, включая то, о чём спросить владельца */
+function tech(){
+  var shop = $('shop').value.trim(), mine = $('mine').value.trim(), rivals = $('rivals').value.trim(), keys = $('keys').value.trim();
+  var when = $('when').value, wd = $('weekdays').checked;
+  var hh = when.split(':')[0].replace(/^0/, ''), cron = '0 ' + hh + ' * * ' + (wd ? '1-5' : '*');
+  function list(t){ return t.split(/\n+/).map(function(x){ return x.trim(); }).filter(Boolean).map(function(x){ return '  • ' + x; }).join('\n'); }
+  var known = [];
+  if (shop) known.push('Мой магазин и категория: ' + shop);
+  if (mine) known.push('Мои товары для сравнения:\n' + list(mine));
+  if (rivals) known.push('Конкуренты:\n' + list(rivals));
+  if (keys) known.push('Ключевые запросы:\n' + list(keys));
+  var ask = [];
+  if (!shop) ask.push('название моего магазина и категорию');
+  if (!mine) ask.push('мои товары для сравнения (SKU или ссылки)');
+  if (!rivals) ask.push('ссылки на товары или магазины конкурентов (3–15)');
+  if (!keys) ask.push('ключевые запросы, по которым смотреть выдачу (3–10)');
+  return [
+'ЗАДАЧА: собери агента завода «Разведчик Ozon». Он ' + (wd ? 'по будням' : 'каждый день') + ' в ' + when + ' по Москве присылает мне сводку по конкурентам на Ozon в отдельного Telegram-бота и работает роботом в ИИ-офисе.',
+'',
+'ШАГ 0. ДАННЫЕ ОТ МЕНЯ',
+known.length ? known.join('\n') : '(пока ничего не указала)',
+ask.length ? 'Прежде чем собирать, спроси у меня одним сообщением: ' + ask.join('; ') + '.' : 'Всё нужное я дала, можно собирать.',
+'Проверь, какие переменные заданы (только имена): REPORT_BOT_TOKEN, OZON_CLIENT_ID, OZON_API_KEY, OZON_PERF_CLIENT_ID, OZON_PERF_CLIENT_SECRET, ANALYTICS_API_TOKEN, OZON_LOGIN. Без REPORT_BOT_TOKEN не начинай: попроси создать бота в @BotFather, положить токен в Railway (сервис agent → Variables) и нажать «Старт» в боте.',
+'',
+'ШАГ 1. ЧТО ОТСЛЕЖИВАТЬ ПО КАЖДОМУ КОНКУРЕНТУ',
+'1. Цены: с Ozon Картой и без, изменение к вчера в ₽ и %, рядом моя цена.',
+'2. Обложка: сменилось ли главное фото; если да, приложи старое и новое.',
+'3. Новинки: новые товары в магазинах конкурентов и в топ-36 по моим запросам.',
+'4. Акции: акции, распродажи, зачёркнутая цена, купоны.',
+'5. Рост продаж (оценка): прирост отзывов и счётчика покупок за сутки и 7 дней, плюс сервис аналитики, если задан ANALYTICS_API_TOKEN.',
+'6. Реклама (оценка): позиции по моим запросам и сколько их карточек с пометкой продвижения в топ-12.',
+'Точных продаж и рекламных расходов конкурентов нет ни у кого: 5 и 6 подписывай как оценку.',
+'',
+'ШАГ 2. ИСТОЧНИКИ ДАННЫХ',
+'• Конкуренты: открытая витрина Ozon через Playwright (карточки, магазины, поиск). Раз в день, паузы 3–8 с, только публичные страницы. Не пускает: повтори через 30 минут, потом отметь в сводке, что не проверено.',
+'• Мои товары, цены, акции, продажи: Ozon Seller API (Client-Id и Api-Key из OZON_CLIENT_ID и OZON_API_KEY), методы сверь с актуальной документацией.',
+'• Моя реклама: Ozon Performance API, если заданы OZON_PERF_*.',
+'• Сервис аналитики: если задан ANALYTICS_API_TOKEN, спроси, какой это сервис.',
+'• Кабинет через браузер: только если задан OZON_LOGIN и отчёта нет в API. Код из SMS спрашивай у меня, сессию сохраняй.',
+'• Снимки дня (json + главные фото) храни в work/ozon-spy/ГГГГ-ММ-ДД/, сравнивай с прошлым днём, старше 30 дней удаляй.',
+'',
+'ШАГ 3. СВОДКА',
+'• Отправляй через Bot API с REPORT_BOT_TOKEN. Chat id возьми из getUpdates и сохрани в work/ozon-spy/chat_id.',
+'• Формат без таблиц: «🕵️ Сводка · дата» → 3 главных изменения → по конкурентам 1–3 строки, только изменения → продажи и реклама (оценка) → что сделать сегодня, 1–3 пункта.',
+'• Ничего не изменилось: одна строка «Без изменений». Нет данных: так и пиши, не выдумывай.',
+'',
+'ШАГ 4. СБОРКА',
+'1. Инструкция разведчика в work/ozon-spy.md: роль, конкуренты, запросы, источники, формат.',
+'2. Навык .claude/skills/ozon-spy/SKILL.md со скриптом сбора и сравнения (Python + Playwright).',
+'3. Создай агента: python agent/tools/factory.py create ozon-spy --name "Разведчик Ozon" --role "Сводка по конкурентам Ozon" --prompt-file work/ozon-spy.md --skills ozon-spy. Так он появится роботом в ИИ-офисе.',
+'4. Пробный запуск: factory.py run ozon-spy "Пробная сводка". Покажи результат и что не получилось.',
+'5. После моего «ок»: factory.py schedule ozon-spy "' + cron + '" "Сводка по конкурентам за сутки".',
+'',
+'ПРАВИЛА',
+'• Ключи только из переменных окружения, в код, файлы и сообщения не пиши.',
+'• Агент только читает: мои цены, акции и рекламу не меняет.',
+'• Запиши в agent/MEMORY.md, где файлы разведчика и как менять список конкурентов.'
+  ].join('\n');
+}
+function renderTech(){
+  var t = tech(); $('techText').textContent = t;
+  $('techLen').textContent = t.length > 4000 ? '⚠️ ' + t.length + ' символов: Telegram разрежет на два сообщения. Сократи списки или отправь промпт файлом .txt' : t.length + ' символов, влезает в одно сообщение Telegram';
+  $('techLen').style.color = t.length > 4000 ? '#D2353B' : '';
+}
+$('copyTech').addEventListener('click', function(){ copyText(tech(), $('techText')); });
+$('copyAll').addEventListener('click', function(){ copyText(tech(), $('techText')); });
+$('techMore').addEventListener('click', function(){ var b = $('techBox'), o = !b.classList.contains('open'); b.classList.toggle('open', o); this.textContent = o ? 'Свернуть' : 'Показать полностью'; });
+$('f').addEventListener('input', renderTech); $('f').addEventListener('change', renderTech);
+renderTech();
+$('f').addEventListener('input', build); $('f').addEventListener('change', build); $('f').addEventListener('submit', function(e){ e.preventDefault(); });
+build();
+$('copy').addEventListener('click', function(){
+  var marks = $('prompt').querySelectorAll('mark').length;
+  copyText($('prompt').textContent, $('prompt'));
+  if (marks) setTimeout(function(){ toast('Скопировано. Жёлтые поля ещё не заполнены'); }, 1900);
+});
+
+/* шаги */
+var done = store('steps') || {};
+var steps = document.querySelectorAll('.step');
+function paint(){
+  var n = 0;
+  steps.forEach(function(s){ var on = !!done[s.dataset.k]; s.classList.toggle('done', on); s.querySelector('input').checked = on; if (on) n++; });
+  $('bar').style.width = (n / steps.length * 100) + '%';
+}
+steps.forEach(function(s){ s.querySelector('input').addEventListener('change', function(e){ done[s.dataset.k] = e.target.checked; store('steps', done); paint(); }); });
+paint();
+
+/* правки */
+var C = [
+  'Добавь в сводку конкурента: [ссылка]',
+  'Пиши сводку короче: только изменения, без конкурентов, у которых всё по-старому',
+  'Если конкурент снизил цену больше чем на 10%, присылай сообщение сразу, не жди утра',
+  'Раз в неделю, в понедельник, пришли итог недели: кто вырос, кто упал, какие обложки сменились',
+  'Покажи, откуда взял эту цифру',
+  'Перенеси сводку на 8:00'
+];
+$('cmds').innerHTML = C.map(function(c, i){ return '<div class="cmd"><span>' + esc(c) + '</span><button type="button" data-i="' + i + '">Копировать</button></div>'; }).join('');
+$('cmds').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) copyText(C[+b.dataset.i], b.previousSibling); });
+})();
+</script>
