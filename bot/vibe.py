@@ -267,6 +267,7 @@ def spread(uid, gap=2 * 3600):
 async def on_start(m: Message, command: CommandObject):
     uid, arg = m.from_user.id, (command.args or '').strip()
     u = db.user(uid)
+    log.info('vibe /start uid=%s arg=%r known=%s in_main=%s', uid, arg, bool(u), M.user(uid) is not None)
     if arg.startswith('vorder_'):
         return await bind_order(m, arg[7:])
     in_main = M.user(uid) is not None  # уже в автовебе или интенсиве: обычный /start остаётся за ними
@@ -323,6 +324,7 @@ def asset(name):
 async def send_photo(uid, file, caption, markup=None, key=''):
     try:
         await bot().send_photo(uid, asset(file), caption=caption, reply_markup=markup)
+        log.info('vibe photo %s %s ok', uid, key)
         if key:
             db.event(uid, 'sent', key)
         return True
