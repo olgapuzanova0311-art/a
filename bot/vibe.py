@@ -323,8 +323,10 @@ def asset(name):
 
 async def send_photo(uid, file, caption, markup=None, key=''):
     try:
-        await bot().send_photo(uid, asset(file), caption=caption, reply_markup=markup)
-        log.info('vibe photo %s %s ok', uid, key)
+        fid = db.setting('fid_' + file)  # фото грузим в Telegram один раз, дальше шлём по file_id мгновенно
+        msg = await bot().send_photo(uid, fid or asset(file), caption=caption, reply_markup=markup)
+        if not fid and msg.photo:
+            db.set_setting('fid_' + file, msg.photo[-1].file_id)
         if key:
             db.event(uid, 'sent', key)
         return True
