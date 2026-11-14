@@ -254,7 +254,8 @@ async def on_start(m: Message, command: CommandObject):
     u = db.user(uid)
     if arg.startswith('vorder_'):
         return await bind_order(m, arg[7:])
-    if not arg.startswith('vibe') and not (u and arg in ('', 'vprompt', 'vaccess')):
+    in_main = M.user(uid) is not None  # уже в автовебе или интенсиве: обычный /start остаётся за ними
+    if not arg.startswith('vibe') and not (u and (arg in ('vprompt', 'vaccess') or (arg == '' and not in_main))):
         raise SkipHandler()
     if u and arg == 'vprompt':
         db.tag(uid, 'prompt_opened')
@@ -628,8 +629,8 @@ async def on_team_reply(m: Message):
 @router.message(F.chat.type == 'private')
 async def on_text(m: Message):
     uid = m.from_user.id
-    if not is_vibe(uid) or (m.text or '').startswith('/'):
-        raise SkipHandler()
+    if not is_vibe(uid) or (m.text or '').startswith('/') or M.user(uid) is not None:
+        raise SkipHandler()  # кто есть и в автовебе, тот пишет команде через автовеб, как раньше
     txt = (m.text or m.caption or '').strip().lower()
     if txt in ('стоп', 'stop'):
         db.run('UPDATE users SET stopped=1 WHERE id=?', uid)
