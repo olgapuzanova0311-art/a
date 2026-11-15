@@ -760,23 +760,39 @@ async def c_setup(m, a):
 
 @admin_cmd('vibecaptions')
 async def c_captions(m, a):
-    """Подписывает видео уроков, которые идут в канале сразу после закрепа с программой."""
+    """Подписывает видео уроков в канале. Урок узнаём по длине видео (или номеру в имени файла), а не по порядку сообщений."""
     ch, first = chat_id('course'), int(a or 0) or int(db.setting('course_toc_id') or 0) + 1
     if not ch or first < 2:
         return await m.answer('Сначала /vibesetup')
-    ok, bad, mid = 0, [], first
-    for title in T.COURSE_LESSONS:
-        for _ in range(4):  # пропускаем служебные сообщения между видео
-            try:
-                await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption=f'<b>{title}</b>')
-                ok += 1
-                mid += 1
+    ok, found, misses = 0, set(), 0
+    for mid in range(first, first + 60):
+        if misses >= 12 or len(found) == len(T.COURSE_LESSONS):
+            break
+        try:
+            msg = await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption='⏳')
+        except TelegramBadRequest:
+            misses += 1
+            continue
+        misses = 0
+        v = getattr(msg, 'video', None) or getattr(msg, 'document', None)
+        idx = None
+        name = (getattr(v, 'file_name', '') or '').strip()
+        for k, pre in enumerate(T.COURSE_PREFIXES):
+            if name.startswith(pre):
+                idx = k
                 break
-            except TelegramBadRequest as e:
-                mid += 1
-                last = str(e)
-        else:
-            bad.append(title)
+        dur = getattr(v, 'duration', None)
+        if idx is None and dur:
+            k = min(range(len(T.COURSE_DURATIONS)), key=lambda i: abs(T.COURSE_DURATIONS[i] - dur))
+            if abs(T.COURSE_DURATIONS[k] - dur) <= 6:
+                idx = k
+        if idx is None:
+            await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption='')
+            continue
+        await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption=f'<b>{T.COURSE_LESSONS[idx]}</b>')
+        found.add(idx)
+        ok += 1
+    bad = [T.COURSE_LESSONS[i] for i in range(len(T.COURSE_LESSONS)) if i not in found]
     await m.answer(f'Подписала видео: {ok} из {len(T.COURSE_LESSONS)}' + (('\nНе нашла: ' + ', '.join(bad)) if bad else ''))
 
 
