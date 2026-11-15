@@ -1037,6 +1037,28 @@ async def r_getcourse(req: web.Request):
     return web.json_response({'ok': True})
 
 
+async def r_stats(req: web.Request):
+    """Сводные цифры воронки без личных данных, по секретному ключу."""
+    if req.match_info['secret'] not in {x for x in (GC_SECRET, GC_SECRET_CLUB) if x}:
+        return web.Response(status=403)
+    q = lambda sql, *a: [dict(r) for r in db.q(sql, *a)]
+    out = {
+        'users_by_src': q("SELECT src, COUNT(*) n, SUM(paid_at IS NOT NULL) paid, MIN(started_at) first, MAX(started_at) last "
+                          "FROM users GROUP BY src"),
+        'tags': q("SELECT u.src, t.tag, COUNT(*) n FROM tags t JOIN users u ON u.id=t.user_id GROUP BY u.src, t.tag"),
+        'sent': q("SELECT u.src, e.key, COUNT(DISTINCT e.user_id) n FROM events e JOIN users u ON u.id=e.user_id "
+                  "WHERE e.kind='sent' GROUP BY u.src, e.key"),
+        'clicks': q("SELECT u.src, e.key, COUNT(DISTINCT e.user_id) n FROM events e JOIN users u ON u.id=e.user_id "
+                    "WHERE e.kind='click' GROUP BY u.src, e.key"),
+        'kinds': q("SELECT kind, COUNT(*) n FROM events GROUP BY kind"),
+        'orders': q("SELECT cost, COUNT(*) n FROM orders GROUP BY cost"),
+        'paid': q("SELECT src, paid_price, COUNT(*) n FROM users WHERE paid_at IS NOT NULL GROUP BY src, paid_price"),
+        'report': report(),
+    }
+    return web.json_response(out)
+
+
 def setup_web(app):
+    app.router.add_get('/vibe/stats/{secret}', r_stats)
     app.router.add_get('/vibe/r/{uid:\\d+}/{key}', r_redirect)
     app.router.add_route('*', '/vibe/gc/{secret}', r_getcourse)
