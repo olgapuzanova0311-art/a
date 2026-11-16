@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Лён и Дуб · домашний текстиль и панно из дерева</title>
+<meta name="description" content="Махровые полотенца, халаты, пледы и панно из дерева для спокойного дома. Доставка по России, подарочная упаковка.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#F7F3EE;--bg2:#EFE8DF;--card:#FFFFFF;--ink:#1F1B17;--muted:#6E655B;--line:#E4DBCF;
+ --sage:#7E8E73;--sage-l:#E5EADF;--terra:#B8714A;--terra-d:#9A5A37;--terra-l:#F3E3D7;--wood:#A27A58;
+ --r:22px;--shadow:0 10px 30px -12px rgba(60,40,20,.18);
+ --ease:cubic-bezier(.2,.7,.2,1)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Onest,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Unbounded,sans-serif;font-weight:500;line-height:1.12;letter-spacing:-.01em;margin:0}
+h2{font-size:clamp(28px,4vw,46px)}
+p{margin:0 0 12px}
+a{color:inherit}
+img,svg{display:block;max-width:100%}
+button{font:inherit;color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+section{padding:88px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);margin-bottom:14px}
+.eyebrow::before{content:"";width:22px;height:1.5px;background:currentColor}
+.lead{font-size:19px;color:var(--muted);max-width:640px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 26px;border-radius:99px;border:0;cursor:pointer;font-weight:600;font-size:16px;text-decoration:none;transition:transform .25s var(--ease),background .25s,box-shadow .25s}
+.btn:active{transform:scale(.97)}
+.btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{background:#3a332c;box-shadow:var(--shadow)}
+.btn-terra{background:var(--terra);color:#fff}.btn-terra:hover{background:var(--terra-d);box-shadow:var(--shadow)}
+.btn-ghost{background:transparent;border:1.5px solid var(--ink)}.btn-ghost:hover{background:var(--ink);color:#fff}
+:focus-visible{outline:3px solid var(--sage);outline-offset:3px;border-radius:8px}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:40;background:rgba(247,243,238,.86);backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
+.hdr.scrolled{border-color:var(--line)}
+.hdr .wrap{display:flex;align-items:center;gap:28px;height:72px}
+.logo{font-family:Unbounded;font-weight:600;font-size:20px;text-decoration:none;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.logo i{width:30px;height:30px;border-radius:50%;background:conic-gradient(var(--terra) 0 50%,var(--sage) 0);display:block}
+.nav{display:flex;gap:24px;margin-left:auto}
+.nav a{text-decoration:none;font-weight:500;color:var(--muted);transition:color .2s}.nav a:hover{color:var(--ink)}
+.cart-btn{position:relative;display:inline-flex;align-items:center;gap:10px;min-height:46px;padding:0 18px;border-radius:99px;border:1.5px solid var(--ink);background:transparent;cursor:pointer;font-weight:600}
+.cart-btn:hover{background:var(--ink);color:#fff}
+.cart-count{min-width:22px;height:22px;border-radius:99px;background:var(--terra);color:#fff;font-size:12px;display:grid;place-items:center;padding:0 6px}
+.cart-count.bump{animation:bump .5s var(--ease)}
+@keyframes bump{30%{transform:scale(1.5)}}
+.burger{display:none}
+
+/* hero */
+.hero{padding:56px 0 80px;position:relative;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero h1{font-size:clamp(38px,5.6vw,74px);margin:4px 0 22px}
+.hero h1 .w{display:inline-block;opacity:0;transform:translateY(30px);animation:rise .9s var(--ease) forwards}
+.hero h1 em{font-style:normal;color:var(--terra)}
+@keyframes rise{to{opacity:1;transform:none}}
+.hero .lead{opacity:0;animation:rise .9s .5s var(--ease) forwards}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px;opacity:0;animation:rise .9s .65s var(--ease) forwards}
+.trust{display:flex;flex-wrap:wrap;gap:28px;margin-top:40px;opacity:0;animation:rise .9s .8s var(--ease) forwards}
+.trust b{display:block;font-family:Unbounded;font-weight:500;font-size:26px}
+.trust span{font-size:14px;color:var(--muted)}
+.hero-art{position:relative;aspect-ratio:1/1.02}
+.blob{position:absolute;border-radius:40% 60% 55% 45%/50% 45% 55% 50%;animation:morph 14s ease-in-out infinite alternate}
+.blob.b1{inset:6% 10% 10% 6%;background:var(--terra-l)}
+.blob.b2{width:42%;height:42%;right:0;bottom:0;background:var(--sage-l);animation-duration:18s}
+@keyframes morph{50%{border-radius:55% 45% 40% 60%/45% 60% 40% 55%;transform:rotate(6deg)}}
+.hero-card{position:absolute;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.hc1{left:4%;top:8%;width:58%;aspect-ratio:4/5;animation:float 7s ease-in-out infinite}
+.hc2{right:4%;top:22%;width:40%;aspect-ratio:3/4;animation:float 8s 1s ease-in-out infinite}
+.hc3{left:30%;bottom:2%;width:44%;aspect-ratio:5/4;animation:float 9s .5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-12px)}}
+.sticker{position:absolute;right:6%;top:4%;width:118px;height:118px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;text-align:center;font-size:12px;font-weight:600;line-height:1.25;animation:spin 18s linear infinite;z-index:2}
+.sticker span{animation:spin 18s linear infinite reverse;display:block;padding:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* marquee */
+.marquee{background:var(--ink);color:#F7F3EE;overflow:hidden;padding:16px 0}
+.marquee-track{display:flex;gap:48px;width:max-content;animation:mq 32s linear infinite;font-family:Unbounded;font-size:16px}
+.marquee-track span{white-space:nowrap;display:flex;align-items:center;gap:48px}
+.marquee-track span::after{content:"✦";color:var(--terra)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* categories */
+.cats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:36px}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;transition:transform .35s var(--ease),box-shadow .35s;min-height:44px}
+.cat:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.cat .art{border-radius:16px;aspect-ratio:1;overflow:hidden;margin-bottom:14px}
+.cat b{display:block;font-family:Unbounded;font-weight:500;font-size:16px}
+.cat span{font-size:14px;color:var(--muted)}
+
+/* catalog */
+.cat-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:20px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.chip{min-height:44px;padding:0 18px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;font-weight:600;font-size:15px;transition:all .2s}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.sort{min-height:44px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);padding:0 16px;font:600 15px Onest}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px}
+.prod{background:var(--card);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);transition:transform .4s var(--ease),box-shadow .4s}
+.prod:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.prod .art{aspect-ratio:1/1.05;position:relative;overflow:hidden}
+.prod .art svg{transition:transform .8s var(--ease)}
+.prod:hover .art svg{transform:scale(1.06)}
+.badge{position:absolute;left:12px;top:12px;background:var(--card);border-radius:99px;font-size:12px;font-weight:700;padding:5px 11px;z-index:1}
+.badge.hit{background:var(--terra);color:#fff}.badge.new{background:var(--sage);color:#fff}
+.prod .body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.prod h3{font-family:Onest;font-weight:700;font-size:17px;line-height:1.3}
+.prod .desc{font-size:14px;color:var(--muted);margin:0}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{min-height:36px;min-width:44px;padding:0 10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.price-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:6px}
+.price{font-family:Unbounded;font-weight:500;font-size:19px;white-space:nowrap;display:flex;flex-direction:column;line-height:1.2}
+.price s{font-family:Onest;font-size:14px;color:var(--muted);font-weight:400}
+.add{min-height:46px;padding:0 16px;border-radius:99px;border:0;background:var(--ink);color:#fff;font-weight:600;cursor:pointer;transition:background .2s,transform .2s;white-space:nowrap}
+.add:hover{background:var(--terra)}.add.done{background:var(--sage)}
+
+/* why */
+.why{background:var(--bg2)}
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:40px}
+.why-card{background:var(--card);border-radius:var(--r);padding:26px}
+.why-card .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:var(--terra-l);margin-bottom:18px;font-size:24px}
+.why-card h3{font-size:18px;margin-bottom:10px}
+.why-card p{color:var(--muted);font-size:15px;margin:0}
+
+/* wood custom */
+.custom{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.custom-art{border-radius:28px;overflow:hidden;aspect-ratio:1.1}
+.steps{counter-reset:s;display:grid;gap:14px;margin:26px 0 30px;padding:0;list-style:none}
+.steps li{counter-increment:s;display:flex;gap:16px;align-items:flex-start}
+.steps li::before{content:counter(s);flex:none;width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:Unbounded;font-size:14px}
+
+/* gift */
+.gift{background:var(--ink);color:#F7F3EE;border-radius:32px;padding:56px;display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center;position:relative;overflow:hidden}
+.gift .lead{color:#cfc6bb}
+.gift .eyebrow{color:#C9B79F}
+.gift-art{border-radius:24px;overflow:hidden;aspect-ratio:1}
+
+/* reviews */
+.revs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+.rev{background:var(--card);border-radius:var(--r);padding:26px;border:1px solid var(--line)}
+.stars{color:var(--terra);letter-spacing:3px;margin-bottom:12px}
+.rev p{font-size:16px}
+.rev .who{display:flex;align-items:center;gap:12px;margin-top:16px;font-size:14px;color:var(--muted)}
+.rev .who i{width:40px;height:40px;border-radius:50%;background:var(--sage-l);display:block}
+
+/* delivery + faq */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.dl{display:grid;gap:12px;margin-top:26px}
+.dl div{background:var(--card);border-radius:18px;padding:18px 20px;border:1px solid var(--line);display:flex;gap:16px;align-items:flex-start}
+.dl b{display:block}
+.dl span{color:var(--muted);font-size:15px}
+.dl .ic{font-size:22px;flex:none}
+details.q{border-bottom:1px solid var(--line)}
+details.q summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;padding:20px 0;font-weight:600;font-size:17px;min-height:44px}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::after{content:"+";font-size:24px;line-height:1;transition:transform .3s var(--ease)}
+details.q[open] summary::after{transform:rotate(45deg)}
+details.q p{color:var(--muted);padding-bottom:18px;margin:0}
+
+/* subscribe */
+.sub{text-align:center;background:var(--terra-l);border-radius:32px;padding:64px 24px}
+.sub .lead{margin:14px auto 26px}
+
+footer{padding:56px 0 40px;border-top:1px solid var(--line);margin-top:88px}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+.foot h4{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.foot a{display:block;text-decoration:none;margin:6px 0;color:var(--ink)}
+.foot a:hover{color:var(--terra)}
+.copy{margin-top:36px;font-size:14px;color:var(--muted)}
+
+/* drawer */
+.overlay{position:fixed;inset:0;background:rgba(31,27,23,.45);opacity:0;pointer-events:none;transition:opacity .35s;z-index:60}
+.overlay.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,100%);background:var(--bg);z-index:70;transform:translateX(100%);transition:transform .45s var(--ease);display:flex;flex-direction:column}
+.drawer.show{transform:none}
+.dr-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line)}
+.dr-head h3{font-size:20px}
+.x{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:20px}
+.dr-body{flex:1;overflow-y:auto;padding:16px 22px}
+.ci{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);animation:rise .4s var(--ease)}
+.ci .art{width:72px;height:72px;border-radius:14px;overflow:hidden}
+.ci b{display:block;font-size:15px;line-height:1.3}
+.ci small{color:var(--muted)}
+.qty{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;margin-top:6px}
+.qty button{width:34px;height:34px;border:0;background:none;cursor:pointer;font-size:18px}
+.qty span{min-width:24px;text-align:center;font-weight:600}
+.ci .p{font-weight:700;text-align:right}
+.rm{display:block;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:6px;margin-left:auto;text-decoration:underline;min-height:32px}
+.empty{text-align:center;padding:60px 10px;color:var(--muted)}
+.empty .big{font-size:48px;margin-bottom:10px}
+.dr-foot{padding:18px 22px 24px;border-top:1px solid var(--line);background:#fff}
+.row{display:flex;justify-content:space-between;margin:6px 0;color:var(--muted)}
+.row.total{color:var(--ink);font-weight:700;font-size:20px;margin-top:10px}
+.promo{display:flex;gap:8px;margin-bottom:12px}
+.promo input{flex:1}
+.progress{height:6px;border-radius:99px;background:var(--bg2);overflow:hidden;margin:6px 0 12px}
+.progress i{display:block;height:100%;background:var(--sage);transition:width .5s var(--ease)}
+.freeship{font-size:14px;color:var(--muted)}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal.show{opacity:1;pointer-events:auto}
+.modal-box{background:var(--bg);border-radius:28px;width:min(620px,100%);max-height:92vh;overflow-y:auto;padding:30px;transform:translateY(24px) scale(.98);transition:transform .4s var(--ease)}
+.modal.show .modal-box{transform:none}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.f{display:grid;gap:6px;margin-bottom:14px}
+.f label{font-weight:600;font-size:15px}
+input,select,textarea{width:100%;min-height:50px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:12px 14px;font:16px Onest;color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sage);box-shadow:0 0 0 4px var(--sage-l)}
+.f.err input,.f.err select{border-color:#C0533A}
+.f .msg{font-size:13px;color:#C0533A;display:none}.f.err .msg{display:block}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.radios{display:grid;gap:8px}
+.radio{display:flex;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;cursor:pointer;min-height:50px}
+.radio input{width:20px;min-height:20px;height:20px;accent-color:var(--ink)}
+.radio:has(input:checked){border-color:var(--ink)}
+.radio small{color:var(--muted);margin-left:auto;white-space:nowrap}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);margin:6px 0 18px}
+.check input{width:20px;min-height:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--ink)}
+.summary{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:16px;border:1px solid var(--line)}
+.success{text-align:center;padding:20px 0}
+.success .ok{width:84px;height:84px;border-radius:50%;background:var(--sage);color:#fff;display:grid;place-items:center;font-size:40px;margin:0 auto 18px;animation:pop .6s var(--ease)}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:14px 22px;border-radius:99px;z-index:90;transition:transform .45s var(--ease);font-weight:600;max-width:calc(100% - 32px);text-align:center}
+.toast.show{transform:translate(-50%,0)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+
+@media (max-width:1060px){.grid{grid-template-columns:repeat(3,1fr)}.cats{grid-template-columns:repeat(3,1fr)}.why-grid{grid-template-columns:repeat(2,1fr)}.foot{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){
+ section{padding:64px 0}
+ .nav{display:none}.hdr .wrap{gap:12px}.cart-btn{margin-left:auto}
+ .hero-grid,.custom,.two,.gift{grid-template-columns:1fr}
+ .hero-art{max-width:520px;margin:0 auto;width:100%}
+ .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+ .revs{grid-template-columns:1fr}
+ .gift{padding:36px 24px}
+}
+@media (max-width:560px){
+ body{font-size:16px}
+ .cats{grid-template-columns:repeat(2,1fr)}
+ .why-grid{grid-template-columns:1fr}
+ .prod .body{padding:12px}
+ .prod h3{font-size:15px}.prod .desc{display:none}
+ .price-row{flex-direction:column;align-items:stretch}
+ .add{width:100%}
+ .f2{grid-template-columns:1fr}
+ .foot{grid-template-columns:1fr}
+ .cart-btn .lbl{display:none}
+ .sticker{width:92px;height:92px;font-size:10px}
+ .modal-box{padding:22px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv,.hero h1 .w,.hero .lead,.hero-cta,.trust{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header class="hdr" id="hdr"><div class="wrap">
+ <a class="logo" href="#top" aria-label="Лён и Дуб, на главную"><i></i>Лён и Дуб</a>
+ <nav class="nav" aria-label="Разделы"><a href="#catalog">Каталог</a><a href="#custom">Панно на заказ</a><a href="#gifts">Подарки</a><a href="#delivery">Доставка</a><a href="#faq">Вопросы</a></nav>
+ <button class="cart-btn" id="openCart" aria-label="Открыть корзину"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="lbl">Корзина</span><span class="cart-count" id="cartCount">0</span></button>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap hero-grid">
+ <div>
+  <div class="eyebrow">Текстиль и дерево для дома</div>
+  <h1><span class="w">Дом,</span> <span class="w" style="animation-delay:.1s">в&nbsp;котором</span> <span class="w" style="animation-delay:.2s">хочется</span> <span class="w" style="animation-delay:.3s"><em>замедлиться</em></span></h1>
+  <p class="lead">Плотные махровые полотенца, мягкие халаты, пледы и панно из натурального дерева. Вещи, к которым тянется рука каждый день, и подарки, которые не уберут в шкаф.</p>
+  <div class="hero-cta"><a class="btn btn-dark" href="#catalog">Выбрать для дома</a><a class="btn btn-ghost" href="#gifts">Подобрать подарок</a></div>
+  <div class="trust"><div><b>[4,9]★</b><span>рейтинг на маркетплейсах</span></div><div><b>[12 000+]</b><span>покупателей</span></div><div><b>100%</b><span>хлопок и дерево</span></div></div>
+ </div>
+ <div class="hero-art" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="sticker"><span>Подарочная<br>упаковка<br>бесплатно</span></div>
+  <div class="hero-card hc1" data-art="robe" data-c="#E9DCCB"></div>
+  <div class="hero-card hc2" data-art="panel" data-c="#E3D3BF"></div>
+  <div class="hero-card hc3" data-art="towels" data-c="#DDE4D5"></div>
+ </div>
+</div></section>
+
+<div class="marquee" aria-hidden="true"><div class="marquee-track"><span>Плотность махры от 500 г/м²</span><span>Панно ручной работы</span><span>Доставка по всей России</span><span>Подарочная упаковка</span><span>Обмен и возврат 14 дней</span><span>Плотность махры от 500 г/м²</span><span>Панно ручной работы</span><span>Доставка по всей России</span><span>Подарочная упаковка</span><span>Обмен и возврат 14 дней</span></div></div>
+
+<section id="cats"><div class="wrap">
+ <div class="eyebrow rv">Категории</div>
+ <h2 class="rv">Что ищете сегодня?</h2>
+ <div class="cats" id="catsGrid"></div>
+</div></section>
+
+<section id="catalog" style="padding-top:0"><div class="wrap">
+ <div class="cat-head"><div><div class="eyebrow rv">Каталог</div><h2 class="rv">Любимое покупателей</h2></div>
+ <label class="rv"><span class="sr" style="position:absolute;left:-9999px">Сортировка</span><select class="sort" id="sort" aria-label="Сортировка"><option value="pop">Сначала популярные</option><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option></select></label></div>
+ <div class="filters" id="filters" role="group" aria-label="Фильтр по категории"></div>
+ <div class="grid" id="grid"></div>
+</div></section>
+
+<section class="why"><div class="wrap">
+ <div class="eyebrow rv">Почему выбирают нас</div>
+ <h2 class="rv">Вещи, которые служат годами</h2>
+ <div class="why-grid">
+  <div class="why-card rv"><div class="ic">🌿</div><h3>Натуральный состав</h3><p>100% хлопок в текстиле и массив дерева в декоре. Без синтетики, которая скатывается и не впитывает.</p></div>
+  <div class="why-card rv"><div class="ic">🧺</div><h3>Мягкие после стирок</h3><p>Длинная петля и плотность от 500 г/м²: полотенце не дубеет и не теряет цвет через полгода.</p></div>
+  <div class="why-card rv"><div class="ic">🪵</div><h3>Ручная работа</h3><p>Каждое панно режет и шлифует мастер. Два одинаковых не бывает, рисунок дерева всегда свой.</p></div>
+  <div class="why-card rv"><div class="ic">🎁</div><h3>Готово к подарку</h3><p>Упаковываем в коробку с лентой и открыткой бесплатно. Можно отправить сразу получателю.</p></div>
+ </div>
+</div></section>
+
+<section id="custom"><div class="wrap custom">
+ <div class="custom-art rv" data-art="panelbig" data-c="#E8D9C6"></div>
+ <div>
+  <div class="eyebrow rv">Панно на заказ</div>
+  <h2 class="rv">Ваша стена, наш мастер</h2>
+  <p class="lead rv">Сделаем панно под размер и цвет вашего интерьера: с надписью, фамилией, датой свадьбы или картой города.</p>
+  <ol class="steps rv"><li><div><b>Присылаете фото стены</b><br><span style="color:var(--muted)">и пару слов, чего хочется</span></div></li><li><div><b>Рисуем эскиз за 1–2 дня</b><br><span style="color:var(--muted)">правим, пока не понравится</span></div></li><li><div><b>Изготавливаем за 5–7 дней</b><br><span style="color:var(--muted)">и отправляем в коробке</span></div></li></ol>
+  <button class="btn btn-terra rv" id="customBtn">Обсудить своё панно</button>
+ </div>
+</div></section>
+
+<section id="gifts" style="padding-top:0"><div class="wrap">
+ <div class="gift rv">
+  <div>
+   <div class="eyebrow">Подарочные наборы</div>
+   <h2>Подарок, который точно используют</h2>
+   <p class="lead" style="margin-top:14px">Халат и полотенца в коробке с лентой. Маме, подруге, на новоселье или коллегам к Новому году. Подпишем открытку от вашего имени.</p>
+   <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px"><button class="btn btn-terra" data-filter-go="sets">Смотреть наборы</button><a class="btn" style="border:1.5px solid #F7F3EE" href="#faq">Корпоративным клиентам</a></div>
+  </div>
+  <div class="gift-art" data-art="gift" data-c="#3A332C"></div>
+ </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+ <div class="eyebrow rv">Отзывы</div>
+ <h2 class="rv">Что пишут покупатели</h2>
+ <div class="revs">
+  <div class="rev rv"><div class="stars">★★★★★</div><p>[Отзыв покупателя с маркетплейса: про мягкость полотенец после стирки]</p><div class="who"><i></i>[Имя], Wildberries</div></div>
+  <div class="rev rv"><div class="stars">★★★★★</div><p>[Отзыв про халат: размер, плотность, как подарили маме]</p><div class="who"><i></i>[Имя], Ozon</div></div>
+  <div class="rev rv"><div class="stars">★★★★★</div><p>[Отзыв про панно: как смотрится в гостиной, упаковка]</p><div class="who"><i></i>[Имя], Wildberries</div></div>
+ </div>
+</div></section>
+
+<section id="delivery" style="padding-top:0"><div class="wrap two">
+ <div>
+  <div class="eyebrow rv">Доставка и оплата</div>
+  <h2 class="rv">Привезём бережно</h2>
+  <div class="dl">
+   <div class="rv"><span class="ic">📦</span><div><b>СДЭК и Почта России</b><span>По всей России за 2–7 дней. Бесплатно от [5 000 ₽].</span></div></div>
+   <div class="rv"><span class="ic">🚚</span><div><b>Курьером по [городу]</b><span>На следующий день, [350 ₽].</span></div></div>
+   <div class="rv"><span class="ic">💳</span><div><b>Оплата</b><span>При получении или онлайн картой и СБП.</span></div></div>
+   <div class="rv"><span class="ic">🛍</span><div><b>Удобнее на маркетплейсе?</b><span>Мы есть на Wildberries и Ozon: ищите «Лён и Дуб».</span></div></div>
+  </div>
+ </div>
+ <div id="faq">
+  <div class="eyebrow rv">Вопросы</div>
+  <h2 class="rv">Часто спрашивают</h2>
+  <div style="margin-top:20px" class="rv">
+   <details class="q"><summary>Полотенца не линяют?</summary><p>Ткань окрашена устойчивыми красителями. Первую стирку советуем отдельно при 40°, дальше можно с вещами похожего цвета.</p></details>
+   <details class="q"><summary>Как выбрать размер халата?</summary><p>Ориентируйтесь на свой размер одежды. Если любите свободную посадку или халат на подарок, берите на размер больше. Таблица размеров есть в карточке.</p></details>
+   <details class="q"><summary>Чем обработано дерево?</summary><p>Масло-воском на натуральной основе. Безопасно для детской, не пахнет, подчёркивает рисунок дерева.</p></details>
+   <details class="q"><summary>Можно вернуть товар?</summary><p>Да, в течение 14 дней, если сохранён товарный вид и бирки. Панно, сделанные на заказ, возврату не подлежат.</p></details>
+   <details class="q"><summary>Делаете корпоративные подарки?</summary><p>Да: наборы от 10 штук, гравировка логотипа на дереве, открытки с вашим текстом. Напишите в комментарии к заказу или в Telegram.</p></details>
+  </div>
+ </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+ <div class="sub rv"><div class="eyebrow">Клуб покупателей</div><h2>Скидка 10% на первый заказ</h2><p class="lead">Подпишитесь на наш Telegram: новинки раньше всех, промокоды для своих и советы по уходу за текстилем.</p><a class="btn btn-dark" href="[ссылка на Telegram-канал]">Забрать скидку в Telegram</a></div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+ <div class="foot">
+  <div><a class="logo" href="#top"><i></i>Лён и Дуб</a><p style="color:var(--muted);margin-top:12px;max-width:320px">Домашний текстиль и изделия из дерева для спокойного дома.</p></div>
+  <div><h4>Магазин</h4><a href="#catalog">Каталог</a><a href="#custom">Панно на заказ</a><a href="#gifts">Подарки</a></div>
+  <div><h4>Покупателям</h4><a href="#delivery">Доставка и оплата</a><a href="#faq">Вопросы</a><a href="#faq">Обмен и возврат</a></div>
+  <div><h4>Мы на связи</h4><a href="tel:[телефон]">[+7 900 000-00-00]</a><a href="[ссылка Telegram]">Telegram</a><a href="[ссылка WB]">Wildberries</a><a href="[ссылка Ozon]">Ozon</a></div>
+ </div>
+ <div class="copy">© 2026 Лён и Дуб · [ИП / ООО, ИНН] · <a href="[политика]">Политика конфиденциальности</a></div>
+</div></footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Корзина" aria-hidden="true">
+ <div class="dr-head"><h3>Корзина</h3><button class="x" id="closeCart" aria-label="Закрыть корзину">×</button></div>
+ <div class="dr-body" id="cartBody"></div>
+ <div class="dr-foot" id="cartFoot"></div>
+</aside>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="modal-box" id="modalBox"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== Настройки магазина ===== */
+const CONFIG={
+  orderEndpoint:"",          // URL для приёма заказов (Google Apps Script, Formspree, свой сервер). Пусто: заказ сохраняется и отправляется в Telegram.
+  telegram:"",               // username менеджера без @, например shop_manager
+  freeShipFrom:5000,
+  promo:{"ДОМ10":10}         // промокоды: код → скидка в %
+};
+/* ===== Товары (цены и названия примерные, замените на свои) ===== */
+const CATS=[
+ {id:"all",name:"Все"},
+ {id:"towels",name:"Полотенца",sub:"махра и вафля",art:"towels",c:"#DDE4D5"},
+ {id:"robes",name:"Халаты",sub:"для дома и бани",art:"robe",c:"#E9DCCB"},
+ {id:"textile",name:"Пледы и текстиль",sub:"пледы, скатерти",art:"plaid",c:"#E6DDE6"},
+ {id:"panels",name:"Панно из дерева",sub:"ручная работа",art:"panel",c:"#E3D3BF"},
+ {id:"paintings",name:"Картины из дерева",sub:"на стену",art:"painting",c:"#DCE3EA"},
+ {id:"sets",name:"Наборы",sub:"в подарок",art:"gift",c:"#F0E0D2"}
+];
+const P=[
+ {id:1,cat:"towels",name:"Махровое полотенце «Облако»",desc:"Хлопок 100%, 550 г/м², длинная петля",price:1290,old:1590,badge:"hit",opts:["50×90","70×140"],delta:[0,700],art:"towels",c:"#DDE4D5",pop:10},
+ {id:2,cat:"towels",name:"Набор полотенец «Спа», 3 шт",desc:"Лицо, руки, тело. Молочный и шалфей",price:3490,old:3990,opts:["Молочный","Шалфей","Графит"],art:"towels",c:"#EAE3D6",pop:9},
+ {id:3,cat:"towels",name:"Вафельное полотенце «Кухня»",desc:"Лён и хлопок, быстро сохнет, 2 шт",price:890,badge:"new",opts:["45×70"],art:"waffle",c:"#F1E6D8",pop:6},
+ {id:4,cat:"robes",name:"Махровый халат «Утро»",desc:"Плотная махра, глубокие карманы, капюшон",price:4990,old:5990,badge:"hit",opts:["S","M","L","XL"],art:"robe",c:"#E9DCCB",pop:10},
+ {id:5,cat:"robes",name:"Вафельный халат «Лето»",desc:"Лёгкий, для бани и после душа",price:3290,opts:["S/M","L/XL"],art:"robe",c:"#E2E8DD",pop:7},
+ {id:6,cat:"robes",name:"Халат из муслина «Нежность»",desc:"4 слоя муслина, дышит, становится мягче",price:4490,badge:"new",opts:["S/M","L/XL"],art:"robe",c:"#F0E4E4",pop:8},
+ {id:7,cat:"textile",name:"Плед «Тёплый вечер»",desc:"Хлопок с кистями, 150×200 см",price:3990,opts:["Беж","Терракота","Шалфей"],art:"plaid",c:"#EBDDD3",pop:8},
+ {id:8,cat:"textile",name:"Льняная скатерть «Сад»",desc:"Умягчённый лён, 140×180 см",price:2790,opts:["Натуральный","Белый"],art:"plaid",c:"#E8E6DA",pop:5},
+ {id:9,cat:"panels",name:"Панно «Горы» из дуба",desc:"Многослойное, масло-воск, 60×40 см",price:6900,badge:"hit",opts:["60×40","90×60"],delta:[0,3500],art:"panel",c:"#E3D3BF",pop:9},
+ {id:10,cat:"panels",name:"Панно «Волна»",desc:"Объёмное, сосна и орех, 80×50 см",price:7900,opts:["Светлое","Тёмное"],art:"panel2",c:"#E8DCCB",pop:7},
+ {id:11,cat:"paintings",name:"Картина «Лес» из шпона",desc:"Инкрустация шпоном, рама из ясеня",price:5400,badge:"new",opts:["40×50","50×70"],delta:[0,2200],art:"painting",c:"#DCE3EA",pop:7},
+ {id:12,cat:"paintings",name:"Картина-карта вашего города",desc:"Гравировка на дубе, по вашему адресу",price:8900,opts:["50×50","70×70"],delta:[0,3000],art:"map",c:"#E9E2D6",pop:6},
+ {id:13,cat:"sets",name:"Набор «Для неё»: халат + 2 полотенца",desc:"В коробке с лентой и открыткой",price:7490,old:8590,badge:"hit",opts:["S/M","L/XL"],art:"gift",c:"#F0E0D2",pop:9},
+ {id:14,cat:"sets",name:"Набор «Новоселье»: плед + панно",desc:"Подарок, который украсит новый дом",price:9900,old:10890,opts:["Светлый","Тёмный"],art:"gift",c:"#E7DDD0",pop:7}
+];
+/* ===== Иллюстрации-заглушки (замените на фото: <img src="..."> ) ===== */
+function art(type,bg){
+ const T="#B8714A",S="#7E8E73",W="#A27A58",D="#3A332C",L="#F7F3EE";
+ const g={
+  towels:`<rect x="70" y="180" width="260" height="56" rx="18" fill="${S}"/><rect x="80" y="130" width="240" height="56" rx="18" fill="${L}"/><rect x="90" y="80" width="220" height="56" rx="18" fill="${T}"/><g stroke="#00000014" stroke-width="3">${[...Array(9)].map((_,i)=>`<line x1="${110+i*24}" y1="92" x2="${110+i*24}" y2="124"/><line x1="${100+i*25}" y1="142" x2="${100+i*25}" y2="174"/>`).join("")}</g><rect x="150" y="248" width="100" height="10" rx="5" fill="#00000010"/>`,
+  waffle:`<rect x="110" y="60" width="180" height="210" rx="14" fill="${L}"/><g fill="none" stroke="${S}" stroke-width="3" opacity=".6">${[...Array(8)].map((_,i)=>`<line x1="110" y1="${80+i*24}" x2="290" y2="${80+i*24}"/><line x1="${130+i*22}" y1="60" x2="${130+i*22}" y2="270"/>`).join("")}</g><rect x="110" y="230" width="180" height="16" fill="${T}" opacity=".8"/>`,
+  robe:`<circle cx="200" cy="58" r="10" fill="${W}"/><path d="M200 68 L140 96 Q110 110 104 150 L92 270 Q150 286 200 284 Q250 286 308 270 L296 150 Q290 110 260 96 Z" fill="${L}"/><path d="M200 68 L164 92 L200 190 L236 92 Z" fill="${bg}"/><path d="M164 92 L200 190 L182 284" fill="none" stroke="#00000018" stroke-width="4"/><path d="M110 180 Q200 196 290 180" stroke="${T}" stroke-width="10" fill="none" stroke-linecap="round"/><rect x="128" y="210" width="40" height="34" rx="8" fill="#00000010"/><rect x="232" y="210" width="40" height="34" rx="8" fill="#00000010"/>`,
+  plaid:`<path d="M80 90 Q200 60 320 90 L320 250 Q200 280 80 250 Z" fill="${T}"/><g stroke="${L}" stroke-width="6" opacity=".55"><path d="M80 140 Q200 112 320 140"/><path d="M80 200 Q200 172 320 200"/><line x1="150" y1="78" x2="150" y2="266"/><line x1="250" y1="78" x2="250" y2="266"/></g><g stroke="${T}" stroke-width="4">${[...Array(10)].map((_,i)=>`<line x1="${90+i*25}" y1="${256+Math.sin(i)*4}" x2="${90+i*25}" y2="${280+Math.sin(i)*4}"/>`).join("")}</g>`,
+  panel:`<rect x="70" y="70" width="260" height="190" rx="10" fill="#EFE3D3"/><path d="M70 230 L150 140 L200 190 L250 120 L330 220 L330 260 L70 260 Z" fill="${W}"/><path d="M70 260 L130 200 L190 240 L260 180 L330 250 L330 260 Z" fill="#7A5A3F"/><circle cx="270" cy="105" r="18" fill="${T}" opacity=".85"/><rect x="70" y="70" width="260" height="190" rx="10" fill="none" stroke="#7A5A3F" stroke-width="6"/>`,
+  panel2:`<rect x="70" y="70" width="260" height="190" rx="10" fill="#EFE3D3"/>${[0,1,2,3,4].map(i=>`<path d="M70 ${110+i*32} Q135 ${80+i*32} 200 ${110+i*32} T330 ${110+i*32} L330 ${142+i*32} Q265 ${172+i*32} 200 ${142+i*32} T70 ${142+i*32} Z" fill="${["#C9A882","#A27A58","#7A5A3F","#B88E66","#8E6A4C"][i]}" opacity=".9"/>`).join("")}`,
+  panelbig:`<rect x="40" y="40" width="320" height="240" rx="12" fill="#EFE3D3"/><path d="M40 240 L120 130 L180 190 L250 100 L360 230 L360 280 L40 280 Z" fill="${W}"/><path d="M40 280 L110 210 L190 260 L270 190 L360 270 L360 280 Z" fill="#7A5A3F"/><circle cx="290" cy="90" r="22" fill="${T}"/><rect x="40" y="40" width="320" height="240" rx="12" fill="none" stroke="#7A5A3F" stroke-width="7"/>`,
+  painting:`<rect x="100" y="50" width="200" height="230" rx="6" fill="${W}"/><rect x="116" y="66" width="168" height="198" fill="#EFE7DB"/>${[0,1,2,3,4,5].map(i=>`<path d="M${130+i*25} 250 L${142+i*25} ${150+(i%3)*18} L${154+i*25} 250 Z" fill="${i%2?S:"#5E6D55"}"/>`).join("")}<circle cx="240" cy="110" r="16" fill="${T}" opacity=".8"/>`,
+  map:`<rect x="90" y="60" width="220" height="220" rx="8" fill="#C9A882"/><g stroke="#7A5A3F" stroke-width="3" fill="none" opacity=".8"><path d="M90 140 L310 120"/><path d="M90 200 L310 230"/><path d="M160 60 L180 280"/><path d="M240 60 L220 280"/><path d="M90 100 Q200 180 310 170"/></g><path d="M90 250 Q160 220 220 250 T310 240 L310 280 L90 280Z" fill="#8FA3B5" opacity=".7"/><circle cx="200" cy="170" r="9" fill="${T}"/>`,
+  gift:`<rect x="100" y="130" width="200" height="140" rx="10" fill="${T}"/><rect x="88" y="104" width="224" height="40" rx="8" fill="#C98A64"/><rect x="190" y="104" width="20" height="166" fill="${L}"/><path d="M200 104 Q160 60 140 84 Q130 104 200 104 Q270 104 260 84 Q240 60 200 104Z" fill="none" stroke="${L}" stroke-width="10" stroke-linejoin="round"/><rect x="120" y="176" width="60" height="70" rx="6" fill="#ffffff22"/>`
+ };
+ return `<svg viewBox="0 0 400 330" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Иллюстрация товара"><rect width="400" height="330" fill="${bg}"/><ellipse cx="200" cy="292" rx="150" ry="14" fill="#00000010"/>${g[type]||""}</svg>`;
+}
+document.querySelectorAll("[data-art]").forEach(el=>el.innerHTML=art(el.dataset.art,el.dataset.c));
+
+/* ===== Утилиты ===== */
+const $=s=>document.querySelector(s);
+const rub=n=>n.toLocaleString("ru-RU")+" ₽";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2400)}
+
+/* ===== Категории и каталог ===== */
+let filter="all",sort="pop";
+const sel={};
+$("#catsGrid").innerHTML=CATS.slice(1).map(c=>`<button class="cat rv" data-go="${c.id}"><div class="art">${art(c.art,c.c)}</div><b>${c.name}</b><span>${c.sub}</span></button>`).join("");
+$("#filters").innerHTML=CATS.map(c=>`<button class="chip" data-f="${c.id}" aria-pressed="${c.id==="all"}">${c.name}</button>`).join("");
+function priceOf(p,i){return p.price+((p.delta||[])[i]||0)}
+function renderGrid(){
+ let list=P.filter(p=>filter==="all"||p.cat===filter);
+ list=[...list].sort((a,b)=>sort==="asc"?a.price-b.price:sort==="desc"?b.price-a.price:b.pop-a.pop);
+ $("#grid").innerHTML=list.map(p=>{
+  const i=sel[p.id]||0;
+  return `<article class="prod rv in"><div class="art">${p.badge?`<span class="badge ${p.badge}">${p.badge==="hit"?"Хит":"Новинка"}</span>`:""}${art(p.art,p.c)}</div>
+  <div class="body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
+  <div class="opts" role="group" aria-label="Вариант">${p.opts.map((o,k)=>`<button class="opt" data-p="${p.id}" data-i="${k}" aria-pressed="${k===i}">${esc(o)}</button>`).join("")}</div>
+  <div class="price-row"><div class="price">${rub(priceOf(p,i))}${p.old&&!((p.delta||[])[i])?`<s>${rub(p.old)}</s>`:""}</div><button class="add" data-add="${p.id}">В корзину</button></div></div></article>`}).join("");
+}
+function setFilter(f){filter=f;document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.f===f));renderGrid()}
+$("#filters").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b)setFilter(b.dataset.f)});
+$("#sort").addEventListener("change",e=>{sort=e.target.value;renderGrid()});
+document.addEventListener("click",e=>{
+ const go=e.target.closest("[data-go],[data-filter-go]");
+ if(go){setFilter(go.dataset.go||go.dataset.filterGo);$("#catalog").scrollIntoView({behavior:"smooth"})}
+ const o=e.target.closest(".opt");
+ if(o){sel[o.dataset.p]=+o.dataset.i;renderGrid()}
+ const a=e.target.closest("[data-add]");
+ if(a){addToCart(+a.dataset.add);a.textContent="Добавлено ✓";a.classList.add("done");setTimeout(()=>{a.textContent="В корзину";a.classList.remove("done")},1400)}
+});
+renderGrid();
+
+/* ===== Корзина ===== */
+let cart=JSON.parse(localStorage.getItem("ld_cart")||"[]");
+let promo=localStorage.getItem("ld_promo")||"";
+function save(){localStorage.setItem("ld_cart",JSON.stringify(cart));localStorage.setItem("ld_promo",promo)}
+function addToCart(id){
+ const p=P.find(x=>x.id===id),i=sel[id]||0,key=id+"|"+i;
+ const ex=cart.find(c=>c.key===key);
+ if(ex)ex.q++;else cart.push({key,id,i,q:1});
+ save();renderCart();toast("Добавили в корзину: "+p.name);
+ const cc=$("#cartCount");cc.classList.remove("bump");void cc.offsetWidth;cc.classList.add("bump");
+}
+function totals(){
+ const sub=cart.reduce((s,c)=>{const p=P.find(x=>x.id===c.id);return s+priceOf(p,c.i)*c.q},0);
+ const pct=CONFIG.promo[promo.toUpperCase()]||0;
+ const disc=Math.round(sub*pct/100);
+ return {sub,disc,pct,total:sub-disc,count:cart.reduce((s,c)=>s+c.q,0)};
+}
+function renderCart(){
+ const t=totals();$("#cartCount").textContent=t.count;
+ if(!cart.length){
+  $("#cartBody").innerHTML=`<div class="empty"><div class="big">🧺</div><p>Корзина пока пустая</p><button class="btn btn-dark" id="toCatalog">Перейти в каталог</button></div>`;
+  $("#cartFoot").innerHTML="";return;
+ }
+ $("#cartBody").innerHTML=cart.map(c=>{const p=P.find(x=>x.id===c.id);return `<div class="ci"><div class="art">${art(p.art,p.c)}</div><div><b>${esc(p.name)}</b><small>${esc(p.opts[c.i])}</small><br><div class="qty"><button data-q="${c.key}" data-d="-1" aria-label="Меньше">−</button><span>${c.q}</span><button data-q="${c.key}" data-d="1" aria-label="Больше">+</button></div></div><div><div class="p">${rub(priceOf(p,c.i)*c.q)}</div><button class="rm" data-rm="${c.key}">Удалить</button></div></div>`}).join("");
+ const left=Math.max(0,CONFIG.freeShipFrom-t.total);
+ $("#cartFoot").innerHTML=`<p class="freeship">${left?`До бесплатной доставки ещё ${rub(left)}`:"Доставка бесплатная 🎉"}</p><div class="progress"><i style="width:${Math.min(100,t.total/CONFIG.freeShipFrom*100)}%"></i></div>
+ <div class="promo"><input id="promoIn" placeholder="Промокод" value="${esc(promo)}" aria-label="Промокод"><button class="btn btn-ghost" style="min-height:50px;padding:0 18px" id="promoBtn">Применить</button></div>
+ <div class="row"><span>Товары (${t.count})</span><span>${rub(t.sub)}</span></div>${t.disc?`<div class="row"><span>Скидка ${t.pct}%</span><span>−${rub(t.disc)}</span></div>`:""}
+ <div class="row total"><span>Итого</span><span>${rub(t.total)}</span></div>
+ <button class="btn btn-terra" style="width:100%;margin-top:14px" id="checkoutBtn">Оформить заказ</button>`;
+}
+$("#cartBody").addEventListener("click",e=>{
+ const q=e.target.closest("[data-q]"),r=e.target.closest("[data-rm]");
+ if(q){const c=cart.find(x=>x.key===q.dataset.q);c.q+=+q.dataset.d;if(c.q<1)cart=cart.filter(x=>x!==c);save();renderCart()}
+ if(r){cart=cart.filter(x=>x.key!==r.dataset.rm);save();renderCart()}
+ if(e.target.id==="toCatalog"){closeCart();$("#catalog").scrollIntoView({behavior:"smooth"})}
+});
+$("#cartFoot").addEventListener("click",e=>{
+ if(e.target.id==="promoBtn"){const v=$("#promoIn").value.trim();if(CONFIG.promo[v.toUpperCase()]){promo=v;save();renderCart();toast("Промокод применён")}else{toast("Такого промокода нет")}}
+ if(e.target.id==="checkoutBtn")openCheckout();
+});
+let lastFocus=null;
+function openCart(){lastFocus=document.activeElement;$("#drawer").classList.add("show");$("#overlay").classList.add("show");$("#drawer").setAttribute("aria-hidden","false");setTimeout(()=>$("#closeCart").focus(),50)}
+function closeCart(){$("#drawer").classList.remove("show");$("#overlay").classList.remove("show");$("#drawer").setAttribute("aria-hidden","true");lastFocus&&lastFocus.focus()}
+$("#openCart").onclick=openCart;$("#closeCart").onclick=closeCart;
+$("#overlay").onclick=()=>{closeCart();closeModal()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeCart()}});
+renderCart();
+
+/* ===== Оформление ===== */
+function field(id,label,type="text",ph="",msg="Заполните поле"){return `<div class="f" id="f_${id}"><label for="${id}">${label}</label><input id="${id}" name="${id}" type="${type}" placeholder="${ph}" autocomplete="${{name:"name",phone:"tel",email:"email",city:"address-level2",addr:"street-address"}[id]||"off"}"><span class="msg">${msg}</span></div>`}
+function openModal(html){$("#modalBox").innerHTML=html;$("#modal").classList.add("show");$("#overlay").classList.add("show");setTimeout(()=>{const f=$("#modalBox input,#modalBox button");f&&f.focus()},60)}
+function closeModal(){if(!$("#modal").classList.contains("show"))return;$("#modal").classList.remove("show");if(!$("#drawer").classList.contains("show"))$("#overlay").classList.remove("show")}
+function openCheckout(){
+ const t=totals();
+ openModal(`<div class="modal-head"><h3 id="mTitle">Оформление заказа</h3><button class="x" onclick="closeModal()" aria-label="Закрыть">×</button></div>
+ <div class="summary"><div class="row"><span>Товаров: ${t.count}</span><span>${rub(t.sub)}</span></div>${t.disc?`<div class="row"><span>Скидка</span><span>−${rub(t.disc)}</span></div>`:""}<div class="row total" style="font-size:18px"><span>К оплате</span><span>${rub(t.total)}</span></div></div>
+ <form id="orderForm" novalidate>
+ <div class="f2">${field("name","Имя","text","Как к вам обращаться")}${field("phone","Телефон","tel","+7 900 000-00-00","Проверьте номер телефона")}</div>
+ ${field("email","E-mail (необязательно)","email","Для чека и трек-номера","Проверьте e-mail")}
+ <div class="f"><label>Доставка</label><div class="radios">
+  <label class="radio"><input type="radio" name="ship" value="СДЭК" checked>СДЭК до пункта выдачи<small>2–5 дней</small></label>
+  <label class="radio"><input type="radio" name="ship" value="Почта России">Почта России<small>3–7 дней</small></label>
+  <label class="radio"><input type="radio" name="ship" value="Курьер">Курьер по городу<small>завтра</small></label>
+ </div></div>
+ <div class="f2">${field("city","Город","text","Например, Казань")}${field("addr","Адрес или пункт выдачи","text","Улица, дом или адрес ПВЗ")}</div>
+ <div class="f"><label>Оплата</label><div class="radios">
+  <label class="radio"><input type="radio" name="pay" value="При получении" checked>При получении</label>
+  <label class="radio"><input type="radio" name="pay" value="Онлайн">Онлайн картой или СБП<small>пришлём ссылку</small></label>
+ </div></div>
+ <label class="check"><input type="checkbox" name="giftwrap">Упаковать в подарочную коробку с открыткой (бесплатно)</label>
+ <div class="f"><label for="comment">Комментарий</label><textarea id="comment" name="comment" placeholder="Текст открытки, удобное время, пожелания"></textarea></div>
+ <label class="check" id="f_agree"><input type="checkbox" name="agree" id="agree">Согласен на обработку персональных данных</label>
+ <button class="btn btn-dark" style="width:100%" type="submit">Подтвердить заказ на ${rub(t.total)}</button>
+ </form>`);
+ const form=$("#orderForm");
+ const rules={name:v=>v.trim().length>1,phone:v=>v.replace(/\D/g,"").length>=10,email:v=>!v||/^\S+@\S+\.\S+$/.test(v),city:v=>v.trim().length>1,addr:v=>v.trim().length>3};
+ Object.keys(rules).forEach(k=>{const el=form.elements[k];el.addEventListener("blur",()=>$("#f_"+k).classList.toggle("err",!rules[k](el.value)));el.addEventListener("input",()=>$("#f_"+k).classList.remove("err"))});
+ form.addEventListener("submit",async e=>{
+  e.preventDefault();
+  let ok=true;Object.keys(rules).forEach(k=>{const good=rules[k](form.elements[k].value);$("#f_"+k).classList.toggle("err",!good);if(!good&&ok){form.elements[k].focus();ok=false}});
+  if(!form.elements.agree.checked){toast("Отметьте согласие на обработку данных");ok=false}
+  if(!ok)return;
+  const fd=Object.fromEntries(new FormData(form));
+  const num="LD-"+Date.now().toString().slice(-6);
+  const items=cart.map(c=>{const p=P.find(x=>x.id===c.id);return {name:p.name,option:p.opts[c.i],qty:c.q,price:priceOf(p,c.i)}});
+  const order={number:num,date:new Date().toISOString(),customer:fd,items,totals:totals(),promo};
+  const text=`Заказ ${num}\n`+items.map(i=>`• ${i.name} (${i.option}) × ${i.qty} = ${rub(i.price*i.qty)}`).join("\n")+`\nИтого: ${rub(order.totals.total)}\n${fd.name}, ${fd.phone}\n${fd.ship}: ${fd.city}, ${fd.addr}\nОплата: ${fd.pay}${fd.giftwrap?"\nПодарочная упаковка":""}${fd.comment?"\nКомментарий: "+fd.comment:""}`;
+  const btn=form.querySelector("[type=submit]");btn.disabled=true;btn.textContent="Отправляем…";
+  let sent=false;
+  if(CONFIG.orderEndpoint){try{await fetch(CONFIG.orderEndpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...order,text})});sent=true}catch(err){}}
+  const orders=JSON.parse(localStorage.getItem("ld_orders")||"[]");orders.push(order);localStorage.setItem("ld_orders",JSON.stringify(orders));
+  cart=[];promo="";save();renderCart();closeCart();
+  const tg=CONFIG.telegram?`https://t.me/${CONFIG.telegram}?text=${encodeURIComponent(text)}`:"";
+  openModal(`<div class="success"><div class="ok">✓</div><h3 id="mTitle">Спасибо, заказ принят!</h3><p class="lead" style="margin:12px auto 20px">Номер заказа <b>${num}</b>. ${sent?"Менеджер свяжется с вами в течение часа в рабочее время.":(tg?"Отправьте заказ менеджеру в Telegram в один клик, так мы ответим быстрее.":"Менеджер свяжется с вами по телефону, чтобы подтвердить заказ.")}</p>
+  ${tg?`<a class="btn btn-terra" href="${tg}" target="_blank" rel="noopener">Отправить заказ в Telegram</a>`:""}
+  <button class="btn btn-ghost" style="margin-top:10px" onclick="navigator.clipboard&&navigator.clipboard.writeText(${esc(JSON.stringify(text))});toast('Текст заказа скопирован')">Скопировать заказ</button>
+  <p style="margin-top:18px"><button class="btn btn-dark" onclick="closeModal()">Вернуться в магазин</button></p></div>`);
+ });
+}
+$("#customBtn").onclick=()=>{
+ openModal(`<div class="modal-head"><h3 id="mTitle">Панно на заказ</h3><button class="x" onclick="closeModal()" aria-label="Закрыть">×</button></div>
+ <p class="muted" style="color:var(--muted)">Расскажите, что хочется, мастер ответит с идеей и ценой в течение дня.</p>
+ <form id="customForm" novalidate>${field("name","Имя","text","Как к вам обращаться")}${field("phone","Телефон или Telegram","text","+7 900 000-00-00 или @ник","Укажите, как с вами связаться")}
+ <div class="f"><label for="idea">Идея</label><textarea id="idea" name="idea" placeholder="Размер, цвет, надпись, для какой комнаты"></textarea></div>
+ <button class="btn btn-terra" style="width:100%" type="submit">Отправить заявку</button></form>`);
+ $("#customForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.target;let ok=true;
+  [["name",v=>v.trim().length>1],["phone",v=>v.trim().length>4]].forEach(([k,r])=>{const g=r(f.elements[k].value);$("#f_"+k).classList.toggle("err",!g);if(!g)ok=false});if(!ok)return;
+  const fd=Object.fromEntries(new FormData(f));
+  if(CONFIG.orderEndpoint){try{await fetch(CONFIG.orderEndpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"custom",...fd})})}catch(err){}}
+  openModal(`<div class="success"><div class="ok">✓</div><h3 id="mTitle">Заявка отправлена</h3><p class="lead" style="margin:12px auto 20px">Мастер свяжется с вами в течение дня и предложит эскиз.</p><button class="btn btn-dark" onclick="closeModal()">Хорошо</button></div>`);
+ });
+};
+
+/* ===== Анимации появления ===== */
+const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add("in");io.unobserve(en.target)}}),{threshold:.12,rootMargin:"0px 0px -40px 0px"});
+document.querySelectorAll(".rv").forEach((el,i)=>{el.style.transitionDelay=(i%4)*80+"ms";io.observe(el)});
+addEventListener("scroll",()=>$("#hdr").classList.toggle("scrolled",scrollY>10),{passive:true});
+</script>
+</body>
+</html>
