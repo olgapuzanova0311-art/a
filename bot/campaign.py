@@ -187,7 +187,11 @@ async def run_one(M, c):
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
         log.info('campaign %s %s: ok=%s fail=%s max=%s', KEY, STAGE, ok, fail, mx)
-        await M.notify_admins(f'📨 {what} «{TITLE}»: доставлено в Telegram {ok}, не доставлено {fail}'
-                              + (f', в MAX {mx}' if STAGE == 'all' else '') + '.')
+        # всего с учётом прошлых запусков: если бот перезапускался посреди рассылки, первая часть ушла раньше
+        total = M.q('SELECT COUNT(*) FROM sent WHERE key=?', mark_key).fetchone()[0]
+        mx_total = M.MX.q('SELECT COUNT(*) FROM max_sent WHERE key=?', mark_key).fetchone()[0] if (M.MX and STAGE == 'all') else 0
+        extra = f' (с прошлого запуска: всего отмечено {total})' if total > ok + fail else ''
+        await M.notify_admins(f'📨 {what} «{TITLE}»: доставлено в Telegram {ok}, не доставлено {fail}{extra}'
+                              + (f', в MAX {mx_total}' if STAGE == 'all' else '') + '.')
     except Exception:
         log.exception('campaign')
