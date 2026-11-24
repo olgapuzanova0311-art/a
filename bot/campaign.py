@@ -10,25 +10,30 @@ log = logging.getLogger('campaign')
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
     dict(
-        KEY='bf_3eggs',
-        TITLE='3 яйца: финальный эфир 26.11',
+        KEY='bf_closed_live',
+        TITLE='Закрытый эфир 26.11: ИИ-офис из 10 агентов',
         STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
         START=0,                        # 0 → сразу после выкладки
-        UNTIL=1795708800,               # 26.11.2026 19:00 МСК: после начала эфира не отправляем
-        PHOTO='yaica.jpg',              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/yaica.jpg',
+        UNTIL=1795543200,               # 24.11.2026 21:00 МСК: в тексте «сегодня с 19:00 до 22:00», позже не отправляем
+        PHOTO=None,
+        PHOTO_URL=None,
         TEXT=(
-            'ПРИВЕТ, ЭТО ОЛЬГА! У МЕНЯ ДЛЯ ТЕБЯ 3 ЯЙЦА 🍳\n\n'
-            'Я запускаю финальный эфир моего челленджа "Черная ИИшница", где собираю 10 ии-агентов на 600.000 руб, и там есть яйца\n\n'
-            'Каждое разбиваете одним нажатием, а внутри тебя ждет подарок:\n\n'
-            '🎁 1. набор лучших ии-инструментов для селлера\n'
-            '🎁 2. 50 форматов топовых рилс с хуками\n'
-            '🎁 3. грант от меня на 3 000 ₽ на продукты 2027 года\n\n'
-            '26.11 в 19:00 на этом же сайте соберу ИИ-офис из 10 агентов.'
+            '🔐 ВАМ ДОСТУПЕН ЗАКРЫТЫЙ ЭФИР: СОБИРАЕМ ИИ-ОФИС ИЗ 10 АГЕНТОВ\n\n'
+            '26 ноября в 19:00 МСК соберу офис прямо на эфире и покажу, как задача сама проходит через всех агентов без меня. '
+            'Живая команда на эти задачи стоила бы около 600 000 ₽ в месяц 🔥\n\n'
+            'Шаблон оркестратора, агента, который раздаёт задачи остальным, получат только те, кто будет в прямом эфире. В записи его не будет\n\n'
+            '🎁 А ЕЩЁ ВСЕХ, КТО ЗАРЕГИСТРИРУЕТСЯ, ЖДЁТ НАБОР ПОДАРКОВ:\n\n'
+            '🤖 «ИИ-ассистент по задачам»\nСам собирает задачи из чатов, календаря и зумов и напоминает в боте\n'
+            '🧰 «Набор селлера»\nЛучшие ИИ-инструменты для работы на маркетплейсах\n'
+            '🎬 «50 форматов рилс с хуками»\nГотовые идеи роликов, которые цепляют с первых секунд\n'
+            '💳 «Грант на 3 000 ₽»\nНа мои продукты 2027 года\n\n'
+            '🥚 А сегодня с 19:00 до 22:00 на сайте будет золотое яйцо: чек-лист на 30 идей агентов под ваш бизнес\n\n'
+            'Забирайте всё по клику 👇'
         ),
         NAMED=False,
-        LINK='https://bf.olgapuzanovva.ru',
-        BUTTON='РАЗБИТЬ ЯЙЦА',
+        LINK='https://bf.olgapuzanovva.ru/',
+        BUTTON='✅ ЗАБРАТЬ ПОДАРКИ ✅',
+        REPEAT=3,                       # три одинаковые кнопки друг под другом
     ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
@@ -78,9 +83,15 @@ async def run_one(M, c):
             if not M.mark(r['id'], mark_key):
                 continue
             try:
-                kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)]])
-                if photo:
-                    m = await M.bot.send_photo(r['id'], photo, caption=text_for(c, r['first_name']), reply_markup=kb)
+                kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)] for _ in range(c.get('REPEAT', 1))])
+                text = text_for(c, r['first_name'])
+                if photo and len(text) > 1024:
+                    # подпись к фото в Telegram не длиннее 1024 символов: картинку шлём отдельно, текст с кнопкой следом
+                    m = await M.bot.send_photo(r['id'], photo)
+                    photo = m.photo[-1].file_id
+                    await M.bot.send_message(r['id'], text, reply_markup=kb, disable_web_page_preview=True)
+                elif photo:
+                    m = await M.bot.send_photo(r['id'], photo, caption=text, reply_markup=kb)
                     photo = m.photo[-1].file_id  # дальше шлём уже загруженную картинку
                 else:
                     await M.bot.send_message(r['id'], text_for(c, r['first_name']), reply_markup=kb, disable_web_page_preview=True)
@@ -98,7 +109,7 @@ async def run_one(M, c):
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
                 if await M.MX.send(r['id'], text_for(c, r['first_name']).replace('{', '{{').replace('}', '}}'),
-                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]], photo=PHOTO_URL or None):
+                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]] * c.get('REPEAT', 1), photo=PHOTO_URL or None):
                     mx += 1
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
