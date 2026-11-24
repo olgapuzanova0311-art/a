@@ -26,12 +26,19 @@ def track_url(key, uid, link):
 
 async def click(req):
     key, uid = req.match_info['key'], req.match_info['uid'][:24]
-    r = M_.q('SELECT url FROM campaign_links WHERE key=?', key).fetchone() if M_ else None
+    try:
+        r = M_.q('SELECT url FROM campaign_links WHERE key=?', key).fetchone() if M_ else None
+    except Exception:
+        log.exception('click link')
+        r = None
     if not r:
         raise web.HTTPFound('https://t.me/aivwb')
     now = int(time.time())
-    M_.q('INSERT INTO clicks(key, uid, first, last, n) VALUES(?,?,?,?,1) '
-         'ON CONFLICT(key, uid) DO UPDATE SET last=excluded.last, n=n+1', key, uid, now, now)
+    try:  # клик считаем, но человек уходит по ссылке в любом случае
+        M_.q('INSERT INTO btn_clicks(key, uid, first, last, n) VALUES(?,?,?,?,1) '
+             'ON CONFLICT(key, uid) DO UPDATE SET last=excluded.last, n=n+1', key, uid, now, now)
+    except Exception:
+        log.exception('click')
     raise web.HTTPFound(r['url'])
 
 
@@ -40,7 +47,7 @@ def setup_web(app, main_module):
     M_ = main_module
     M_.db.executescript('''
     CREATE TABLE IF NOT EXISTS campaign_links(key TEXT PRIMARY KEY, url TEXT);
-    CREATE TABLE IF NOT EXISTS clicks(key TEXT, uid TEXT, first INTEGER, last INTEGER, n INTEGER, PRIMARY KEY(key, uid));
+    CREATE TABLE IF NOT EXISTS btn_clicks(key TEXT, uid TEXT, first INTEGER, last INTEGER, n INTEGER, PRIMARY KEY(key, uid));
     ''')
     M_.db.commit()
     app.router.add_get('/c/{key}/{uid}', click)
@@ -55,8 +62,8 @@ def clicks_text():
         k = r['key']
         tg = M_.q("SELECT COUNT(*) FROM sent WHERE key=?", k + ':all').fetchone()[0]
         mx = M_.MX.q("SELECT COUNT(*) FROM max_sent WHERE key=?", k + ':all').fetchone()[0] if M_.MX else 0
-        ct = M_.q("SELECT COUNT(*) FROM clicks WHERE key=? AND uid NOT LIKE 'm%'", k).fetchone()[0]
-        cm = M_.q("SELECT COUNT(*) FROM clicks WHERE key=? AND uid LIKE 'm%'", k).fetchone()[0]
+        ct = M_.q("SELECT COUNT(*) FROM btn_clicks WHERE key=? AND uid NOT LIKE 'm%'", k).fetchone()[0]
+        cm = M_.q("SELECT COUNT(*) FROM btn_clicks WHERE key=? AND uid LIKE 'm%'", k).fetchone()[0]
         sent = tg + mx
         pct = f'{(ct + cm) * 100 / sent:.0f}%' if sent else '—'
         out.append(f'• {k}: отправлено {sent}, нажали {ct + cm} ({pct}); Telegram {ct}, MAX {cm}')
