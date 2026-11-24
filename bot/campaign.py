@@ -90,6 +90,21 @@ CAMPAIGNS = [
         LINK='https://bf.olgapuzanovva.ru',
         BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
     ),
+    dict(
+        KEY='bf_gold_sheep',
+        TITLE='Овечки: дожим золотого яйца',
+        STAGE='all',
+        START=1795543200,               # 24.11.2026 21:00 МСК
+        UNTIL=1795546200,               # 24.11.2026 21:50 МСК
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT=('{hello}🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑\n'
+              'вы считаете овечек или уже успели разбить золотое яйцо? 👆👆👆'),
+        NAMED=True,                     # «Имя, 🐑…»; без имени начинаем сразу с овечек
+        HELLO='{name}, ',
+        LINK='https://bf.olgapuzanovva.ru',
+        BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
+    ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 
@@ -98,6 +113,8 @@ def text_for(c, first_name):
     if not c['NAMED']:
         return c['TEXT']
     name = (first_name or '').strip()
+    if 'HELLO' in c:
+        return c['TEXT'].format(hello=c['HELLO'].format(name=html.escape(name)) if name else '')
     return c['TEXT'].format(hello=f'{html.escape(name)}, п' if name else 'П')
 
 
