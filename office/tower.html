@@ -180,41 +180,33 @@ function api(path, body, method){
 function agent(id){ for (var i = 0; i < S.agents.length; i++) if (S.agents[i].id === id) return S.agents[i]; return null; }
 function initials(n){ return (n || '?').trim().charAt(0).toUpperCase(); }
 
-/* ================= небоскрёб: офис в разрезе ================= */
-// здание из 5 этажей, на каждом два отдела слева и справа от лифта; внизу лобби с ресепшеном и входом
-var W = 640, H = 400, cv = $('cv'), ctx = cv.getContext('2d');
-var off = document.createElement('canvas'); off.width = W; off.height = H; var px = off.getContext('2d');
+/* ================= небоскрёб: реалистичное здание в разрезе ================= */
+// фон: фото-иллюстрация здания (tower.jpg, 1672×941), координаты ниже в пикселях этой картинки.
+// агенты стоят на этажах картинки, ездят на лифте у правого фасада, носят задачи и отчёты
+var W = 1672, H = 941, cv = $('cv'), ctx = cv.getContext('2d');
+var PHOTO = new Image(); PHOTO.src = '/tower.jpg';
 var robots = {}, bubbles = [], tick = 0;
 var DEPT_ORDER = ['lead','marketing','studio','sales','analytics','edu','tech','reception'];
 var DEPT_ICON = {lead:'👑', marketing:'📣', studio:'🎬', sales:'💰', analytics:'📊', edu:'🎓', tech:'⚙️', reception:'📅', lounge:'☕'};
-// тёплый вечерний интерьер: стена и пол каждого отдела
-var DEPT_WALL = {lead:'#5A4636', analytics:'#3F4660', marketing:'#5B3F4A', studio:'#3B3F66', sales:'#3D5546', edu:'#5E5238', tech:'#24353F', lounge:'#5A4A3A', reception:'#594838'};
-var FLOOR_Y0 = 26, FLOOR_H = 72, ROOM_H = 64, BX0 = 28, BX1 = 612, LIFT_X = 320, LIFT_W = 22;
-var LAYOUT = [['lead','analytics'], ['marketing','studio'], ['sales','edu'], ['tech','lounge'], ['reception','lobby']];
-var ZONES = [];
-(function(){
-  LAYOUT.forEach(function(row, lv){
-    var y = FLOOR_Y0 + lv * FLOOR_H;
-    row.forEach(function(k, c){
-      var x = c ? LIFT_X + LIFT_W / 2 + 4 : BX0 + 6, w = c ? BX1 - 6 - x : LIFT_X - LIFT_W / 2 - 4 - x;
-      var z = {key: k, x: x, y: y, w: w, h: ROOM_H, level: lv, desks: []};
-      var n = k === 'lobby' ? 0 : (k === 'reception' ? 3 : (k === 'studio' || k === 'tech' ? 4 : 5));
-      for (var j = 0; j < n; j++) z.desks.push({x: z.x + (k === 'reception' ? 70 : 34) + j * (k === 'reception' ? 44 : 52), y: y + 40, boss: k === 'lead' && j === 0, zone: k});
-      if (k !== 'lobby') ZONES.push(z); else LOBBY = z;
-    });
-  });
-})();
-var LOBBY;
-var ZL = ZONES.filter(function(z){ return z.key === 'lounge'; })[0], COFFEE = {x: ZL.x + ZL.w - 18, y: ZL.y + 46};
-// в лаунже столы стоят только в левой половине, справа диван и кофемашина
-ZL.desks = ZL.desks.slice(0, 3);
-var LOUNGE = [{x: ZL.x + 190, y: ZL.y + 58}, {x: ZL.x + 210, y: ZL.y + 58}, {x: ZL.x + 230, y: ZL.y + 58}, {x: ZL.x + 170, y: ZL.y + 58}];
-var ENTRY = {x: LOBBY.x + LOBBY.w / 2, y: LOBBY.y + 58};
-function walkY(lv){ return FLOOR_Y0 + lv * FLOOR_H + 58; }
-function levelOf(y){ return Math.max(0, Math.min(LAYOUT.length - 1, Math.floor((y - FLOOR_Y0) / FLOOR_H))); }
+var FLOORS = [148, 304, 436, 574, 712, 880];          // линия пола каждого этажа сверху вниз
+var LIFT_X = 1606;                                    // лифт у правого фасада
+// отделы на этажах: [ключ, этаж, x от, x до, сколько мест]
+var ROOMS = [['lead',0,140,800,5], ['analytics',0,830,1560,5], ['marketing',1,140,560,4], ['studio',1,600,1560,6],
+             ['sales',2,140,820,5], ['edu',2,850,1560,5], ['tech',3,140,1560,9], ['reception',5,170,760,4], ['lounge',5,1080,1500,4]];
+var ZONES = ROOMS.map(function(r){
+  var k = r[0], lv = r[1], x0 = r[2], x1 = r[3], n = r[4], top = lv ? FLOORS[lv - 1] + 24 : 22;
+  var z = {key: k, x: x0, y: top, w: x1 - x0, h: FLOORS[lv] - top, level: lv, desks: []};
+  for (var j = 0; j < n; j++) z.desks.push({x: x0 + 50 + j * ((x1 - x0 - 100) / Math.max(1, n - 1)), y: FLOORS[lv], boss: k === 'lead' && j === 0, zone: k});
+  return z;
+});
+var ZL = ZONES.filter(function(z){ return z.key === 'lounge'; })[0];
+var COFFEE = {x: 1250, y: FLOORS[5]};
+var LOUNGE = [{x: 1180, y: FLOORS[5]}, {x: 1300, y: FLOORS[5]}, {x: 1380, y: FLOORS[5]}, {x: 1460, y: FLOORS[5]}];
+var ENTRY = {x: 840, y: FLOORS[5]};
+function walkY(lv){ return FLOORS[lv]; }
+function levelOf(y){ var b = 0, bd = 1e9; FLOORS.forEach(function(f, i){ var d = Math.abs(f - y); if (d < bd) { bd = d; b = i; } }); return b; }
 function zone(k){ for (var i = 0; i < ZONES.length; i++) if (ZONES[i].key === k) return ZONES[i]; return ZL; }
 function deptOf(a){ return a.is_main ? 'lead' : (DEPT_ORDER.indexOf(a.dept) >= 0 ? a.dept : 'lounge'); }
-// рассадка: по порядку внутри отдела; кому не хватило стола в своей комнате, садится в лаунж
 var SEATING = {key: '', map: {}, used: []};
 function seating(){
   var key = S.agents.map(function(a){ return a.id + ':' + a.dept + ':' + a.is_main; }).join(',');
@@ -222,112 +214,63 @@ function seating(){
   var map = {}, used = [], free = {}, spare = ZL.desks.slice();
   ZONES.forEach(function(z){ free[z.key] = z.desks.slice(); });
   var list = S.agents.slice().sort(function(a, b){ return (b.is_main - a.is_main) || (a.id - b.id); });
-  list.forEach(function(a){
+  list.forEach(function(a, i){
     var d = (free[deptOf(a)] || []).shift() || spare.shift();
-    if (!d) d = ZL.desks[a.id % ZL.desks.length];
-    if (free.lounge.indexOf(d) >= 0) free.lounge.splice(free.lounge.indexOf(d), 1);
-    if (spare.indexOf(d) >= 0) spare.splice(spare.indexOf(d), 1);
+    if (!d) d = {x: ZL.x + 40 + (i * 37) % (ZL.w - 80), y: FLOORS[5], zone: 'lounge'};
     map[a.id] = d; used.push([d, a]);
   });
   SEATING = {key: key, map: map, used: used};
   return SEATING;
 }
-
-function rect(x,y,w,h,c){ px.fillStyle = c; px.fillRect(x|0, y|0, w, h); }
 function shade(hex, k){
   var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   function f(v){ return Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); }
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
-function plant(x, y){ rect(x, y + 8, 8, 8, '#6B4A2E'); rect(x - 3, y - 1, 14, 10, '#2E8B57'); rect(x, y - 5, 8, 5, '#3DBE8B'); rect(x - 1, y + 2, 3, 3, '#1F6B43'); }
-var SKY = null;
-function drawSky(){
-  if (!SKY) { SKY = px.createLinearGradient(0, 0, 0, H); SKY.addColorStop(0, '#1B2340'); SKY.addColorStop(.55, '#3B3F6E'); SKY.addColorStop(1, '#6E5A7A'); }
-  px.fillStyle = SKY; px.fillRect(0, 0, W, H);
-  // город за зданием
-  for (var i = 0; i < 16; i++) {
-    var bx = i * 42 - 10, bh = 90 + (i * 53) % 140, by = H - 40 - bh;
-    rect(bx, by, 34, bh + 40, i % 2 ? '#2A2F50' : '#262B48');
-    for (var wy = by + 6; wy < H - 44; wy += 9) for (var wx = bx + 4; wx < bx + 30; wx += 7) if ((wx * 3 + wy * 7 + i) % 9 < 3) rect(wx, wy, 3, 4, '#F6C66B');
-  }
-  rect(0, H - 14, W, 14, '#2B2B34'); rect(0, H - 14, W, 1, '#4A4A58');
-}
-function drawRoom(){
-  drawSky();
-  // каркас здания
-  rect(BX0 - 6, FLOOR_Y0 - 14, BX1 - BX0 + 12, 10, '#1E1F27'); rect(BX0 - 6, FLOOR_Y0 - 14, BX1 - BX0 + 12, 2, '#3A3B47');
-  for (var lv = 0; lv < LAYOUT.length; lv++) {
-    var y = FLOOR_Y0 + lv * FLOOR_H;
-    rect(BX0, y - 4, BX1 - BX0, 4, '#2A2B34');
-    rect(BX0, y + ROOM_H, BX1 - BX0, FLOOR_H - ROOM_H, '#2E2F3A'); rect(BX0, y + ROOM_H, BX1 - BX0, 1, '#565868');
-  }
-  rect(BX0 - 6, FLOOR_Y0 - 4, 6, LAYOUT.length * FLOOR_H + 4, '#1E1F27'); rect(BX1, FLOOR_Y0 - 4, 6, LAYOUT.length * FLOOR_H + 4, '#1E1F27');
-  ZONES.concat([LOBBY]).forEach(function(z){
-    var wall = DEPT_WALL[z.key] || '#5A4A3A';
-    rect(z.x, z.y, z.w, z.h, wall);
-    // деревянные панели и тёплый свет с потолка
-    for (var x = z.x; x < z.x + z.w; x += 12) rect(x, z.y + 8, 1, 26, shade(wall, -.18));
-    rect(z.x, z.y, z.w, 3, '#1A1A22');
-    for (var lx = z.x + 20; lx < z.x + z.w - 10; lx += 48) { rect(lx, z.y + 3, 14, 2, '#FFE7B0'); px.fillStyle = 'rgba(255,214,140,.10)'; px.beginPath(); px.moveTo(lx - 8, z.y + 5); px.lineTo(lx + 22, z.y + 5); px.lineTo(lx + 34, z.y + 50); px.lineTo(lx - 20, z.y + 50); px.fill(); }
-    // пол
-    rect(z.x, z.y + 50, z.w, z.h - 50, shade(wall, .18)); rect(z.x, z.y + 50, z.w, 1, shade(wall, .35));
-    for (var fx = z.x + 6; fx < z.x + z.w; fx += 16) rect(fx, z.y + 51, 1, z.h - 51, shade(wall, .1));
-    // стеклянный фасад: стойки
-    for (var mx = z.x + 70; mx < z.x + z.w - 10; mx += 70) rect(mx, z.y + 3, 1, z.h - 3, 'rgba(20,20,30,.35)');
-    if (z.key !== 'lobby' && z.key !== 'reception') plant(z.x + z.w - 12, z.y + 40);
-  });
-  // лифт: шахта со стеклом и дверями на каждом этаже
-  rect(LIFT_X - LIFT_W / 2, FLOOR_Y0, LIFT_W, LAYOUT.length * FLOOR_H - (FLOOR_H - ROOM_H), '#20222C');
-  for (var l2 = 0; l2 < LAYOUT.length; l2++) { var yy = FLOOR_Y0 + l2 * FLOOR_H; rect(LIFT_X - 8, yy + 26, 16, 36, '#8C93A8'); rect(LIFT_X, yy + 26, 1, 36, '#5D6378'); rect(LIFT_X - 3, yy + 20, 6, 3, '#FFBA09'); }
-  // штаб: экраны с графиками, как в переговорной
-  var ZH = zone('lead'); rect(ZH.x + 150, ZH.y + 4, 104, 16, '#11131C');
-  rect(ZH.x + 152, ZH.y + 5, 32, 14, '#173A6B'); rect(ZH.x + 186, ZH.y + 5, 32, 14, '#173A6B'); rect(ZH.x + 220, ZH.y + 5, 32, 14, '#173A6B');
-  [3, 6, 4, 8, 11, 9].forEach(function(v, i){ rect(ZH.x + 155 + i * 5, ZH.y + 18 - v, 3, v, '#FFBA09'); });
-  for (var i2 = 0; i2 < 6; i2++) rect(ZH.x + 190 + i2 * 4, ZH.y + 16 - (i2 * 3) % 9, 3, 2, '#5CF2FF');
-  px.strokeStyle = '#5CF2FF'; px.lineWidth = 2; px.beginPath(); px.arc(ZH.x + 236, ZH.y + 12, 5, 0, 5); px.stroke();
-  // студия: свет и камера
-  var ZS = zone('studio'), sx = ZS.x + ZS.w - 70; rect(sx, ZS.y + 6, 44, 44, '#6C4BD8'); rect(sx + 2, ZS.y + 8, 40, 2, '#B9A6FF'); rect(sx - 12, ZS.y + 30, 10, 7, '#222'); rect(sx - 8, ZS.y + 37, 2, 13, '#222'); rect(sx + 14, ZS.y + 36, 12, 14, '#C8643A');
-  // аналитика и техотдел: стены экранов и серверы
-  var ZA = zone('analytics'); for (var k = 0; k < 4; k++) { rect(ZA.x + 150 + k * 24, ZA.y + 5, 22, 13, '#173A6B'); rect(ZA.x + 153 + k * 24, ZA.y + 15 - k * 2, 16, 2, '#5CF2FF'); }
-  var ZT = zone('tech'); for (var s2 = 0; s2 < 3; s2++) { var rx = ZT.x + ZT.w - 74 + s2 * 16; rect(rx, ZT.y + 10, 12, 40, '#10161C'); for (var sy = 0; sy < 8; sy++) rect(rx + 2, ZT.y + 13 + sy * 4, 8, 1, (tick / 8 + sy + s2) % 4 < 2 ? '#2DE2C4' : '#127A6B'); }
-  // лаунж: диван и кофемашина
-  rect(ZL.x + 160, ZL.y + 46, 80, 12, '#C8643A'); rect(ZL.x + 160, ZL.y + 40, 80, 7, '#A94F2B'); rect(ZL.x + 158, ZL.y + 42, 4, 16, '#8E3F21'); rect(ZL.x + 238, ZL.y + 42, 4, 16, '#8E3F21');
-  rect(COFFEE.x - 6, COFFEE.y - 18, 14, 22, '#5B5F73'); rect(COFFEE.x - 4, COFFEE.y - 14, 10, 6, '#2B2D42'); rect(COFFEE.x - 2, COFFEE.y - 4, 4, 3, '#FFFFFF');
-  // лобби: стойка ресепшена и стеклянные двери
-  var ZR = zone('reception'); rect(ZR.x + 14, ZR.y + 40, 40, 14, '#E8DCC6'); rect(ZR.x + 14, ZR.y + 52, 40, 2, '#FFD98A');
-  rect(LOBBY.x + LOBBY.w / 2 - 34, LOBBY.y + 8, 68, 56, '#2C3D55'); rect(LOBBY.x + LOBBY.w / 2 - 1, LOBBY.y + 8, 2, 56, '#8C93A8'); rect(LOBBY.x + LOBBY.w / 2 - 34, LOBBY.y + 8, 68, 2, '#8C93A8');
-  rect(LOBBY.x + 20, LOBBY.y + 46, 30, 10, '#C8643A'); rect(LOBBY.x + LOBBY.w - 54, LOBBY.y + 46, 30, 10, '#C8643A');
-  plant(LOBBY.x + 64, LOBBY.y + 40); plant(LOBBY.x + LOBBY.w - 70, LOBBY.y + 40);
-  // деревья у входа
-  [BX0 - 14, BX1 + 8].forEach(function(tx){ rect(tx + 4, H - 40, 3, 26, '#4A3424'); rect(tx - 4, H - 58, 20, 20, '#2E6B47'); rect(tx, H - 64, 12, 8, '#3D8A5B'); });
-}
-function drawDesk(d, a){
-  var w = d.boss ? 40 : 32;
-  rect(d.x - w/2, d.y - 6, w, 11, '#B98B5E'); rect(d.x - w/2, d.y - 6, w, 2, '#D4AA80'); rect(d.x - w/2 + 2, d.y + 5, 3, 7, '#8C6440'); rect(d.x + w/2 - 5, d.y + 5, 3, 7, '#8C6440');
-  rect(d.x - 8, d.y - 18, 16, 11, '#141414');
-  var on = a && a.status === 'working';
-  rect(d.x - 7, d.y - 17, 14, 9, on ? (tick % 20 < 10 ? shade(a.color, .55) : shade(a.color, .35)) : (a ? '#3A3D55' : '#2A2C3E'));
-  if (on) for (var i = 0; i < 3; i++) rect(d.x - 5 + i * 4, d.y - 14 + ((tick / 6 + i) % 3 | 0), 2, 1, '#FFFFFF');
-  rect(d.x - 2, d.y - 7, 4, 2, '#141414');
-  if (d.boss) { rect(d.x + 10, d.y - 10, 6, 5, '#FFBA09'); rect(d.x + 12, d.y - 12, 2, 2, '#FFFFFF'); }
-}
-function drawRobot(r){
+// робот в стиле картинки: белый корпус, тёмный визор, голубые глаза, огонёк на груди цветом агента
+function drawRobotV(r, v){
   var a = agent(r.id); if (!a) return;
-  var x = Math.round(r.x), y = Math.round(r.y), c = a.color, step = r.moving ? ((tick / 5 | 0) % 2) : 0;
-  rect(x - 5, y + 1, 10, 2, 'rgba(0,0,0,.18)');
-  rect(x - 3, y - 3, 2, 3 - step, '#2B2D42'); rect(x + 1, y - 3, 2, 2 + step, '#2B2D42');
-  rect(x - 5, y - 9, 10, 7, c); rect(x - 5, y - 9, 10, 1, shade(c, .3)); rect(x - 2, y - 7, 4, 3, shade(c, .5));
-  rect(x - 6, y - 8, 1, 4, shade(c, -.25)); rect(x + 5, y - 8, 1, 4, shade(c, -.25));
-  rect(x - 5, y - 16, 10, 7, '#E8ECF7'); rect(x - 5, y - 16, 10, 1, '#FFFFFF'); rect(x - 4, y - 14, 8, 3, '#1C1E2E');
-  var blink = (tick + r.id * 17) % 140 < 4;
-  if (!blink) { rect(x - 3, y - 13, 2, 1, '#5CF2FF'); rect(x + 1, y - 13, 2, 1, '#5CF2FF'); }
-  rect(x, y - 19, 1, 3, '#2B2D42'); rect(x - 1, y - 21, 3, 2, a.status === 'working' ? (tick % 16 < 8 ? '#FFBA09' : '#FF7A45') : c);
-  if (a.is_main) { rect(x - 3, y - 18, 1, 2, '#FFBA09'); rect(x + 3, y - 18, 1, 2, '#FFBA09'); rect(x - 3, y - 18, 7, 1, '#FFBA09'); }
-  if (S.sel === r.id) { rect(x - 7, y + 3, 14, 1, '#FFBA09'); }
+  var s = v.s, X = v.ox + r.x * s, Y = v.oy + r.y * s, k = s * 1.5, on = a.status === 'working';
+  var bob = r.moving ? Math.sin(tick / 4) * 1.2 * k : 0;
+  ctx.save(); ctx.translate(X, Y + bob);
+  // тень и подсветка «в работе»
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 0, 11 * k, 3 * k, 0, 0, 7); ctx.fill();
+  if (on) { var g = ctx.createRadialGradient(0, -18 * k, 2, 0, -18 * k, 30 * k); g.addColorStop(0, 'rgba(255,186,9,.45)'); g.addColorStop(1, 'rgba(255,186,9,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -18 * k, 30 * k, 0, 7); ctx.fill(); }
+  if (S.sel === r.id) { ctx.strokeStyle = '#FFBA09'; ctx.lineWidth = 2.5 * k; ctx.beginPath(); ctx.ellipse(0, 0, 14 * k, 4 * k, 0, 0, 7); ctx.stroke(); }
+  // ноги
+  var st = r.moving ? Math.sin(tick / 3) * 2 * k : 0;
+  ctx.fillStyle = '#C9CED8'; ctx.fillRect(-5 * k, -8 * k + st * .3, 3.5 * k, 8 * k - st * .3); ctx.fillRect(1.5 * k, -8 * k - st * .3, 3.5 * k, 8 * k + st * .3);
+  // корпус
+  var body = ctx.createLinearGradient(-9 * k, 0, 9 * k, 0); body.addColorStop(0, '#E9ECF2'); body.addColorStop(.5, '#FFFFFF'); body.addColorStop(1, '#C7CCD6');
+  ctx.fillStyle = body; rr(-8 * k, -24 * k, 16 * k, 17 * k, 6 * k); ctx.fill();
+  ctx.fillStyle = a.color; ctx.beginPath(); ctx.arc(0, -16 * k, 2.6 * k, 0, 7); ctx.fill();
+  ctx.fillStyle = on && tick % 30 < 15 ? '#FFFFFF' : 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(-.8 * k, -16.8 * k, .9 * k, 0, 7); ctx.fill();
+  // руки
+  ctx.fillStyle = '#DCE0E8'; rr(-11 * k, -22 * k, 3 * k, 11 * k, 1.5 * k); ctx.fill(); rr(8 * k, -22 * k, 3 * k, 11 * k, 1.5 * k); ctx.fill();
+  // голова
+  var hd = ctx.createRadialGradient(-3 * k, -36 * k, 1, 0, -32 * k, 11 * k); hd.addColorStop(0, '#FFFFFF'); hd.addColorStop(1, '#C9CED8');
+  ctx.fillStyle = hd; ctx.beginPath(); ctx.ellipse(0, -32 * k, 9.5 * k, 8.5 * k, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#141826'; rr(-7 * k, -35 * k, 14 * k, 7 * k, 3.5 * k); ctx.fill();
+  if ((tick + r.id * 17) % 160 > 5) { ctx.fillStyle = '#5CF2FF'; ctx.shadowColor = '#5CF2FF'; ctx.shadowBlur = 6 * k; ctx.beginPath(); ctx.arc(-3 * k, -31.5 * k, 1.4 * k, 0, 7); ctx.arc(3 * k, -31.5 * k, 1.4 * k, 0, 7); ctx.fill(); ctx.shadowBlur = 0; }
+  if (a.is_main) { ctx.fillStyle = '#FFBA09'; ctx.beginPath(); ctx.moveTo(-6 * k, -40 * k); ctx.lineTo(-4 * k, -46 * k); ctx.lineTo(-1 * k, -42 * k); ctx.lineTo(0, -47 * k); ctx.lineTo(1 * k, -42 * k); ctx.lineTo(4 * k, -46 * k); ctx.lineTo(6 * k, -40 * k); ctx.closePath(); ctx.fill(); }
+  else if (on) { ctx.fillStyle = tick % 16 < 8 ? '#FFBA09' : '#FF7A45'; ctx.beginPath(); ctx.arc(0, -43 * k, 1.8 * k, 0, 7); ctx.fill(); ctx.fillRect(-.5 * k, -42 * k, 1 * k, 2.5 * k); }
+  ctx.restore();
+}
+function rr(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+// лифт: стеклянная шахта у фасада, кабина подсвечивается, когда в ней кто-то едет
+function drawLift(v){
+  var s = v.s, x = v.ox + (LIFT_X - 14) * s, y0 = v.oy + 20 * s, y1 = v.oy + FLOORS[5] * s;
+  ctx.fillStyle = 'rgba(140,200,255,.10)'; ctx.fillRect(x, y0, 28 * s, y1 - y0);
+  ctx.strokeStyle = 'rgba(180,220,255,.35)'; ctx.lineWidth = Math.max(1, 1.5 * s); ctx.strokeRect(x, y0, 28 * s, y1 - y0);
+  Object.keys(robots).forEach(function(k){
+    var r = robots[k]; if (Math.abs(r.x - LIFT_X) > 2 || !r.moving) return;
+    ctx.fillStyle = 'rgba(255,214,140,.35)'; ctx.fillRect(x + 2 * s, v.oy + (r.y - 62) * s, 24 * s, 64 * s);
+    ctx.strokeStyle = 'rgba(255,214,140,.9)'; ctx.strokeRect(x + 2 * s, v.oy + (r.y - 62) * s, 24 * s, 64 * s);
+  });
 }
 
 function deskOf(a){ return seating().map[a.id] || ZL.desks[0]; }
-function seat(a){ var d = deskOf(a); return {x: d.x, y: d.y + 18}; }
+function seat(a){ var d = deskOf(a); return {x: d.x, y: d.y}; }
 function syncRobots(){
   var seen = {};
   S.agents.forEach(function(a){
@@ -352,18 +295,18 @@ function think(r){
   r.wait = 300 + Math.random() * 500;
   // в основном сидят у себя в отделе, иногда ходят за кофе или в лаунж
   var roll = Math.random();
-  if (roll < .8) { var s2 = seat(a); goTo(r, s2.x + (Math.random() * 8 - 4), s2.y); }
-  else if (roll < .9) goTo(r, COFFEE.x - 14, COFFEE.y + 10, function(){ say(r.id, '☕'); });
-  else { var p = LOUNGE[(Math.random() * LOUNGE.length) | 0]; goTo(r, p.x + (Math.random() * 16 - 8), p.y); }
+  if (roll < .85) { var s2 = seat(a); goTo(r, s2.x + (Math.random() * 30 - 15), s2.y); }
+  else if (roll < .93) goTo(r, COFFEE.x, COFFEE.y, function(){ say(r.id, '☕'); });
+  else { var p = LOUNGE[(Math.random() * LOUNGE.length) | 0]; goTo(r, p.x + (Math.random() * 30 - 15), p.y); }
 }
 function move(r){
-  var dx = r.tx - r.x, dy = r.ty - r.y, d = Math.sqrt(dx * dx + dy * dy), sp = .9;
+  var dx = r.tx - r.x, dy = r.ty - r.y, d = Math.sqrt(dx * dx + dy * dy), sp = 2.4;
   if (d < 1) {
     r.x = r.tx; r.y = r.ty;
     if (r.path && r.path.length) { var nx = r.path.shift(); r.tx = nx.x; r.ty = nx.y; return; }
     if (r.moving && r.plan) { var p = r.plan; r.plan = null; p(); } r.moving = false; return;
   }
-  if (dx === 0 && Math.abs(dy) > 1) sp = 1.6;  // в лифте быстрее
+  if (dx === 0 && Math.abs(dy) > 1) sp = 4;  // в лифте быстрее
   r.moving = true; r.x += dx / d * Math.min(sp, d); r.y += dy / d * Math.min(sp, d);
 }
 function say(id, text, ttl){ bubbles = bubbles.filter(function(b){ return b.id !== id; }); bubbles.push({id: id, text: text, until: tick + (ttl || 150)}); }
@@ -386,7 +329,7 @@ function nextVisit(ra){
   ra.walking = true; ra.busyUntil = tick + 100000;
   var ready = /^(готово|⚠️)/.test(v.text || '');
   say(ra.id, ready ? '✅ несу отчёт' : '📋 несу задачу', 160);
-  goTo(ra, rb.x + (rb.x > LIFT_X ? -14 : 14), rb.y, function(){
+  goTo(ra, rb.x + (rb.x > 800 ? -34 : 34), rb.y, function(){
     var t = v.text || '💬';
     say(ra.id, ready ? '✅ Готово, вот отчёт' : t.slice(0, 46) + (t.length > 46 ? '…' : ''), 220);
     setTimeout(function(){ say(v.to, '👍', 120); }, 900);
@@ -416,7 +359,7 @@ function incoming(e){
   banner = {title: '📥 Новая задача ' + (src === 'Офис' ? 'в офисе' : 'из ' + src), sub: text.slice(0, 90) + (text.length > 90 ? '…' : ''), until: tick + 420};
   var r = robots[e.a];
   if (!r) return;
-  letters.push({x: r.x < W / 2 ? W - 30 : 30, y: 22, tx: r.x, ty: r.y - 24, t: 0, to: e.a});
+  letters.push({x: r.x < W / 2 ? W - 80 : 80, y: 40, tx: r.x, ty: r.y - 60, t: 0, to: e.a});
 }
 function onEvent(e){
   if (e.type === 'talk') talk(e.a, e.b, e.text);
@@ -425,15 +368,18 @@ function onEvent(e){
   else if (e.type === 'step') say(e.a, e.text, 200);
   else if (e.type === 'reply') say(e.a, '💬 ответил Оле', 160);
 }
-function drawLetters(){
+function drawLetters(v){
   letters = letters.filter(function(l){ return l.t <= 1; });
   letters.forEach(function(l){
     l.t += 1 / 90;
-    var k = Math.min(1, l.t), e = 1 - Math.pow(1 - k, 3), x = l.x + (l.tx - l.x) * e, y = l.y + (l.ty - l.y) * e - Math.sin(k * Math.PI) * 30;
-    rect(x - 6, y - 4, 12, 8, '#FFFFFF'); rect(x - 6, y - 4, 12, 1, '#141414'); rect(x - 6, y + 3, 12, 1, '#141414');
-    rect(x - 6, y - 4, 1, 8, '#141414'); rect(x + 5, y - 4, 1, 8, '#141414');
-    rect(x - 4, y - 2, 2, 1, '#141414'); rect(x - 2, y - 1, 4, 1, '#141414'); rect(x + 2, y - 2, 2, 1, '#141414');
-    rect(x - 1, y, 2, 2, '#E8467C');
+    var k = Math.min(1, l.t), e = 1 - Math.pow(1 - k, 3), x = l.x + (l.tx - l.x) * e, y = l.y + (l.ty - l.y) * e - Math.sin(k * Math.PI) * 90;
+    var X = v.ox + x * v.s, Y = v.oy + y * v.s, q = 26 * v.s;
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(Math.sin(tick / 6) * .15);
+    ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#141414'; ctx.lineWidth = Math.max(1, 2 * v.s);
+    ctx.fillRect(-q, -q * .65, q * 2, q * 1.3); ctx.strokeRect(-q, -q * .65, q * 2, q * 1.3);
+    ctx.beginPath(); ctx.moveTo(-q, -q * .65); ctx.lineTo(0, q * .15); ctx.lineTo(q, -q * .65); ctx.stroke();
+    ctx.fillStyle = '#E8467C'; ctx.beginPath(); ctx.arc(0, q * .15, q * .22, 0, 7); ctx.fill();
+    ctx.restore();
     if (l.t > 1) say(l.to, 'Беру в работу 📥', 200);
   });
 }
@@ -484,27 +430,25 @@ function view(){
 function frame(){
   tick++;
   Object.keys(robots).forEach(function(k){ think(robots[k]); move(robots[k]); });
-  drawRoom();
-  var occ = new Map(); seating().used.forEach(function(p){ occ.set(p[0], p[1]); });
-  ZONES.forEach(function(z){ z.desks.forEach(function(d){ drawDesk(d, occ.get(d)); }); });
-  Object.keys(robots).map(function(k){ return robots[k]; }).sort(function(a, b){ return a.y - b.y; }).forEach(drawRobot);
-  drawLetters();
   var v = view(), dpr = cv.width / cv.getBoundingClientRect().width || 1;
-  ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#1B2340'; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.drawImage(off, v.ox, v.oy, W * v.s, H * v.s);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.fillStyle = '#1B2340'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (PHOTO.complete && PHOTO.naturalWidth) ctx.drawImage(PHOTO, v.ox, v.oy, W * v.s, H * v.s);
+  drawLift(v);
+  Object.keys(robots).map(function(k){ return robots[k]; }).sort(function(a, b){ return a.y - b.y; }).forEach(function(r){ drawRobotV(r, v); });
+  drawLetters(v);
   // подписи и облачка в полном разрешении
   drawSigns(v, dpr);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   Object.keys(robots).forEach(function(k){
     var r = robots[k], a = agent(r.id); if (!a) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 7) * v.s, fs = Math.max(8 * dpr, Math.round(4.6 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y + 14) * v.s, fs = Math.max(8 * dpr, Math.round(13 * v.s));
     ctx.font = '700 ' + fs + 'px Onest, sans-serif';
     var nm = a.name.replace(/^AI-/, ''), t = nm.length > 14 ? nm.slice(0, 13) + '…' : nm, tw = ctx.measureText(t).width + 10 * dpr;
     ctx.fillStyle = S.sel === r.id ? '#FFBA09' : 'rgba(255,255,255,.92)'; roundRect(X - tw / 2, Y - fs * .75, tw, fs * 1.5, fs * .6); ctx.fill();
     ctx.fillStyle = '#141414'; ctx.fillText(t, X, Y + 1);
   });
   if (banner && banner.until > tick) {
-    var bs = Math.max(13, Math.round(4.4 * v.s)), bw = Math.min(cv.width * .9, Math.max(ctx.measureText(banner.title).width, 10) + 60 * dpr);
+    var bs = Math.max(13, Math.round(15 * v.s)), bw = Math.min(cv.width * .9, Math.max(ctx.measureText(banner.title).width, 10) + 60 * dpr);
     ctx.font = '800 ' + bs + 'px Onest, sans-serif'; bw = Math.min(cv.width * .9, Math.max(ctx.measureText(banner.title).width, banner.sub ? ctx.measureText(banner.sub).width * .8 : 0) + 40 * dpr);
     var bx = cv.width / 2, by = v.oy + bs * 2.2, bh = banner.sub ? bs * 3.1 : bs * 2;
     ctx.fillStyle = '#FFBA09'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 2 * dpr;
@@ -515,7 +459,7 @@ function frame(){
   bubbles = bubbles.filter(function(b){ return b.until > tick; });
   bubbles.forEach(function(b){
     var r = robots[b.id]; if (!r) return;
-    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 28) * v.s, fs = Math.max(10 * dpr, Math.round(4.8 * v.s));
+    var X = v.ox + r.x * v.s, Y = v.oy + (r.y - 92) * v.s, fs = Math.max(10 * dpr, Math.round(14 * v.s));
     ctx.font = '600 ' + fs + 'px Onest, sans-serif';
     var tw = Math.min(ctx.measureText(b.text).width + 16 * dpr, cv.width * .6);
     ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5 * dpr;
@@ -531,12 +475,12 @@ function drawSigns(v, dpr){
   names.lounge = 'Лаунж';
   S.agents.forEach(function(a){ var k = deptOf(a); counts[k] = (counts[k] || 0) + 1; if (a.status === 'working') busy[k] = true; });
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  var fs = Math.max(8 * dpr, Math.round(4.2 * v.s));
+  var fs = Math.max(8 * dpr, Math.round(12 * v.s));
   ZONES.forEach(function(z){
     var label = (DEPT_ICON[z.key] || '') + ' ' + (names[z.key] || z.key), n = counts[z.key] || 0;
     ctx.font = '800 ' + fs + 'px Onest, sans-serif';
     var tw = ctx.measureText(label).width, cw = n ? ctx.measureText(String(n)).width + fs * 1.1 : 0;
-    var X = v.ox + (z.x + 4) * v.s, Y = v.oy + (z.y + 4) * v.s, w = tw + cw + fs * 1.4, h = fs * 1.8;
+    var X = v.ox + (z.x + 8) * v.s, Y = v.oy + (z.y + 6) * v.s, w = tw + cw + fs * 1.4, h = fs * 1.8;
     ctx.fillStyle = 'rgba(20,20,20,.86)'; roundRect(X, Y, w, h, h / 2); ctx.fill();
     ctx.fillStyle = '#FFFFFF'; ctx.fillText(label, X + fs * .6, Y + h / 2 + 1);
     if (n) {
@@ -549,8 +493,8 @@ function drawSigns(v, dpr){
 function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 cv.addEventListener('click', function(ev){
   var b = cv.getBoundingClientRect(), dpr = cv.width / b.width, v = view();
-  var x = ((ev.clientX - b.left) * dpr - v.ox) / v.s, y = ((ev.clientY - b.top) * dpr - v.oy) / v.s, best = null, bd = 14;
-  Object.keys(robots).forEach(function(k){ var r = robots[k], d = Math.hypot(r.x - x, (r.y - 8) - y); if (d < bd) { bd = d; best = r.id; } });
+  var x = ((ev.clientX - b.left) * dpr - v.ox) / v.s, y = ((ev.clientY - b.top) * dpr - v.oy) / v.s, best = null, bd = 40;
+  Object.keys(robots).forEach(function(k){ var r = robots[k], d = Math.hypot(r.x - x, (r.y - 25) - y); if (d < bd) { bd = d; best = r.id; } });
   if (best) { if (document.querySelector('.app').classList.contains('wide')) setWide(false); select(best); }
 });
 window.addEventListener('resize', resize);

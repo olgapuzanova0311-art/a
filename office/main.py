@@ -527,6 +527,10 @@ async def tower(req):
     return web.FileResponse(HERE / 'tower.html', headers={'Cache-Control': 'no-cache'})
 
 
+async def tower_img(req):
+    return web.FileResponse(HERE / 'tower.jpg', headers={'Cache-Control': 'public, max-age=86400'})
+
+
 async def health(req):
     return web.Response(text='ok')
 
@@ -692,7 +696,7 @@ async def templates(req):
 def make_app():
     app = web.Application(middlewares=[auth_mw], client_max_size=2 * 1024 * 1024)
     app.add_routes([
-        web.get('/', index), web.get('/tower', tower), web.get('/health', health),
+        web.get('/', index), web.get('/tower', tower), web.get('/tower.jpg', tower_img), web.get('/health', health),
         web.post('/api/login', login), web.get('/api/state', state), web.get('/api/messages', messages),
         web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/inbox', inbox), web.post('/api/agents', save_agent),
         web.delete('/api/agents/{id}', delete_agent), web.get('/api/templates', templates),
