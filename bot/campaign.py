@@ -1,11 +1,73 @@
 """Разовые рассылки с картинкой и именем. Сначала STAGE='test' (только TEST_USERNAMES), после «ок» Ольги STAGE='all'.
 Каждое сообщение уходит человеку один раз (отметка в sent / max_sent), поэтому перезапуск бота ничего не дублирует.
 """
-import asyncio, html, logging
+import asyncio, html, logging, time
 
-from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from aiohttp import web
+from aiogram import Router
+from aiogram.filters import Command, CommandObject
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 log = logging.getLogger('campaign')
+router = Router()
+M_ = None
+
+# Клики: кнопка ведёт на свой домен (agent.olgapuzanovva.ru/c/<рассылка>/<id>, открывается в России без VPN),
+# сайт пересылает запрос боту (docs/Caddyfile.template), бот записывает клик и сразу перекидывает на нужную ссылку.
+TRACK_BASE = 'https://agent.olgapuzanovva.ru/c'
+
+
+def track_url(key, uid, link):
+    if not M_:
+        return link
+    M_.q('INSERT OR REPLACE INTO campaign_links(key, url) VALUES(?,?)', key, link)
+    return f'{TRACK_BASE}/{key}/{uid}'
+
+
+async def click(req):
+    key, uid = req.match_info['key'], req.match_info['uid'][:24]
+    r = M_.q('SELECT url FROM campaign_links WHERE key=?', key).fetchone() if M_ else None
+    if not r:
+        raise web.HTTPFound('https://t.me/aivwb')
+    now = int(time.time())
+    M_.q('INSERT INTO clicks(key, uid, first, last, n) VALUES(?,?,?,?,1) '
+         'ON CONFLICT(key, uid) DO UPDATE SET last=excluded.last, n=n+1', key, uid, now, now)
+    raise web.HTTPFound(r['url'])
+
+
+def setup_web(app, main_module):
+    global M_
+    M_ = main_module
+    M_.db.executescript('''
+    CREATE TABLE IF NOT EXISTS campaign_links(key TEXT PRIMARY KEY, url TEXT);
+    CREATE TABLE IF NOT EXISTS clicks(key TEXT, uid TEXT, first INTEGER, last INTEGER, n INTEGER, PRIMARY KEY(key, uid));
+    ''')
+    M_.db.commit()
+    app.router.add_get('/c/{key}/{uid}', click)
+
+
+def clicks_text():
+    rows = M_.q('SELECT key, url FROM campaign_links ORDER BY rowid DESC LIMIT 15').fetchall()
+    if not rows:
+        return 'Кликов пока нет: счёт идёт с рассылок, отправленных после 24.11.'
+    out = ['👆 Клики по кнопкам рассылок (уникальные люди)\n']
+    for r in rows:
+        k = r['key']
+        tg = M_.q("SELECT COUNT(*) FROM sent WHERE key=?", k + ':all').fetchone()[0]
+        mx = M_.MX.q("SELECT COUNT(*) FROM max_sent WHERE key=?", k + ':all').fetchone()[0] if M_.MX else 0
+        ct = M_.q("SELECT COUNT(*) FROM clicks WHERE key=? AND uid NOT LIKE 'm%'", k).fetchone()[0]
+        cm = M_.q("SELECT COUNT(*) FROM clicks WHERE key=? AND uid LIKE 'm%'", k).fetchone()[0]
+        sent = tg + mx
+        pct = f'{(ct + cm) * 100 / sent:.0f}%' if sent else '—'
+        out.append(f'• {k}: отправлено {sent}, нажали {ct + cm} ({pct}); Telegram {ct}, MAX {cm}')
+    return '\n'.join(out)
+
+
+@router.message(Command('clicks'))
+async def clicks_cmd(m: Message, command: CommandObject):
+    if not M_.is_admin(m.from_user.id):
+        return
+    await m.answer(clicks_text())
 
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
@@ -83,7 +145,8 @@ async def run_one(M, c):
             if not M.mark(r['id'], mark_key):
                 continue
             try:
-                kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=LINK)] for _ in range(c.get('REPEAT', 1))])
+                url = track_url(KEY, r['id'], LINK)
+                kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=url)] for _ in range(c.get('REPEAT', 1))])
                 text = text_for(c, r['first_name'])
                 if photo and len(text) > 1024:
                     # подпись к фото в Telegram не длиннее 1024 символов: картинку шлём отдельно, текст с кнопкой следом
@@ -109,7 +172,7 @@ async def run_one(M, c):
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
                 if await M.MX.send(r['id'], text_for(c, r['first_name']).replace('{', '{{').replace('}', '}}'),
-                                   [[('url', BUTTON, LINK.replace('{', '{{').replace('}', '}}'))]] * c.get('REPEAT', 1), photo=PHOTO_URL or None):
+                                   [[('url', BUTTON, track_url(KEY, f"m{r['id']}", LINK).replace('{', '{{').replace('}', '}}'))]] * c.get('REPEAT', 1), photo=PHOTO_URL or None):
                     mx += 1
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'

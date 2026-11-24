@@ -879,10 +879,11 @@ async def main():
     bizon.init(sys.modules[__name__])
     for a in re.findall(r'\d+', os.environ.get('ADMIN_IDS', '')):
         q('INSERT OR IGNORE INTO admins(id) VALUES(?)', int(a))
-    dp = Dispatcher(); dp.include_router(vibe.router); dp.include_router(avto.router); dp.include_router(bizon.router); dp.include_router(router)
+    dp = Dispatcher(); dp.include_router(vibe.router); dp.include_router(avto.router); dp.include_router(bizon.router); dp.include_router(campaign.router); dp.include_router(router)
     app = web.Application()
     app.router.add_get('/', health); app.router.add_get('/app', app_page); app.router.add_post('/api/me', api_me)
     avto.setup_web(app)
+    campaign.setup_web(app, sys.modules[__name__])
     vibe.setup_web(app)
     # WEBHOOK=1: Telegram сам присылает обновления на PUBLIC_URL (так работает сервер на Timeweb);
     # копия бота, которая ещё опрашивает Telegram по старинке, в это время сообщений не получает
