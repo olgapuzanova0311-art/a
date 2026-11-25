@@ -121,6 +121,21 @@ CAMPAIGNS = [
         BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
         TRACK=False,
     ),
+    dict(
+        KEY='bf_egg_prodavec_aaa',
+        TITLE='Аааа, успели забрать подарок?',
+        STAGE='all',
+        START=0,
+        UNTIL=1795624200,               # 25.11.2026 19:30 МСК: яйцо исчезает в 20:00
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT='{hello}аааааа вы успели забрать подарок? Он сгорает через 1.5 часа 👆👆👆',
+        NAMED=True,
+        HELLO='{name}, ',               # имя из Telegram; без имени сообщение начинается с «Аааааа»
+        LINK='https://bf.olgapuzanovva.ru',
+        BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
+        TRACK=False,
+    ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 
@@ -130,7 +145,10 @@ def text_for(c, first_name):
         return c['TEXT']
     name = (first_name or '').strip()
     if 'HELLO' in c:
-        return c['TEXT'].format(hello=c['HELLO'].format(name=html.escape(name)) if name else '')
+        if name:
+            return c['TEXT'].format(hello=c['HELLO'].format(name=html.escape(name)))
+        t = c['TEXT'].format(hello='')
+        return t[:1].upper() + t[1:]
     return c['TEXT'].format(hello=f'{html.escape(name)}, п' if name else 'П')
 
 
