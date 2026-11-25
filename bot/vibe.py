@@ -312,7 +312,7 @@ def club_menu(uid, join=True):
             [('💼 Биржа заказов', 'cb', 'vc:birzha'), ('❓ Вопросы', 'cb', 'vc:faq')]]
     if join:
         rows.append([('🚀 Присоединиться', 'cb', 'vc:join')])
-    rows.append([('🎁 Бесплатный урок по сайтам', 'cb', 'vb:prompt')])
+    rows.append([('📺 Мини-обучение по нейросетям', 'cb', 'av:mini')])
     return kb(*rows)
 
 
@@ -351,6 +351,13 @@ def plan_club(uid, now):
     plan_funnel(uid, offer - 40 * 60 / SCALE)  # m3 (оффер) через сутки, не ночью, дальше обычные дожимы
     db.run('UPDATE users SET started_at=? WHERE id=?', now, uid)
     spread(uid)
+
+
+async def open_club(who):
+    """Кнопка «Мини-курс и клуб» в мини-обучении: та же клубная ветка."""
+    class P:
+        from_user = who
+    await club_start(P, db.user(who.id), 'vclub')
 
 
 async def club_start(m, u, arg):
@@ -464,6 +471,16 @@ async def run_job(j):
     name = u['name']
     if (key[0] == 'm' or key in ('c1', 'c2', 'c3')) and u['paid_at'] is not None:
         return
+    if key in ('c1', 'c2', 'c3', 'k') or (key[0] == 'm' and key != 'm2'):
+        wait = M.avto.busy_until(uid)
+        if wait:  # у человека сейчас эфир: пишем после него, днём
+            due = day_shift(wait + 30 * 60)
+            while db.one("SELECT 1 FROM jobs WHERE user_id=? AND done=0 AND key!=? AND ABS(due-?)<5400", uid, key, due):
+                due = day_shift(due + 2 * 3600)  # чтобы несколько сообщений не пришли разом
+            if key in ('m6', 'm8', 'm8n', 'm9') and due >= (u['expires_at'] or 0):
+                return  # после эфира цена уже другая, это сообщение устарело
+            db.schedule(uid, key, due)
+            return
     club = db.has(uid, 'club_branch')
     if key == 'c1':
         await send_photo(uid, 'club_app.jpg', T.club_look(), club_menu(uid), key)

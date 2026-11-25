@@ -202,21 +202,50 @@ def mapped(m: Message):
 # ---------------- вход ----------------
 @router.message(CommandStart())
 async def start(m: Message, command: CommandObject):
+    src = (command.args or '').strip()
     u = user(m.from_user.id)
-    if u and not u['funnel']:
+    if u and not u['funnel'] and not src.startswith('mini'):
         raise SkipHandler()          # старый участник интенсива: обычное меню бота
+    await enter(m.from_user, src)
+
+async def enter(who, src):
+    u = user(who.id)
     if not u:
-        src = (command.args or '').strip()
         q('INSERT INTO users(id,username,first_name,created,source,ref_code,funnel) VALUES(?,?,?,?,?,?,1)',
-          m.from_user.id, m.from_user.username, m.from_user.first_name, int(time.time()), src or 'бот', M.secrets.token_hex(4))
-        u = user(m.from_user.id)
+          who.id, who.username, who.first_name, int(time.time()), src or 'бот', M.secrets.token_hex(4))
+        u = user(who.id)
         sheet(u, 'Автовеб: пришёл в бот')
     else:
-        q('UPDATE users SET blocked=0, username=?, first_name=? WHERE id=?', m.from_user.username, m.from_user.first_name, u['id'])
+        # старый участник интенсива, который сам открыл мини-обучение, дальше тоже идёт по автовебу
+        q('UPDATE users SET blocked=0, username=?, first_name=?, funnel=1 WHERE id=?', who.username, who.first_name, u['id'])
+        if not u['funnel']: sheet(user(who.id), 'Автовеб: пришёл в бот (старый участник)')
+        u = user(who.id)
+    if src.startswith('mini'): M.mark(u['id'], 'av_mini')
+    mini = src.startswith('mini') or q("SELECT 1 FROM sent WHERE user_id=? AND key='av_mini'", u['id']).fetchone()
+    club = [[A.CLUB]] if mini else []
     last = u['slot2'] or u['slot']
     if last and last > time.time() - web_len() * 60:
-        return await send(u['id'], A.ALREADY, [[A.WEB], [A.OTHER_TIME]])
-    await send(u['id'], A.WELCOME, [[A.SLOTS]], 'welcome')
+        return await send(u['id'], A.ALREADY, [[A.WEB], [A.OTHER_TIME]] + club)
+    await send(u['id'], A.WELCOME_MINI if mini else A.WELCOME, [[A.SLOTS]] + club, 'welcome')
+
+@router.callback_query(F.data == 'av:mini')
+async def from_club(c: CallbackQuery):
+    await c.answer()
+    await enter(c.from_user, 'mini_club')
+
+@router.callback_query(F.data == 'av:club')
+async def to_club(c: CallbackQuery):
+    await c.answer()
+    await M.vibe.open_club(c.from_user)
+
+def busy_until(uid):
+    """Пока идёт эфир человека (и за час до него), клуб ему не пишет. Возвращает время, до которого ждать, или 0."""
+    u = user(uid)
+    if not u or not u['funnel']: return 0
+    now = time.time()
+    for s in (u['slot'], u['slot2']):
+        if s and s - 75 * 60 <= now < s + (web_len() + 60) * 60: return s + (web_len() + 60) * 60
+    return 0
 
 @router.callback_query(F.data.startswith('av:slot:'))
 async def pick(c: CallbackQuery):
