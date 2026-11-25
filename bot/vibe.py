@@ -27,7 +27,7 @@ from urllib.parse import urlencode
 from aiohttp import web
 from aiogram import F, Router
 from aiogram.dispatcher.event.bases import SkipHandler
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramRetryAfter
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import (CallbackQuery, ChatMemberUpdated, InlineKeyboardButton, InlineKeyboardMarkup,
                            KeyboardButton, Message, ReactionTypeEmoji, ReplyKeyboardMarkup)
@@ -758,42 +758,79 @@ async def c_setup(m, a):
     await m.answer('\n'.join(out) + '\n\nТеперь загрузи видео уроков в канал по порядку, потом напиши /vibecaptions')
 
 
+def lesson_by_duration(dur):
+    """Номер урока по длине видео (запас 3 секунды) или None."""
+    for i, d in enumerate(T.COURSE_DURATIONS):
+        if dur and abs(d - dur) <= 3:
+            return i
+
+
 @admin_cmd('vibecaptions')
 async def c_captions(m, a):
-    """Подписывает видео уроков в канале. Урок узнаём по длине видео (или номеру в имени файла), а не по порядку сообщений."""
-    ch, first = chat_id('course'), int(a or 0) or int(db.setting('course_toc_id') or 0) + 1
+    """Подписывает видео уроков. Пост сначала читаем через пересылку себе и правим, только если это точно урок
+    и подпись пустая или наша. Чужие подписи не меняем."""
+    ch = chat_id('course')
+    first = int(a) if a.isdigit() else int(db.setting('course_toc_id') or 0) + 1
     if not ch or first < 2:
         return await m.answer('Сначала /vibesetup')
-    ok, found, misses = 0, set(), 0
+    if (await bot().get_chat(int(ch))).has_protected_content:
+        return await m.answer('Подписи не менялись: в канале включён запрет копирования, из-за него бот не видит, что в постах. '
+                              'Выключи его на минуту, повтори /vibecaptions и включи обратно')
+    ours = set(T.COURSE_LESSONS) | {'', '⏳'}
+    found, dup, skipped, failed, misses = set(), 0, [], [], 0
+
+    async def tg(fn, **kw):
+        for _ in range(3):
+            try:
+                return await fn(**kw)
+            except TelegramRetryAfter as e:
+                await asyncio.sleep(e.retry_after + 1)
+        return await fn(**kw)
+
     for mid in range(first, first + 60):
         if misses >= 12 or len(found) == len(T.COURSE_LESSONS):
             break
+        await asyncio.sleep(0.3)
         try:
-            msg = await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption='⏳')
+            msg = await tg(bot().forward_message, chat_id=m.from_user.id, from_chat_id=int(ch), message_id=mid,
+                           disable_notification=True)
         except TelegramBadRequest:
             misses += 1
             continue
         misses = 0
-        v = getattr(msg, 'video', None) or getattr(msg, 'document', None)
-        idx = None
-        name = (getattr(v, 'file_name', '') or '').strip()
-        for k, pre in enumerate(T.COURSE_PREFIXES):
-            if name.startswith(pre):
-                idx = k
-                break
-        dur = getattr(v, 'duration', None)
-        if idx is None and dur:
-            k = min(range(len(T.COURSE_DURATIONS)), key=lambda i: abs(T.COURSE_DURATIONS[i] - dur))
-            if abs(T.COURSE_DURATIONS[k] - dur) <= 6:
-                idx = k
+        try:
+            await tg(bot().delete_message, chat_id=m.from_user.id, message_id=msg.message_id)
+        except TelegramBadRequest:
+            pass
+        v = msg.video or msg.document
+        idx = lesson_by_duration(getattr(v, 'duration', None))
         if idx is None:
-            await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption='')
             continue
-        await bot().edit_message_caption(chat_id=int(ch), message_id=mid, caption=f'<b>{T.COURSE_LESSONS[idx]}</b>')
+        if idx in found:
+            dup += 1
+            continue
+        if (msg.caption or '').strip() not in ours:
+            skipped.append(T.COURSE_LESSONS[idx])
+            continue
+        if msg.caption != T.COURSE_LESSONS[idx]:
+            try:
+                await tg(bot().edit_message_caption, chat_id=int(ch), message_id=mid, caption=f'<b>{T.COURSE_LESSONS[idx]}</b>')
+            except TelegramBadRequest as e:
+                log.warning('caption %s: %s', mid, e)
+                failed.append(T.COURSE_LESSONS[idx])
+                continue
         found.add(idx)
-        ok += 1
-    bad = [T.COURSE_LESSONS[i] for i in range(len(T.COURSE_LESSONS)) if i not in found]
-    await m.answer(f'Подписала видео: {ok} из {len(T.COURSE_LESSONS)}' + (('\nНе нашла: ' + ', '.join(bad)) if bad else ''))
+    out = [f'Подписаны верно: {len(found)} из {len(T.COURSE_LESSONS)}']
+    if skipped:
+        out.append('Не трогала, там своя подпись: ' + '; '.join(skipped))
+    if failed:
+        out.append('Не получилось поменять, проверь право бота «Редактирование чужих публикаций»: ' + '; '.join(failed))
+    if dup:
+        out.append(f'Повторов уроков: {dup}, их не трогала')
+    bad = [t for i, t in enumerate(T.COURSE_LESSONS) if i not in found and t not in skipped and t not in failed]
+    if bad:
+        out.append('Не нашла: ' + '; '.join(bad))
+    await m.answer('\n'.join(out))
 
 
 @admin_cmd('vibestats')
