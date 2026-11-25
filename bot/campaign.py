@@ -79,38 +79,25 @@ async def clicks_cmd(m: Message, command: CommandObject):
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
     dict(
-        KEY='bf_gold_egg',
-        TITLE='Золотое яйцо: топ-20 скиллов',
+        KEY='bf_closed_ticket',
+        TITLE='Закрытый эфир завтра: билет',
         STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
         START=0,                        # 0 → сразу после выкладки
-        UNTIL=1795545000,               # 24.11.2026 21:30 МСК: яйцо исчезает в 22:00, позже не отправляем
-        PHOTO='zoloto.jpg',             # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
-        PHOTO_URL='https://agent.olgapuzanovva.ru/img/zoloto.jpg',
+        UNTIL=1795708800,               # 26.11.2026 19:00 МСК: после начала эфира не отправляем
+        PHOTO='bilet.jpg',              # лежит рядом с ботом; для MAX берём копию с сайта (docs/img)
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/bilet.jpg',
         TEXT=(
-            '🥚 СЕГОДНЯ С 19:00 ДО 22:00 НА САЙТЕ ЗОЛОТОЕ ЯЙЦО\n\n'
-            'Внутри «Топ-20 скиллов для Claude и ChatGPT»: ответы на отзывы, юнит-экономика, сценарии рилс и ещё 17. '
-            'Ставятся за пару минут и дальше работают сами.\n\n'
-            '⏳ В 22:00 яйцо исчезнет, этого подарка потом не будет\n\n'
-            'Чтобы разбить яйцо, зарегистрируйтесь на бесплатный эфир 26.11 в 19:00 МСК. Уже зарегистрированы? Заходите на сайт.'
+            '🔐 ВАМ ДОСТУПЕН ЗАКРЫТЫЙ ЭФИР: 10 ИИ-СОТРУДНИКОВ ЗА ОДИН ВЕЧЕР\n\n'
+            'Завтра, 26.11 в 19:00 МСК, вживую соберу ИИ-офис из 10 агентов и покажу, с какого начать вам. Без кода, обычными словами.\n\n'
+            'Шаблон оркестратора (главного ии-управленца) будет только в прямом эфире\n\n'
+            '🎁 После регистрации тебе откроется сразу 5 подарков: ИИ-ассистент, чек-лист 30 идей агентов, '
+            'набор дашбордов селлера, 50 топовых форматов рилс и грант на 3 000 ₽\n\n'
+            'Забирайте всё по клику 👇'
         ),
         NAMED=False,
         LINK='https://bf.olgapuzanovva.ru',
-        BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
-    ),
-    dict(
-        KEY='bf_gold_sheep',
-        TITLE='Овечки: дожим золотого яйца',
-        STAGE='all',
-        START=1795543200,               # 24.11.2026 21:00 МСК
-        UNTIL=1795546200,               # 24.11.2026 21:50 МСК
-        PHOTO=None,
-        PHOTO_URL=None,
-        TEXT=('{hello}🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑🐑\n'
-              'вы считаете овечек или уже успели разбить золотое яйцо? 👆👆👆'),
-        NAMED=True,                     # «Имя, 🐑…»; без имени начинаем сразу с овечек
-        HELLO='{name}, ',
-        LINK='https://bf.olgapuzanovva.ru',
-        BUTTON='✅ РАЗБИТЬ ЯЙЦО ✅',
+        BUTTON='✅ ЗАБРАТЬ ПОДАРКИ ✅',
+        TRACK=False,                    # кнопка ведёт прямо на сайт, без ссылки для подсчёта кликов
     ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
@@ -162,7 +149,7 @@ async def run_one(M, c):
             if not M.mark(r['id'], mark_key):
                 continue
             try:
-                url = track_url(KEY, r['id'], LINK)
+                url = track_url(KEY, r['id'], LINK) if c.get('TRACK') else LINK
                 kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=url)] for _ in range(c.get('REPEAT', 1))])
                 text = text_for(c, r['first_name'])
                 if photo and len(text) > 1024:
@@ -189,7 +176,7 @@ async def run_one(M, c):
                     continue
                 M.MX.q('INSERT OR IGNORE INTO max_sent(user_id, key) VALUES(?,?)', r['id'], mark_key)
                 if await M.MX.send(r['id'], text_for(c, r['first_name']).replace('{', '{{').replace('}', '}}'),
-                                   [[('url', BUTTON, track_url(KEY, f"m{r['id']}", LINK).replace('{', '{{').replace('}', '}}'))]] * c.get('REPEAT', 1), photo=PHOTO_URL or None):
+                                   [[('url', BUTTON, (track_url(KEY, f"m{r['id']}", LINK) if c.get('TRACK') else LINK).replace('{', '{{').replace('}', '}}'))]] * c.get('REPEAT', 1), photo=PHOTO_URL or None):
                     mx += 1
                 await asyncio.sleep(0.6)
         what = 'Тест рассылки' if STAGE.startswith('test') else 'Рассылка'
