@@ -183,6 +183,10 @@ if not q("SELECT 1 FROM settings WHERE k='depts_v1'").fetchone():
             q('INSERT INTO agents(name, role, color, prompt, dept, created) VALUES(?,?,?,?,?,?)',
               t['name'], t['role'], t['color'], t['prompt'] + ' ' + VOICE, t['dept'], time.time())
     q("INSERT INTO settings(k, v) VALUES('depts_v1', '1')")
+if os.environ.get('START_EMPTY') == '1' and not q("SELECT 1 FROM settings WHERE k='empty_v1'").fetchone():
+    # новый офис «с нуля»: остаётся только оркестратор, команду нанимают на глазах у зрителей
+    q('DELETE FROM agents WHERE is_main=0')
+    q("INSERT INTO settings(k, v) VALUES('empty_v1', '1')")
 q("UPDATE agents SET status='idle'")
 q("UPDATE tasks SET status='error', result='Офис перезапускался, задачу нужно поставить заново' WHERE status IN ('queued','working')")
 
