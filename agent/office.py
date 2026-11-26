@@ -10,13 +10,25 @@ python agent/office.py live start|pack|add "Имя"|remove "Имя"|end|team   �
 import json, os, sys, time, urllib.request, http.cookiejar
 
 URL = os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app').rstrip('/')
+# какой офис сейчас выбран в боте (/office_new, /office_main): файл на диске бота, иначе основной офис
+TARGET = os.path.join(os.environ.get('DATA', '/data'), 'office_target')
+
+
+def base():
+    try:
+        u = open(TARGET).read().strip()
+        if u.startswith('http'):
+            return u.rstrip('/')
+    except OSError:
+        pass
+    return URL
 jar = http.cookiejar.CookieJar()
 op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
 
 def call(path, data=None, method=None):
     body = json.dumps(data).encode() if data is not None else None
-    req = urllib.request.Request(URL + path, data=body, method=method or ('POST' if body else 'GET'),
+    req = urllib.request.Request(base() + path, data=body, method=method or ('POST' if body else 'GET'),
                                  headers={'Content-Type': 'application/json'})
     with op.open(req, timeout=60) as r:
         return json.loads(r.read() or b'null')

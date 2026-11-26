@@ -48,6 +48,7 @@ SYSTEM = """Ты Claude Code, рабочая копия Claude Ольги Пуз
    python agent/office.py wait <id> <id>              дождаться отчётов
    python agent/office.py hire "Имя" "роль" "инструкция"  нанять агента, если роли не хватает
    python agent/office.py live add "Имя" | remove "Имя" | team   режим эфира: показать или убрать агента в офисе, кто сейчас в офисе
+   office.py сам работает с офисом, который Ольга выбрала командой /office_new или /office_main; адрес не меняй.
    Поручай нескольким агентам сразу, потом жди всех. Проверь отчёты, доработай слабое и сведи в один итог.
 4. Завод агентов: ты сам создаёшь постоянных агентов под задачи Ольги, пишешь им роль и навыки, ставишь на расписание.
    python agent/tools/factory.py  (без аргументов покажет все команды)
@@ -306,10 +307,12 @@ async def handle(msg):
                 p.terminate()
                 return await say(cid, 'Остановила.')
             return await say(cid, 'Сейчас ничего не выполняется.')
+        if cmd in ('/office_new', '/office_main'):
+            return await switch_office(cid, cmd)
         if cmd in LIVE_CMDS:
             return await live_cmd(cid, cmd, text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else '')
         if cmd == '/office':
-            return await say(cid, os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app'))
+            return await say(cid, current_office())
         return await say(cid, HELLO)
 
     parts = []
@@ -348,6 +351,30 @@ async def handle(msg):
     asyncio.create_task(work(cid, prompt))
 
 
+# ---------------- какой офис сейчас главный: основной или новый «с нуля» ----------------
+MAIN_OFFICE = os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app')
+NEW_OFFICE = os.environ.get('OFFICE_NEW_URL', 'https://office-live-production-1945ccef.up.railway.app')
+OFFICE_TARGET = DATA / 'office_target'
+
+
+def current_office():
+    try:
+        u = OFFICE_TARGET.read_text().strip()
+        if u.startswith('http'):
+            return u
+    except OSError:
+        pass
+    return MAIN_OFFICE
+
+
+async def switch_office(cid, cmd):
+    if cmd == '/office_new':
+        OFFICE_TARGET.write_text(NEW_OFFICE)
+        return await say(cid, '🏗 Теперь работаю с новым офисом: задачи, найм и команды /live идут туда.\n' + NEW_OFFICE + '\nВернуться к основному: /office_main')
+    OFFICE_TARGET.unlink(missing_ok=True)
+    return await say(cid, '🏢 Вернулась к основному офису.\n' + MAIN_OFFICE)
+
+
 # ---------------- режим эфира: мгновенные команды без Claude ----------------
 LIVE_CMDS = {'/live': 'team', '/live_start': 'start', '/live_pack': 'pack', '/live_add': 'add', '/live_remove': 'remove', '/live_end': 'end'}
 
@@ -380,6 +407,8 @@ async def poll():
     await tg('setMyCommands', commands=[{'command': 'new', 'description': 'Новый разговор'},
                                         {'command': 'stop', 'description': 'Остановить задачу'},
                                         {'command': 'office', 'description': 'Ссылка на ИИ-офис'},
+                                        {'command': 'office_new', 'description': 'Работать с новым офисом'},
+                                        {'command': 'office_main', 'description': 'Вернуться к основному офису'},
                                         {'command': 'live_start', 'description': 'Эфир: очистить офис'},
                                         {'command': 'live_pack', 'description': 'Эфир: собрать команду из 10'},
                                         {'command': 'live_add', 'description': 'Эфир: добавить агента'},
