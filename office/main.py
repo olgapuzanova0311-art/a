@@ -187,6 +187,10 @@ if os.environ.get('START_EMPTY') == '1' and not q("SELECT 1 FROM settings WHERE 
     # новый офис «с нуля»: остаётся только оркестратор, команду нанимают на глазах у зрителей
     q('DELETE FROM agents WHERE is_main=0')
     q("INSERT INTO settings(k, v) VALUES('empty_v1', '1')")
+if os.environ.get('START_EMPTY') == '1' and not q("SELECT 1 FROM settings WHERE k='empty_v2'").fetchone():
+    # чистый старт после проверки: без тестовых агентов, задач и строк в ленте
+    q('DELETE FROM agents WHERE is_main=0'); q('DELETE FROM messages'); q('DELETE FROM tasks'); q('DELETE FROM events')
+    q("INSERT INTO settings(k, v) VALUES('empty_v2', '1')")
 q("UPDATE agents SET status='idle'")
 q("UPDATE tasks SET status='error', result='Офис перезапускался, задачу нужно поставить заново' WHERE status IN ('queued','working')")
 
