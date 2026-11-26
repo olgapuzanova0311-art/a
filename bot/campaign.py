@@ -79,6 +79,21 @@ async def clicks_cmd(m: Message, command: CommandObject):
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
     dict(
+        KEY='bf_in15',
+        TITLE='Начинаем через 15 минут',
+        STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
+        START=1795707900,               # 26.11.2026 18:45 МСК
+        UNTIL=1795708800,               # 26.11.2026 19:00 МСК
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT=('❗️❗️❗️МЫ НАЧИНААААЕМ ЧЕРЕЗ 15 МИНУТ\n\n'
+              'Подключиться к эфиру по созданию ИИ-офиса: https://bf.olgapuzanovva.ru'),
+        NAMED=False,
+        LINK='https://bf.olgapuzanovva.ru',
+        BUTTON='➡️ ПОДКЛЮЧИТЬСЯ',
+        TRACK=False,
+    ),
+    dict(
         KEY='bf_onair',
         TITLE='Мы в эфире, начинаем',
         STAGE='all',                    # 'test…' → только тест; 'all' → всем в Telegram и MAX; 'done' → закончена
