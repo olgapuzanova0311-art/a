@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Пульт селлера Ozon · прототип</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F5F7;--card:#FFFFFF;--line:#E6E8EC;--ink:#14161A;--ink2:#52565E;--mute:#8A8F98;
+--s1:#2a78d6;--s2:#eb6834;--brand:#005BFF;
+--good:#1F9D55;--good-bg:#E6F6EC;--warn:#B7791F;--warn-bg:#FDF3DC;--crit:#D93A3A;--crit-bg:#FDE8E8;--r:16px}
+*{box-sizing:border-box}html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Onest,system-ui,sans-serif}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{background:#fff;border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;padding:4px 10px 18px}
+.brand i{width:32px;height:32px;border-radius:10px;background:var(--brand);display:grid;place-items:center;color:#fff;font-style:normal;font-size:15px}
+.nav{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:none;cursor:pointer;text-align:left;font-weight:500;color:var(--ink2)}
+.nav:hover{background:var(--bg)}.nav[aria-current="page"]{background:#EAF1FF;color:var(--brand);font-weight:600}
+.nav .cnt{margin-left:auto;background:var(--crit);color:#fff;border-radius:99px;font-size:12px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px}
+.side-note{margin-top:auto;font-size:12px;color:var(--mute);padding:10px;background:var(--bg);border-radius:12px}
+main{padding:24px 28px 60px;min-width:0}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px}
+.top h1{font-size:24px;margin:0;margin-right:auto}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;min-height:36px;padding:0 14px;border-radius:9px;cursor:pointer;font-weight:500;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.demo{font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-bg);padding:6px 10px;border-radius:99px}
+:focus-visible{outline:3px solid #9DBBFF;outline-offset:2px}
+.grid{display:grid;gap:16px}
+.k6{grid-template-columns:repeat(6,1fr)}.k4{grid-template-columns:repeat(4,1fr)}.k3{grid-template-columns:repeat(3,1fr)}.k2{grid-template-columns:repeat(2,1fr)}.k21{grid-template-columns:2fr 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.card h2{font-size:16px;margin:0 0 4px}.card .sub{font-size:13px;color:var(--mute);margin:0 0 14px}
+.kpi .lbl{font-size:13px;color:var(--ink2)}
+.kpi .val{font-size:26px;font-weight:700;margin:4px 0 2px;letter-spacing:-.01em;white-space:nowrap}
+.delta{font-size:13px;font-weight:600}.up{color:var(--good)}.down{color:var(--crit)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px;white-space:nowrap}
+.pill.good{background:var(--good-bg);color:var(--good)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.alert{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.alert:last-child{border:0}
+.alert b{display:block;font-size:14px}.alert span{font-size:13px;color:var(--ink2)}
+.alert button{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:10px;min-height:36px;padding:0 12px;cursor:pointer;font-size:13px;white-space:nowrap}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em;cursor:default}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.total td{font-weight:700;border-top:2px solid var(--ink)}
+tr.sub td{color:var(--ink2)}
+.bar-in{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;min-width:90px}
+.bar-in i{display:block;height:100%;border-radius:4px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:8px 10px;border-radius:10px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .12s;z-index:5}
+.tip b{font-size:13px}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;min-height:36px;padding:0 14px;cursor:pointer;font-size:13px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{border:0;background:var(--brand);color:#fff;border-radius:12px;min-height:40px;padding:0 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.rec{background:#F7F9FF;border:1px solid #DCE6FF;border-radius:12px;padding:12px 14px;font-size:14px;margin-top:10px}
+.matrix{max-width:620px;display:grid;grid-template-columns:40px repeat(3,1fr);grid-template-rows:repeat(3,92px) 30px;gap:6px}
+.matrix .cell{border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.matrix .ax{font-size:12px;color:var(--mute);display:flex;align-items:center;justify-content:center;text-align:center}
+.dot{width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid var(--ink);font-size:12px;font-weight:700;display:grid;place-items:center;cursor:default}
+.tax{display:grid;grid-template-columns:86px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.tax .d{background:var(--bg);border-radius:12px;text-align:center;padding:8px 4px}
+.tax .d b{display:block;font-size:20px}.tax .d span{font-size:12px;color:var(--ink2)}
+.view{display:none}.view.on{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+.mob-nav{display:none}
+@media (max-width:1200px){.k6{grid-template-columns:repeat(3,1fr)}.k4{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){
+ .app{grid-template-columns:1fr}aside{display:none}
+ .mob-nav{display:flex;gap:6px;overflow-x:auto;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+ .mob-nav .nav{width:auto;white-space:nowrap;flex:none}
+ main{padding:16px 14px 50px}.k21,.k2,.k3{grid-template-columns:1fr}
+}
+@media (max-width:560px){.k6,.k4{grid-template-columns:1fr 1fr}.kpi .val{font-size:21px}.tax{grid-template-columns:70px 1fr}.tax .pill{grid-column:2}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div class="mob-nav" id="mnav"></div>
+<div class="app">
+<aside><div class="brand"><i>O</i>Пульт селлера</div><nav id="snav" aria-label="Разделы"></nav>
+<div class="side-note">Прототип на демо-данных. Следующий шаг: подключить API Ozon Seller и таблицы учёта.</div></aside>
+<main>
+ <div class="top"><h1 id="title">Пульт</h1><span class="demo">Демо-данные</span>
+  <div class="seg" role="group" aria-label="Период"><button data-p="7" aria-pressed="false">7 дней</button><button data-p="30" aria-pressed="true">30 дней</button></div></div>
+
+ <!-- ПУЛЬТ -->
+ <section class="view on" id="v-home">
+  <div class="grid k6" id="kpis"></div>
+  <div class="grid k21" style="margin-top:16px">
+   <div class="card"><h2>Выручка по дням</h2><p class="sub">Наведите на график, чтобы увидеть день</p><div class="chart" id="ch-rev"></div></div>
+   <div class="card"><h2>Требует внимания</h2><p class="sub">Собрано из всех разделов</p><div id="alerts"></div></div>
+  </div>
+  <div class="grid k2" style="margin-top:16px">
+   <div class="card"><h2>Топ-5 товаров по прибыли</h2><p class="sub">За выбранный период</p><div class="tw"><table id="t-top"></table></div></div>
+   <div class="card"><h2>Куда уходят деньги</h2><p class="sub">Доля расходов от выручки за месяц</p><div id="costs"></div></div>
+  </div>
+ </section>
+
+ <!-- ПОСТАВКИ -->
+ <section class="view" id="v-stock">
+  <div class="grid k4" id="stock-kpi"></div>
+  <div class="card" style="margin-top:16px"><h2>Остатки и допоставки</h2><p class="sub">Рекомендация = (срок поставки + 30 дней запаса) × продажи в день − остаток − в пути</p>
+   <div class="tools"><button class="chip" data-sf="all" aria-pressed="true">Все</button><button class="chip" data-sf="crit" aria-pressed="false">Критично</button><button class="chip" data-sf="warn" aria-pressed="false">Скоро</button><button class="chip" data-sf="good" aria-pressed="false">Норма</button><span style="margin-left:auto"></span><button class="btn" id="copySupply">Скопировать заявку на поставку</button></div>
+   <div class="tw"><table id="t-stock"></table></div></div>
+ </section>
+
+ <!-- РЕКЛАМА -->
+ <section class="view" id="v-ads">
+  <div class="grid k4" id="ads-kpi"></div>
+  <div class="grid k2" style="margin-top:16px">
+   <div class="card"><h2>Расход на рекламу по дням, ₽</h2><p class="sub">Сумма по всем кампаниям</p><div class="chart" id="ch-spend"></div></div>
+   <div class="card"><h2>ДРР по дням, %</h2><p class="sub">Доля рекламных расходов в выручке. Пунктир: цель 10%</p><div class="chart" id="ch-drr"></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>Кампании</h2><p class="sub">Статус считается по ДРР: до 10% норма, 10–15% внимание, выше 15% убыточно</p><div class="tw"><table id="t-ads"></table></div><div id="ads-rec"></div></div>
+ </section>
+
+ <!-- ФИНАНСЫ -->
+ <section class="view" id="v-fin">
+  <div class="grid k4" id="fin-kpi"></div>
+  <div class="grid k2" style="margin-top:16px">
+   <div class="card"><h2>ОПиУ: прибыль и убыток за октябрь</h2><p class="sub">Метод начисления, % от выручки</p><div class="tw"><table id="t-pnl"></table></div></div>
+   <div class="card"><h2>Чистая прибыль по месяцам, ₽</h2><p class="sub">Последние 6 месяцев</p><div class="chart" id="ch-profit"></div>
+    <h2 style="margin-top:22px">Деньги на счёте на конец месяца, ₽</h2><p class="sub">Из ДДС</p><div class="chart" id="ch-cash"></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>ДДС: движение денежных средств</h2><p class="sub">Кассовый метод: деньги, которые реально пришли и ушли</p><div class="tw"><table id="t-dds"></table></div></div>
+ </section>
+
+ <!-- НАЛОГИ -->
+ <section class="view" id="v-tax">
+  <div class="grid k3" id="tax-kpi"></div>
+  <div class="grid k21" style="margin-top:16px">
+   <div class="card"><h2>Календарь платежей</h2><p class="sub">Единый налоговый платёж (ЕНП) до 28 числа. Суммы рассчитаны по демо-данным</p><div id="taxes"></div></div>
+   <div class="card"><h2>Как считаем</h2><p class="sub">Режим из настроек: ИП на УСН «Доходы» 6%</p>
+    <p style="font-size:14px">• Авансы по УСН: 6% от поступлений за квартал минус уплаченные взносы.<br>• Взносы ИП: фиксированная часть до 28 декабря и 1% с дохода свыше 300 000 ₽ до 1 июля.<br>• НДФЛ и взносы за сотрудников: ежемесячно до 28 числа.<br>• С 2026 года при доходе свыше порога для УСН появляется НДС.</p>
+    <div class="rec">Это прототип: ставки, пороги и даты сверьте с бухгалтером. В рабочей версии калькулятор берёт реальные поступления из ДДС.</div></div>
+  </div>
+ </section>
+
+ <!-- КОМАНДА -->
+ <section class="view" id="v-team">
+  <div class="card"><h2>Эффективность команды за октябрь</h2><p class="sub">План/факт по ключевому показателю роли и задачи в срок</p><div class="tw"><table id="t-team"></table></div></div>
+  <div class="grid k2" style="margin-top:16px"><div class="card"><h2>Выполнение плана, %</h2><p class="sub">Отсортировано по результату</p><div class="chart" id="ch-team"></div></div>
+  <div class="card"><h2>Выводы</h2><p class="sub">Автоматически по данным таблицы</p><div id="team-rec"></div></div></div>
+ </section>
+
+ <!-- РИСКИ -->
+ <section class="view" id="v-risk">
+  <div class="grid">
+   <div class="card"><h2>Реестр рисков</h2><p class="sub">Оценка = вероятность × влияние (1–3)</p><div class="tw"><table id="t-risk"></table></div></div>
+   <div class="card"><h2>Карта рисков</h2><p class="sub">Номер точки соответствует строке в реестре</p><div class="matrix" id="matrix"></div></div>
+  </div>
+ </section>
+</main></div>
+
+<script>
+/* ================= ДЕМО-ДАННЫЕ ================= */
+const rub=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
+const num=n=>Math.round(n).toLocaleString("ru-RU");
+const pct=(n,d=1)=>(n).toFixed(d).replace(".",",")+"%";
+let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+const days=[...Array(30)].map((_,i)=>{const d=new Date(2026,9,13+i);const base=148000+i*1600+Math.sin(i/2.2)*16000+(d.getDay()%6===0?22000:0)+rnd()*14000;
+ const spend=base*(0.085+rnd()*0.05+(i>22?0.03:0));return {d,rev:base,orders:Math.round(base/1450),spend}});
+const SKU=[
+ {sku:"TW-550-W",name:"Полотенце махровое 70×140 белое",stock:42,transit:0,rate:9.4,lead:12,cost:520,price:1290,profit:61200},
+ {sku:"RB-M-GR",name:"Халат махровый графит, M",stock:18,transit:40,rate:3.1,lead:14,cost:1900,price:4990,profit:48700},
+ {sku:"PL-150-BG",name:"Плед хлопковый 150×200 беж",stock:96,transit:0,rate:4.2,lead:12,cost:1500,price:3990,profit:39900},
+ {sku:"TW-SET3",name:"Набор полотенец «Спа», 3 шт",stock:11,transit:0,rate:2.6,lead:14,cost:1350,price:3490,profit:27400},
+ {sku:"PN-MNT-60",name:"Панно «Горы» из дуба 60×40",stock:23,transit:10,rate:1.1,lead:18,cost:2600,price:6900,profit:31800},
+ {sku:"TW-WF-2",name:"Вафельные полотенца, 2 шт",stock:310,transit:0,rate:5.8,lead:10,cost:290,price:890,profit:14100},
+ {sku:"RB-L-ML",name:"Халат муслин, L/XL",stock:64,transit:0,rate:1.9,lead:14,cost:1700,price:4490,profit:22300},
+ {sku:"TC-140",name:"Скатерть льняная 140×180",stock:8,transit:30,rate:0.4,lead:18,cost:1050,price:2790,profit:6900},
+];
+SKU.forEach(s=>{s.days=(s.stock+s.transit)/s.rate;s.need=Math.max(0,Math.ceil((s.lead+30)*s.rate-s.stock-s.transit));
+ s.st=s.stock/s.rate<s.lead?"crit":s.days<s.lead+10?"warn":"good";});
+const ADS=[
+ {name:"Продвижение в поиске · полотенца",type:"Поиск",spend:96400,imp:812000,clk:18900,ord:402,rev:618000},
+ {name:"Трафареты · халаты",type:"Трафареты",spend:121800,imp:1240000,clk:14100,ord:121,rev:584000},
+ {name:"Оплата за заказ · пледы",type:"За заказ",spend:38200,imp:0,clk:0,ord:96,rev:382000},
+ {name:"Трафареты · панно",type:"Трафареты",spend:57900,imp:402000,clk:3900,ord:29,rev:198000},
+ {name:"Продвижение в поиске · наборы",type:"Поиск",spend:31100,imp:288000,clk:6100,ord:88,rev:301000},
+];
+ADS.forEach(a=>{a.drr=a.spend/a.rev*100;a.ctr=a.imp?a.clk/a.imp*100:null;a.cpo=a.spend/a.ord;a.st=a.drr<=10?"good":a.drr<=15?"warn":"crit"});
+const PNL=[["Выручка",5480000,"rev"],["Комиссия Ozon",-1041000],["Логистика и последняя миля",-602000],["Хранение",-71000],["Реклама",-345400],["Себестоимость товаров",-1918000],["Валовая прибыль",null,"sub"],["ФОТ и подрядчики",-420000],["Сервисы и прочее",-58000],["Налог УСН 6%",-328800],["Чистая прибыль",null,"total"]];
+const MONTHS=["Май","Июнь","Июль","Авг","Сен","Окт"];
+const PROFIT=[312000,268000,402000,455000,521000,0];
+const DDS={in:{"Выплаты Ozon":[3.9,3.6,4.4,4.7,5.0,5.2]},out:{"Оплата поставщикам":[2.1,2.3,2.0,2.4,2.6,2.9],"Реклама":[.24,.22,.27,.3,.31,.35],"ФОТ":[.38,.38,.4,.4,.42,.42],"Налоги и взносы":[.2,.22,.25,.27,.29,.33],"Прочее":[.08,.07,.09,.06,.1,.09]},fin:{"Займ: получен / погашен":[0,.5,-.1,-.1,-.1,-.1],"Вывод собственнику":[-.9,-.8,-1.0,-1.0,-1.1,-1.2]}};
+const TEAM=[
+ {name:"Анна",role:"Менеджер карточек",kpi:"Карточек обновлено",plan:60,fact:71,tasks:94},
+ {name:"Игорь",role:"Специалист по рекламе",kpi:"Заказы с рекламы",plan:800,fact:656,tasks:76,note:"ДРР 10,9% при цели 10%"},
+ {name:"Мария",role:"Менеджер поставок",kpi:"Поставки в срок",plan:12,fact:11,tasks:88},
+ {name:"Дмитрий",role:"Контент и фото",kpi:"Единиц контента",plan:40,fact:26,tasks:61},
+ {name:"Ольга",role:"Отзывы и вопросы",kpi:"Ответов в течение суток",plan:100,fact:97,tasks:96},
+];
+TEAM.forEach(t=>{t.pp=t.fact/t.plan*100;t.st=t.pp>=95&&t.tasks>=85?"good":t.pp>=80?"warn":"crit"});
+const RISKS=[
+ {r:"Out-of-stock хитов: полотенце 70×140 и набор «Спа»",p:3,i:3,m:"Допоставка на этой неделе, страховой запас 14 дней"},
+ {r:"Рост ДРР в трафаретах выше 20%",p:3,i:2,m:"Снизить ставки, перенести бюджет в поиск"},
+ {r:"Зависимость от одного поставщика махры",p:2,i:3,m:"Найти второго поставщика, тестовая партия"},
+ {r:"Повышение комиссий и логистики Ozon",p:2,i:2,m:"Пересчитать юнит-экономику, поднять цены на 3–5%"},
+ {r:"Кассовый разрыв в декабре при закупке к Новому году",p:2,i:3,m:"График платежей в ДДС, договориться об отсрочке"},
+ {r:"Блокировка карточек за претензии по товарному знаку",p:1,i:3,m:"Зарегистрировать знак, хранить документы на товар"},
+ {r:"Уход ключевого сотрудника",p:1,i:2,m:"Регламенты и база знаний, дублёр на каждую роль"},
+];
+RISKS.forEach((x,k)=>{x.n=k+1;x.s=x.p*x.i;x.st=x.s>=6?"crit":x.s>=3?"warn":"good"});
+const TAXES=[
+ {d:new Date(2026,10,28),t:"НДФЛ и страховые взносы за сотрудников за октябрь",sum:142000},
+ {d:new Date(2026,11,28),t:"Фиксированные страховые взносы ИП за 2026 год",sum:57390},
+ {d:new Date(2026,11,28),t:"НДФЛ и взносы за сотрудников за ноябрь",sum:142000},
+ {d:new Date(2027,0,28),t:"НДФЛ и взносы за сотрудников за декабрь",sum:148000},
+ {d:new Date(2027,3,28),t:"УСН за 2026 год (остаток после авансов)",sum:318000},
+ {d:new Date(2027,6,1),t:"Взносы ИП 1% с дохода свыше 300 000 ₽",sum:0,calc:true},
+];
+const TODAY=new Date(2026,10,11);
+const PNL_REV=PNL[0][1],PNL_GROSS=PNL_REV+PNL.slice(1,6).reduce((s,x)=>s+x[1],0),PNL_NET=PNL_REV+PNL.slice(1).reduce((s,x)=>s+(x[1]||0),0);PROFIT[5]=PNL_NET;
+const CASH=(()=>{let bal=0.8;return MONTHS.map((_,m)=>{let s=0;Object.values(DDS.in).forEach(a=>s+=a[m]);Object.values(DDS.out).forEach(a=>s-=a[m]);Object.values(DDS.fin).forEach(a=>s+=a[m]);bal+=s;return bal*1e6})})();
+const MONTH_OUT=Object.values(DDS.out).reduce((s,a)=>s+a[5],0)*1e6;
+/* ================= УТИЛИТЫ ГРАФИКОВ ================= */
+function lineChart(el,{xs,ys,fmt,color="var(--s1)",target,area=true,labels}){
+ const W=640,H=230,L=58,R=12,T=14,B=28;const max=Math.max(...ys,target||0)*1.12,min=0;
+ const X=i=>L+(W-L-R)*i/(ys.length-1),Y=v=>T+(H-T-B)*(1-(v-min)/(max-min));
+ const ticks=[0,.25,.5,.75,1].map(k=>max*k);
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Линейный график">`;
+ ticks.forEach(t=>{s+=`<line x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}" stroke="#EEF0F3"/><text x="${L-8}" y="${Y(t)+4}" font-size="11" fill="#8A8F98" text-anchor="end">${fmt(t,true)}</text>`});
+ const step=Math.ceil(xs.length/6);xs.forEach((x,i)=>{if(i%step===0||i===xs.length-1)s+=`<text x="${X(i)}" y="${H-8}" font-size="11" fill="#8A8F98" text-anchor="middle">${x}</text>`});
+ if(target!=null)s+=`<line x1="${L}" x2="${W-R}" y1="${Y(target)}" y2="${Y(target)}" stroke="#8A8F98" stroke-dasharray="4 4"/>`;
+ const d=ys.map((v,i)=>`${i?"L":"M"}${X(i)},${Y(v)}`).join("");
+ if(area)s+=`<path d="${d}L${X(ys.length-1)},${Y(0)}L${X(0)},${Y(0)}Z" fill="${color}" opacity=".08"/>`;
+ s+=`<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+ s+=`<line class="cx" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="#14161A" stroke-width="1" opacity="0"/><circle class="cd" r="5" fill="${color}" stroke="#fff" stroke-width="2" opacity="0"/>`;
+ s+=`<rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" class="hit"/></svg><div class="tip"></div>`;
+ el.innerHTML=s;const svg=el.querySelector("svg"),tip=el.querySelector(".tip"),cx=svg.querySelector(".cx"),cd=svg.querySelector(".cd");
+ const move=e=>{const r=svg.getBoundingClientRect();const px=(e.clientX-r.left)/r.width*W;let i=Math.round((px-L)/(W-L-R)*(ys.length-1));i=Math.max(0,Math.min(ys.length-1,i));
+  cx.setAttribute("x1",X(i));cx.setAttribute("x2",X(i));cx.setAttribute("opacity",.25);cd.setAttribute("cx",X(i));cd.setAttribute("cy",Y(ys[i]));cd.setAttribute("opacity",1);
+  tip.innerHTML=`${labels?labels[i]:xs[i]}<br><b>${fmt(ys[i])}</b>`;tip.style.left=X(i)/W*r.width+"px";tip.style.top=Y(ys[i])/H*r.height+"px";tip.style.opacity=1};
+ svg.addEventListener("pointermove",move);svg.addEventListener("pointerleave",()=>{tip.style.opacity=0;cx.setAttribute("opacity",0);cd.setAttribute("opacity",0)});
+}
+function barChart(el,{xs,ys,fmt,color="var(--s1)",neg="var(--s2)",horizontal=false,labels}){
+ if(horizontal){const max=Math.max(...ys);el.innerHTML=xs.map((x,i)=>`<div style="display:grid;grid-template-columns:90px 1fr 54px;gap:10px;align-items:center;margin:8px 0" title="${x}: ${fmt(ys[i])}"><span style="font-size:13px">${x}</span><div class="bar-in" style="height:14px"><i style="width:${Math.min(100,ys[i]/Math.max(100,max)*100)}%;background:${color}"></i></div><span style="font-size:13px;text-align:right;font-variant-numeric:tabular-nums">${fmt(ys[i])}</span></div>`).join("");return}
+ const W=640,H=220,L=58,R=12,T=14,B=28;const max=Math.max(...ys)*1.15,min=Math.min(0,...ys)*1.15;
+ const bw=(W-L-R)/ys.length;const Y=v=>T+(H-T-B)*(1-(v-min)/(max-min));
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Столбчатый график">`;
+ [0,.5,1].map(k=>min+(max-min)*k).forEach(t=>{s+=`<line x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}" stroke="#EEF0F3"/><text x="${L-8}" y="${Y(t)+4}" font-size="11" fill="#8A8F98" text-anchor="end">${fmt(t,true)}</text>`});
+ const step=Math.ceil(xs.length/8);
+ ys.forEach((v,i)=>{const x=L+bw*i+2,w=Math.max(2,bw-4),y0=Y(0),y1=Y(v);const h=Math.abs(y1-y0);
+  s+=`<g class="b" data-i="${i}"><rect x="${L+bw*i}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent"/><path d="${v>=0?`M${x},${y0}V${y1+Math.min(4,h)}Q${x},${y1} ${x+Math.min(4,w/2)},${y1}H${x+w-Math.min(4,w/2)}Q${x+w},${y1} ${x+w},${y1+Math.min(4,h)}V${y0}Z`:`M${x},${y0}V${y1-Math.min(4,h)}Q${x},${y1} ${x+Math.min(4,w/2)},${y1}H${x+w-Math.min(4,w/2)}Q${x+w},${y1} ${x+w},${y1-Math.min(4,h)}V${y0}Z`}" fill="${v>=0?color:neg}"/></g>`;
+  if(i%step===0||i===xs.length-1)s+=`<text x="${L+bw*i+bw/2}" y="${H-8}" font-size="11" fill="#8A8F98" text-anchor="middle">${xs[i]}</text>`});
+ s+=`<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#C9CDD3"/></svg><div class="tip"></div>`;
+ el.innerHTML=s;const svg=el.querySelector("svg"),tip=el.querySelector(".tip");
+ svg.querySelectorAll(".b").forEach(g=>{g.addEventListener("pointerenter",()=>{const i=+g.dataset.i,r=svg.getBoundingClientRect();g.querySelector("path").setAttribute("opacity",.8);
+  tip.innerHTML=`${labels?labels[i]:xs[i]}<br><b>${fmt(ys[i])}</b>`;tip.style.left=(L+bw*i+bw/2)/W*r.width+"px";tip.style.top=Math.min(Y(ys[i]),Y(0))/H*r.height+"px";tip.style.opacity=1});
+  g.addEventListener("pointerleave",()=>{g.querySelector("path").setAttribute("opacity",1);tip.style.opacity=0})});
+}
+const short=(v,ax)=>Math.abs(v)>=1e6?(v/1e6).toFixed(ax?1:2).replace(".",",")+" млн":Math.abs(v)>=1e3?Math.round(v/1e3)+" тыс":Math.round(v)+"";
+const pill=(st,txt)=>`<span class="pill ${st}">${{good:"✓",warn:"!",crit:"✕"}[st]} ${txt}</span>`;
+const fd=d=>d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"});
+
+/* ================= РАЗДЕЛЫ ================= */
+const VIEWS=[["home","Пульт","◉"],["stock","Поставки","▣"],["ads","Реклама","◆"],["fin","Финансы и ДДС","₽"],["tax","Налоги","§"],["team","Команда","☺"],["risk","Риски","▲"]];
+let period=30;
+function counts(){return {stock:SKU.filter(s=>s.st==="crit").length,ads:ADS.filter(a=>a.st==="crit").length,tax:TAXES.filter(t=>(t.d-TODAY)/864e5<=21).length,risk:RISKS.filter(r=>r.st==="crit").length}}
+function renderNav(){const c=counts();const h=VIEWS.map(([id,t,ic])=>`<button class="nav" data-v="${id}"><span aria-hidden="true">${ic}</span>${t}${c[id]?`<span class="cnt" aria-label="${c[id]} требуют внимания">${c[id]}</span>`:""}</button>`).join("");
+ snav.innerHTML=h;mnav.innerHTML=h;document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>show(b.dataset.v))}
+function show(v){document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));document.querySelectorAll(".nav").forEach(b=>b.dataset.v===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+ title.textContent=VIEWS.find(x=>x[0]===v)[1];draw(v);scrollTo({top:0})}
+function kpi(l,v,d,up,note,arrowUp){const a=arrowUp===undefined?up:arrowUp;return `<div class="card kpi"><div class="lbl">${l}</div><div class="val">${v}</div>${d?`<span class="delta ${up?"up":"down"}">${a?"▲":"▼"} ${d}</span>`:""}${note?`<span style="font-size:13px;color:var(--mute)"> ${note}</span>`:""}</div>`}
+
+function drawHome(){
+ const D=days.slice(-period),rev=D.reduce((s,d)=>s+d.rev,0),sp=D.reduce((s,d)=>s+d.spend,0),ord=D.reduce((s,d)=>s+d.orders,0);
+ const margin=PNL_NET/PNL_REV;
+ kpis.innerHTML=kpi("Выручка",short(rev)+" ₽","12,4%",true,"к прошлому периоду")+kpi("Чистая прибыль",short(rev*margin)+" ₽","8,1%",true)+kpi("Маржинальность",pct(margin*100),"1,2 п.п.",false,null,false)+kpi("Заказы",num(ord),"9,7%",true)+kpi("ДРР от всей выручки",pct(sp/rev*100),"1,8 п.п.",false,"растёт",true)+kpi("Деньги на счёте",short(CASH[5])+" ₽",null,null,"хватит на "+Math.round(CASH[5]/MONTH_OUT*30)+" дн. расходов");
+ lineChart(document.getElementById("ch-rev"),{xs:D.map(d=>d.d.getDate()),labels:D.map(d=>d.d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",weekday:"short"})),ys:D.map(d=>d.rev),fmt:(v,ax)=>ax?short(v):rub(v)});
+ const al=[];
+ SKU.filter(s=>s.st==="crit").forEach(s=>al.push(["crit",`Заканчивается: ${s.name}`,`Остатка на ${Math.floor(s.stock/s.rate)} дн., поставка идёт ${s.lead} дн. Довезти ${s.need} шт.`,"stock"]));
+ ADS.filter(a=>a.st==="crit").forEach(a=>al.push(["crit",`Убыточная реклама: ${a.name}`,`ДРР ${pct(a.drr)} при цели 10%`,"ads"]));
+ TAXES.filter(t=>(t.d-TODAY)/864e5<=21).forEach(t=>al.push(["warn",`Налог через ${Math.ceil((t.d-TODAY)/864e5)} дн.: ${rub(t.sum)}`,t.t,"tax"]));
+ TEAM.filter(t=>t.st==="crit").forEach(t=>al.push(["warn",`${t.name}: план выполнен на ${Math.round(t.pp)}%`,t.role,"team"]));
+ alerts.innerHTML=al.slice(0,6).map(a=>`<div class="alert">${pill(a[0],a[0]==="crit"?"Срочно":"Внимание")}<div><b>${a[1]}</b><span>${a[2]}</span></div><button data-go="${a[3]}">Открыть</button></div>`).join("");
+ alerts.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>show(b.dataset.go));
+ const k=period/30;
+ document.getElementById("t-top").innerHTML=`<tr><th>Товар</th><th class="n">Прибыль</th><th class="n">Продажи/день</th><th>Запас</th></tr>`+[...SKU].sort((a,b)=>b.profit-a.profit).slice(0,5).map(s=>`<tr><td>${s.name}</td><td class="n">${rub(s.profit*k)}</td><td class="n">${String(s.rate).replace(".",",")}</td><td>${pill(s.st,Math.floor(s.days)+" дн.")}</td></tr>`).join("");
+ const R=5480000,cs=[["Себестоимость",1918000],["Комиссия Ozon",1041000],["Логистика",602000],["ФОТ",420000],["Реклама",345400],["Налоги",328800],["Хранение и прочее",129000]];
+ costs.innerHTML=cs.map(([n,v])=>`<div style="display:grid;grid-template-columns:130px 1fr 60px;gap:10px;align-items:center;margin:9px 0" title="${n}: ${rub(v)}"><span style="font-size:13px">${n}</span><div class="bar-in" style="height:12px"><i style="width:${v/R*100/0.4}%;background:var(--s1)"></i></div><span style="font-size:13px;text-align:right">${pct(v/R*100)}</span></div>`).join("")+`<p style="font-size:13px;color:var(--mute);margin:10px 0 0">Остаток: чистая прибыль ${pct(PNL_NET/PNL_REV*100)} от выручки</p>`;
+}
+let sf="all";
+function drawStock(){
+ const crit=SKU.filter(s=>s.st==="crit"),need=SKU.reduce((s,x)=>s+x.need,0),val=SKU.reduce((s,x)=>s+x.need*x.cost,0);
+ document.getElementById("stock-kpi").innerHTML=kpi("Товаров в риске out-of-stock",crit.length)+kpi("Нужно довезти, шт.",num(need))+kpi("Закупка на сумму",rub(val))+kpi("Средний запас",Math.round(SKU.reduce((s,x)=>s+x.days,0)/SKU.length)+" дн.");
+ const L=SKU.filter(s=>sf==="all"||s.st===sf).sort((a,b)=>a.days-b.days);
+ document.getElementById("t-stock").innerHTML=`<tr><th>Статус</th><th>Артикул</th><th>Товар</th><th class="n">Остаток FBO</th><th class="n">В пути</th><th class="n">Продаж/день</th><th class="n">Хватит, дн.</th><th class="n">Срок поставки</th><th class="n">Довезти, шт.</th></tr>`+
+ L.map(s=>`<tr><td>${pill(s.st,{crit:"Критично",warn:"Скоро",good:"Норма"}[s.st])}</td><td>${s.sku}</td><td>${s.name}</td><td class="n">${s.stock}</td><td class="n">${s.transit||"—"}</td><td class="n">${String(s.rate).replace(".",",")}</td><td class="n">${Math.floor(s.days)}</td><td class="n">${s.lead} дн.</td><td class="n"><b>${s.need||"—"}</b></td></tr>`).join("");
+}
+function drawAds(){
+ const sp=ADS.reduce((s,a)=>s+a.spend,0),rv=ADS.reduce((s,a)=>s+a.rev,0),od=ADS.reduce((s,a)=>s+a.ord,0);
+ document.getElementById("ads-kpi").innerHTML=kpi("Расход за 30 дней",rub(sp))+kpi("Выручка с рекламы",short(rv)+" ₽")+kpi("ДРР по рекламной выручке",pct(sp/rv*100),"1,8 п.п.",false,null,true)+kpi("Цена заказа (CPO)",rub(sp/od));
+ const D=days.slice(-period);
+ barChart(document.getElementById("ch-spend"),{xs:D.map(d=>d.d.getDate()),labels:D.map(d=>fd(d.d)),ys:D.map(d=>d.spend),fmt:(v,ax)=>ax?short(v):rub(v)});
+ lineChart(document.getElementById("ch-drr"),{xs:D.map(d=>d.d.getDate()),labels:D.map(d=>fd(d.d)),ys:D.map(d=>d.spend/d.rev*100),fmt:v=>pct(v),target:10,color:"var(--s2)"});
+ document.getElementById("t-ads").innerHTML=`<tr><th>Статус</th><th>Кампания</th><th>Тип</th><th class="n">Расход</th><th class="n">CTR</th><th class="n">Заказы</th><th class="n">CPO</th><th class="n">Выручка</th><th class="n">ДРР</th></tr>`+
+ [...ADS].sort((a,b)=>b.drr-a.drr).map(a=>`<tr><td>${pill(a.st,{good:"Окупается",warn:"Внимание",crit:"Убыточно"}[a.st])}</td><td>${a.name}</td><td>${a.type}</td><td class="n">${rub(a.spend)}</td><td class="n">${a.ctr==null?"—":pct(a.ctr,2)}</td><td class="n">${a.ord}</td><td class="n">${rub(a.cpo)}</td><td class="n">${rub(a.rev)}</td><td class="n"><b>${pct(a.drr)}</b></td></tr>`).join("");
+ const bad=ADS.filter(a=>a.st==="crit"),best=[...ADS].sort((a,b)=>a.drr-b.drr)[0];
+ document.getElementById("ads-rec").innerHTML=`<div class="rec"><b>Что сделать:</b> ${bad.map(a=>`снизить ставки или остановить «${a.name}» (ДРР ${pct(a.drr)})`).join("; ")}. Освободившийся бюджет перенести в «${best.name}», там ДРР ${pct(best.drr)}.</div>`;
+}
+function drawFin(){
+ const rev=PNL_REV,gross=PNL_GROSS,net=PNL_NET;
+ document.getElementById("fin-kpi").innerHTML=kpi("Выручка за октябрь",short(rev)+" ₽","9,4%",true)+kpi("Валовая прибыль",short(gross)+" ₽")+kpi("Чистая прибыль",short(net)+" ₽","5,8%",true)+kpi("Рентабельность",pct(net/rev*100));
+ document.getElementById("t-pnl").innerHTML=`<tr><th>Статья</th><th class="n">Сумма</th><th class="n">% выручки</th></tr>`+PNL.map(([n,v,t])=>{const val=t==="sub"?gross:t==="total"?net:v;return `<tr class="${t||""}"><td>${n}</td><td class="n">${rub(val)}</td><td class="n">${pct(Math.abs(val)/rev*100)}</td></tr>`}).join("");
+ barChart(document.getElementById("ch-profit"),{xs:MONTHS,ys:PROFIT,fmt:(v,ax)=>ax?short(v):rub(v)});
+ const cash=CASH;
+ lineChart(document.getElementById("ch-cash"),{xs:MONTHS,ys:cash,fmt:(v,ax)=>ax?short(v):rub(v)});
+ const row=(n,a,cls="")=>`<tr class="${cls}"><td>${n}</td>${a.map(v=>`<td class="n">${v===0?"—":short(v*1e6)}</td>`).join("")}</tr>`;
+ const sum=(o,m)=>Object.values(o).reduce((s,a)=>s+a[m],0);
+ let h=`<tr><th>Статья</th>${MONTHS.map(m=>`<th class="n">${m}</th>`).join("")}</tr><tr class="sub"><td colspan="7"><b>Операционная деятельность</b></td></tr>`;
+ Object.entries(DDS.in).forEach(([n,a])=>h+=row("+ "+n,a));Object.entries(DDS.out).forEach(([n,a])=>h+=row("− "+n,a.map(v=>-v)));
+ h+=row("Операционный поток",MONTHS.map((_,m)=>sum(DDS.in,m)-sum(DDS.out,m)),"sub");
+ h+=`<tr class="sub"><td colspan="7"><b>Финансовая деятельность</b></td></tr>`;Object.entries(DDS.fin).forEach(([n,a])=>h+=row(n,a));
+ h+=row("Остаток на конец месяца",cash.map(v=>v/1e6),"total");
+ document.getElementById("t-dds").innerHTML=h;
+}
+function drawTax(){
+ const next=TAXES.find(t=>t.d>=TODAY),dd=Math.ceil((next.d-TODAY)/864e5),q=TAXES.filter(t=>(t.d-TODAY)/864e5<=60).reduce((s,t)=>s+t.sum,0);
+ document.getElementById("tax-kpi").innerHTML=kpi("Ближайший платёж",rub(next.sum),null,null,"через "+dd+" дн.")+kpi("Платежи на 60 дней",rub(q))+kpi("Налоговая нагрузка",pct(6.0),null,null,"от выручки");
+ taxes.innerHTML=TAXES.map(t=>{const d=Math.ceil((t.d-TODAY)/864e5),st=d<=21?"warn":"good";return `<div class="tax"><div class="d"><b>${t.d.getDate()}</b><span>${t.d.toLocaleDateString("ru-RU",{month:"short",year:"2-digit"})}</span></div><div><b style="font-size:14px">${t.t}</b><div style="font-size:13px;color:var(--ink2)">${t.calc?"Рассчитается по итогам года":rub(t.sum)}</div></div>${pill(st,d<=21?"через "+d+" дн.":"запланирован")}</div>`}).join("");
+}
+function drawTeam(){
+ document.getElementById("t-team").innerHTML=`<tr><th>Сотрудник</th><th>Роль</th><th>Показатель</th><th class="n">План</th><th class="n">Факт</th><th>Выполнение</th><th class="n">Задачи в срок</th><th>Оценка</th></tr>`+
+ TEAM.map(t=>`<tr><td><b>${t.name}</b></td><td>${t.role}</td><td>${t.kpi}</td><td class="n">${t.plan}</td><td class="n">${t.fact}</td><td><div style="display:flex;gap:8px;align-items:center"><div class="bar-in" style="width:110px"><i style="width:${Math.min(100,t.pp)}%;background:var(--s1)"></i></div>${Math.round(t.pp)}%</div></td><td class="n">${t.tasks}%</td><td>${pill(t.st,{good:"Эффективно",warn:"Норма",crit:"Ниже плана"}[t.st])}</td></tr>`).join("");
+ const S=[...TEAM].sort((a,b)=>b.pp-a.pp);barChart(document.getElementById("ch-team"),{horizontal:true,xs:S.map(t=>t.name),ys:S.map(t=>t.pp),fmt:v=>Math.round(v)+"%"});
+ const best=S[0],worst=S[S.length-1];
+ document.getElementById("team-rec").innerHTML=`<div class="rec"><b>Лучший результат:</b> ${best.name}, ${best.role.toLowerCase()}: ${Math.round(best.pp)}% плана и ${best.tasks}% задач в срок.</div><div class="rec"><b>Нужна помощь:</b> ${worst.name}, ${worst.role.toLowerCase()}: ${Math.round(worst.pp)}% плана. Разобрать загрузку и отдать часть рутины ИИ: сценарии и тексты для контента.</div><div class="rec"><b>Проверить:</b> ${TEAM.filter(t=>t.note).map(t=>t.name+": "+t.note).join("; ")}.</div>`;
+}
+function drawRisk(){
+ document.getElementById("t-risk").innerHTML=`<tr><th>№</th><th>Риск</th><th class="n">Вероятность</th><th class="n">Влияние</th><th>Оценка</th><th>Что делаем</th></tr>`+
+ [...RISKS].sort((a,b)=>b.s-a.s).map(x=>`<tr><td>${x.n}</td><td style="white-space:normal;min-width:220px">${x.r}</td><td class="n">${x.p}</td><td class="n">${x.i}</td><td>${pill(x.st,x.s+" · "+{crit:"высокий",warn:"средний",good:"низкий"}[x.st])}</td><td style="white-space:normal;min-width:220px;color:var(--ink2)">${x.m}</td></tr>`).join("");
+ const bg=(p,i)=>p*i>=6?"var(--crit-bg)":p*i>=3?"var(--warn-bg)":"var(--good-bg)";let h="";
+ for(let p=3;p>=1;p--){h+=`<div class="ax">${["","Низкая","Средняя","Высокая"][p]}</div>`;for(let i=1;i<=3;i++)h+=`<div class="cell" style="background:${bg(p,i)}">${RISKS.filter(x=>x.p===p&&x.i===i).map(x=>`<span class="dot" title="${x.n}. ${x.r}">${x.n}</span>`).join("")}</div>`}
+ h+=`<div></div>${["Слабое","Среднее","Сильное"].map(t=>`<div class="ax">${t}</div>`).join("")}`;
+ matrix.innerHTML=h;
+}
+const DRAW={home:drawHome,stock:drawStock,ads:drawAds,fin:drawFin,tax:drawTax,team:drawTeam,risk:drawRisk};
+let cur="home";function draw(v){cur=v;DRAW[v]()}
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{period=+b.dataset.p;document.querySelectorAll("[data-p]").forEach(x=>x.setAttribute("aria-pressed",x===b));draw(cur)});
+document.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>{sf=b.dataset.sf;document.querySelectorAll("[data-sf]").forEach(x=>x.setAttribute("aria-pressed",x===b));drawStock()});
+copySupply.onclick=()=>{const t="Артикул;Товар;Количество\n"+SKU.filter(s=>s.need).map(s=>`${s.sku};${s.name};${s.need}`).join("\n");navigator.clipboard&&navigator.clipboard.writeText(t);copySupply.textContent="Скопировано ✓";setTimeout(()=>copySupply.textContent="Скопировать заявку на поставку",1600)};
+renderNav();show("home");
+</script></body></html>
