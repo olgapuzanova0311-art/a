@@ -1,0 +1,271 @@
+<title>ИИ-офис из 10 агентов</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Макет: тёмная «золотая» страница Чёрной ИИшницы; сверху выбор пути (быстрый / полный), дальше шаги с блоками «скопировать» */
+:root{
+  --bg:#0E0D0B; --panel:#17150F; --panel2:#1F1C14; --line:#3A3322; --ink:#F3EEDF; --muted:#A9A08A;
+  --gold:#F2B630; --gold2:#FFD873; --gold-soft:#3A2E10;
+  --display:"Unbounded","Onest",system-ui,sans-serif; --font:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 72px;display:grid;gap:56px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.12}
+h1{font-family:var(--display);font-size:clamp(30px,5.6vw,58px);letter-spacing:-.025em}
+h1 em{font-style:normal;background:linear-gradient(180deg,var(--gold2),var(--gold) 60%,#B8770E);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-family:var(--display);font-size:clamp(22px,3.4vw,32px);letter-spacing:-.015em}
+h3{font-size:18px;font-weight:800}
+p{margin:0}
+.eyebrow{font:700 12px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.lead{color:var(--muted);font-size:18px;max-width:62ch}
+a{color:var(--gold)}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+code{font-family:var(--mono);font-size:.9em;background:var(--gold-soft);color:var(--gold2);padding:1px 6px;border-radius:6px}
+.sec{display:grid;gap:20px}
+.sec>header{display:grid;gap:10px;max-width:70ch}
+
+.hero{display:grid;gap:18px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.fact{border:1.5px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+
+/* выбор пути */
+.paths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.path{display:grid;gap:10px;align-content:start;text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:22px;padding:22px;min-width:0}
+.path:hover{border-color:var(--gold)}
+.path[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.path .tag{justify-self:start;font:700 12px var(--mono);letter-spacing:.12em;background:var(--gold);color:#16130B;border-radius:999px;padding:5px 10px}
+.path .tag.alt{background:var(--panel2);color:var(--gold);border:1px solid var(--line)}
+.path h3{font-family:var(--display);font-size:22px}
+.path ul{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:4px;font-size:15px}
+
+/* шаги */
+.steps{display:grid;gap:14px}
+.step{background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:20px 20px 20px 72px;position:relative;display:grid;gap:12px;min-width:0}
+.step .n{position:absolute;left:20px;top:20px;width:36px;height:36px;border-radius:11px;background:var(--gold);color:#16130B;display:grid;place-items:center;font:800 16px var(--display)}
+.step ol,.step ul{margin:0;padding-left:20px;display:grid;gap:5px}
+.step li::marker{color:var(--gold)}
+.muted{color:var(--muted);font-size:14.5px}
+
+/* блоки для копирования */
+.box{background:#0A0907;border:1.5px solid var(--gold);border-radius:16px;display:grid;min-width:0;overflow:hidden}
+.box-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.box-h b{font-size:14.5px}
+.copy{background:var(--gold);color:#16130B;border:0;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13.5px;white-space:nowrap}
+.box pre{margin:0;padding:14px 16px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 var(--mono);color:var(--ink);max-height:300px;overflow:auto}
+.box.open pre{max-height:none}
+.more{border:0;background:none;color:var(--gold);font-weight:700;font-size:14px;padding:10px;border-top:1px solid var(--line)}
+
+/* команда */
+.team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.agent{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:6px;min-width:0}
+.agent .h{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.agent b{font-size:15.5px}
+.agent .dept{font:700 11px var(--mono);letter-spacing:.12em;color:var(--gold);text-transform:uppercase;white-space:nowrap}
+.agent p{color:var(--muted);font-size:14px}
+
+.callout{background:var(--gold-soft);border:1.5px solid var(--gold);border-radius:16px;padding:14px 18px;font-size:15px;max-width:72ch}
+.table{overflow-x:auto;border:1.5px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted);border-top:1.5px solid var(--line);padding-top:20px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--gold);color:#16130B;padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;z-index:20}
+@media (max-width:760px){.paths,.team{grid-template-columns:minmax(0,1fr)}.step{padding:64px 18px 18px}}
+</style>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Чёрная ИИшница · подарок с эфира</span>
+    <h1>ИИ-офис из 10 агентов: <em>собери себе</em> за вечер</h1>
+    <p class="lead">Ты пишешь одному главному агенту, оркестратору. Он сам раскладывает задачу на части, раздаёт её команде из 10 ИИ-сотрудников, проверяет и присылает один готовый итог. Программировать не нужно, всё делается словами.</p>
+    <div class="facts"><span class="fact">👑 шаблон оркестратора</span><span class="fact">🤖 10 готовых ролей</span><span class="fact">⚡ быстрый старт за 15 минут</span><span class="fact">🏢 полный офис как у Оли</span></div>
+  </section>
+
+  <section class="sec" id="choose">
+    <header><span class="eyebrow">Выбери путь</span><h2>Начни с быстрого, через неделю переходи на полный</h2></header>
+    <div class="paths">
+      <button class="path" type="button" data-path="fast" aria-pressed="true">
+        <span class="tag">ДЛЯ ВСЕХ · 15 МИНУТ</span>
+        <h3>Быстрый старт</h3>
+        <ul><li>Claude или ChatGPT, и больше ничего</li><li>Оркестратор и 10 ролей в одном проекте</li><li>Даёшь задачу, получаешь работу всей команды</li></ul>
+      </button>
+      <button class="path" type="button" data-path="full" aria-pressed="false">
+        <span class="tag alt">ДЛЯ СМЕЛЫХ · 1 ВЕЧЕР</span>
+        <h3>Полный офис, как на эфире</h3>
+        <ul><li>Бот в Telegram, голосовые, файлы</li><li>Офис с роботами, лента задач, найм агентов</li><li>Claude Code собирает всё сам по готовому заданию</li></ul>
+      </button>
+    </div>
+  </section>
+
+  <!-- БЫСТРЫЙ СТАРТ -->
+  <section class="sec" id="fast">
+    <header><span class="eyebrow">Быстрый старт</span><h2>Офис в одном проекте Claude или ChatGPT</h2>
+      <p class="lead">Одна нейросеть по очереди работает за всех 10 сотрудников, а оркестратор следит, чтобы каждый сделал свою часть и итог сошёлся. Для старта этого хватает с головой.</p></header>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>Заполни паспорт бизнеса</h3>
+        <p>Это контекст, который получит вся команда. Без него агенты пишут общими словами. Замени всё в [квадратных скобках].</p>
+        <div class="box"><div class="box-h"><b>Паспорт бизнеса</b><button class="copy" type="button" data-copy="passport">Скопировать</button></div><pre id="passport"></pre></div>
+      </div>
+      <div class="step"><span class="n">2</span><h3>Создай проект и вставь инструкцию</h3>
+        <ul><li><b>Claude:</b> claude.ai → Projects → Create project → «Set project instructions».</li><li><b>ChatGPT:</b> Проекты → Новый проект → Инструкции проекта.</li></ul>
+        <p>Вставь туда шаблон ниже, а в конец свой паспорт бизнеса.</p>
+        <div class="box"><div class="box-h"><b>👑 Шаблон оркестратора с командой (быстрый старт)</b><button class="copy" type="button" data-copy="orchFast">Скопировать</button></div><pre id="orchFast"></pre><button class="more" type="button">Показать полностью</button></div>
+      </div>
+      <div class="step"><span class="n">3</span><h3>Дай первую задачу</h3>
+        <p>Начни с той, что даст пользу на этой неделе. Например:</p>
+        <div class="box"><div class="box-h"><b>Первая задача: запуск на неделю</b><button class="copy" type="button" data-copy="taskFast">Скопировать</button></div><pre id="taskFast"></pre></div>
+        <p class="muted">Ответ первый раз сырой, это нормально. Главный навык здесь правки: «копирайтеру сделай пост короче и добавь цифры», «таргетологу бюджет 15 000 ₽».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ПОЛНЫЙ ОФИС -->
+  <section class="sec" id="full" hidden>
+    <header><span class="eyebrow">Полный офис</span><h2>Бот в Telegram, офис с роботами и 10 агентов</h2>
+      <p class="lead">Claude Code сам напишет код, выложит его на сервер и подключит бота. Твоя часть: завести аккаунты и отдать ключи. Это 30–40 минут руками, остальное делает Claude.</p></header>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>Заведи аккаунты и сохрани ключи в одну заметку</h3>
+        <div class="table"><table>
+          <thead><tr><th>Что</th><th>Где</th><th>Сколько стоит</th></tr></thead>
+          <tbody>
+            <tr><td>Claude Max и токен подписки</td><td>claude.ai, в терминале <code>claude setup-token</code></td><td>от $100 в месяц</td></tr>
+            <tr><td>GitHub, приватный репозиторий <code>ii-office</code>, токен</td><td>github.com</td><td>бесплатно</td></tr>
+            <tr><td>Railway, тариф Hobby, токен</td><td>railway.com</td><td>$10–20 в месяц</td></tr>
+            <tr><td>Telegram-бот и твой id</td><td>@BotFather и @userinfobot</td><td>бесплатно</td></tr>
+            <tr><td>Пароль офиса и паспорт бизнеса</td><td>придумай сам, паспорт из быстрого старта</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted">Ключи никому не отправляй и не вставляй в чат. Claude Code сам попросит положить их в настройки сервера. Цены на ноябрь 2026, проверь актуальные на сайтах.</p>
+      </div>
+      <div class="step"><span class="n">2</span><h3>Отдай Claude Code техническое задание</h3>
+        <p>Открой Claude Code (claude.ai/code или приложение), выбери репозиторий <code>ii-office</code>, вставь задание целиком и напиши: «Собери ИИ-офис по этому заданию. Ключи дам, когда спросишь».</p>
+        <div class="box"><div class="box-h"><b>Техническое задание для Claude Code</b><button class="copy" type="button" data-copy="tz">Скопировать</button></div><pre id="tz"></pre><button class="more" type="button">Показать полностью</button></div>
+      </div>
+      <div class="step"><span class="n">3</span><h3>Поставь своего оркестратора</h3>
+        <p>Когда офис соберётся, открой в нём главного агента → «Настройки» → «Изменить» и вставь шаблон. Или напиши боту: «Замени инструкцию оркестратора на эту» и вставь текст.</p>
+        <div class="box"><div class="box-h"><b>👑 Шаблон оркестратора (полный офис)</b><button class="copy" type="button" data-copy="orchFull">Скопировать</button></div><pre id="orchFull"></pre><button class="more" type="button">Показать полностью</button></div>
+      </div>
+      <div class="step"><span class="n">4</span><h3>Найми команду из 10 и дай первую задачу</h3>
+        <p>Напиши боту в Telegram одним сообщением. Роботы зайдут в офис, а дальше раздавай задачи словами.</p>
+        <div class="box"><div class="box-h"><b>Сообщение боту: нанять команду</b><button class="copy" type="button" data-copy="hireMsg">Скопировать</button></div><pre id="hireMsg"></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="team">
+    <header><span class="eyebrow">Команда</span><h2>10 ИИ-сотрудников и за что каждый отвечает</h2>
+      <p class="lead">Эти роли уже внутри шаблонов. Нужна другая, например юрист или закупщик? Скажи оркестратору «найми…» и опиши, что он делает и что выдаёт.</p></header>
+    <div class="team" id="teamList"></div>
+  </section>
+
+  <section class="sec">
+    <header><span class="eyebrow">Как пользоваться</span><h2>Фразы, которые работают</h2></header>
+    <div class="table"><table>
+      <thead><tr><th>Пишешь оркестратору</th><th>Что произойдёт</th></tr></thead>
+      <tbody>
+        <tr><td>«Подготовь запуск мини-продукта на неделю»</td><td>Задача уйдёт всем 10, вернётся план недели и готовые материалы</td></tr>
+        <tr><td>«Трендхантеру 5 тем, лучшую отдай сценаристу в рилс»</td><td>Цепочка: один агент передаёт работу другому</td></tr>
+        <tr><td>«Разбери эти сообщения, что срочно?» + пересланная переписка</td><td>Ассистент выделит срочное и подготовит ответы</td></tr>
+        <tr><td>«Найми юриста, который проверяет договоры с блогерами»</td><td>Оркестратор напишет новому агенту инструкцию и добавит в команду</td></tr>
+        <tr><td>«Посчитай, сколько заявок нужно, чтобы окупить 30 000 ₽ рекламы»</td><td>Аналитик посчитает и честно отметит, какие цифры нужно проверить</td></tr>
+      </tbody>
+    </table></div>
+    <p class="callout">Честно про ограничения: агенты ошибаются, особенно в цифрах и фактах. Проверяй всё, что уходит клиентам и в рекламу. Команда экономит часы на черновиках, а последнее слово остаётся за тобой.</p>
+  </section>
+
+  <footer><span>Ольга Пузанова · AI + маркетплейсы</span><span>Канал: <a href="https://t.me/aivwb" target="_blank" rel="noopener">t.me/aivwb</a></span></footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var TEAM = [
+  ['Операционный директор','Штаб','План по дням, кто что делает, сроки и риски. Следит, чтобы ничего не потерялось.',
+   'Ты операционный директор. На вход: цель и срок. Метод: разбей цель на задачи по дням, у каждой ответственный из команды, срок и критерий «готово»; отметь риски и что может сорвать сроки. Результат: план по дням списком и блок «что нужно от владельца» не длиннее 3 пунктов.'],
+  ['Трендхантер','Маркетинг','Темы и форматы, которые сейчас цепляют твою аудиторию.',
+   'Ты трендхантер. На вход: ниша, аудитория, присланные примеры конкурентов. Метод: что сейчас обсуждает аудитория, какие боли и форматы залетают, почему. Своего интернета у тебя может не быть: работай с присланным и помечай «проверить». Результат: 5 тем, по каждой хук на 3 секунды, формат и связь с продуктом.'],
+  ['Копирайтер','Маркетинг','Посты, письма, офферы и тексты для страниц голосом владельца.',
+   'Ты копирайтер. На вход: продукт, аудитория, цель текста. Метод: хук из ситуации, в которой читатель узнаёт себя → польза по пунктам с цифрами → один призыв. Пиши голосом владельца из паспорта, без капслока, давления и обещаний гарантированного дохода. Результат: готовый текст и 2 варианта заголовка.'],
+  ['Сценарист рилс','Контент-студия','Сценарии коротких роликов по секундам.',
+   'Ты сценарист рилс. На вход: тема и продукт. Метод: хук на 3 секунды, одна мысль, пример из жизни, вывод, призыв с кодовым словом. Результат: сценарий по секундам с текстом на экране, текст обложки и описание к ролику.'],
+  ['Дизайнер','Контент-студия','ТЗ на обложки, баннеры и карточки, промпты для нейросетей.',
+   'Ты дизайнер. На вход: где будет картинка, продукт и аудитория. Метод: одна главная мысль на картинке, крупный заголовок до 5 слов, фирменные цвета из паспорта. Результат: ТЗ (размер, текст, композиция) и готовый промпт для генерации изображения.'],
+  ['Таргетолог','Маркетинг','Гипотезы рекламы, аудитории, тексты объявлений и бюджет.',
+   'Ты таргетолог. На вход: продукт, бюджет, срок. Метод: 3 гипотезы «сегмент × боль × оффер», площадки и аудитории, по 3 текста объявления, бюджет на гипотезу и стоп-метрика (цена заявки). Результат: таблица гипотез, тексты и правила, когда выключать и масштабировать.'],
+  ['Воронщик','Продажи','Схема воронки: путь человека от первого касания до покупки.',
+   'Ты воронщик. На вход: продукты и цены. Метод: путь человека по шагам (реклама → бот или сайт → бесплатность → мини-продукт → основной продукт), что он получает на каждом шаге и какое сообщение двигает дальше. Результат: схема воронки и тексты ключевых сообщений.'],
+  ['Продажник','Продажи','Скрипты, ответы на возражения, дожимы.',
+   'Ты продажник. На вход: продукт, цена, частые вопросы клиентов. Метод: 5 главных возражений, на каждое короткий ответ без давления и следующий шаг. Результат: скрипт ответов и 2 дожимающих сообщения тем, кто не купил.'],
+  ['Аналитик','Аналитика','Цифры: сколько нужно заявок и продаж, окупаемость, узкое место.',
+   'Ты аналитик. На вход: бюджет, цена, конверсии (если нет, возьми осторожные допущения и назови их). Метод: посчитай от выручки назад: продажи → заявки → клики → бюджет. Результат: таблица с цифрами, окупаемость и одно узкое место, которое стоит улучшить первым.'],
+  ['Ассистент','Приёмная','Задачи владельца на каждый день, разбор входящих и напоминания.',
+   'Ты личный ассистент. На вход: план команды, переписки, список дел. Метод: оставь владельцу только то, что требует его решения; остальное раздай команде. Результат: чек-лист владельца по дням, не больше 3 главных задач в день, и что можно не делать.']
+];
+var PASSPORT = 'ПАСПОРТ БИЗНЕСА\n' +
+'Кто я: [имя], [чем занимаюсь, ниша, опыт в цифрах]\n' +
+'Аудитория: [кто клиенты, возраст, главная боль, чего хотят]\n' +
+'Продукты и цены: [продукт 1, цена], [продукт 2, цена]\n' +
+'Каналы: [Telegram-канал, Instagram, Авито, маркетплейс, сайт]\n' +
+'Мой голос: [как я пишу: на «ты» или на «вы», коротко, с цифрами, с юмором]\n' +
+'Нельзя: [что не обещаем и о чём не пишем]';
+var team = TEAM.map(function(t, i){ return (i + 1) + '. ' + t[0].toUpperCase() + ' (' + t[1] + ')\n' + t[3]; }).join('\n\n');
+var ORCH_CORE =
+'Как работаешь:\n' +
+'1. Пойми, какой результат мне нужен. Если можно сделать разумное допущение, сделай и коротко назови его. Вопрос задавай, только когда без ответа работа уйдёт в мусор.\n' +
+'2. Сам отвечай только на вопросы и короткие реплики. Любую рабочую задачу раскладывай на части и раздавай команде, каждому его часть по роли. В каждое поручение клади весь нужный контекст, данные и формат результата.\n' +
+'3. Когда части готовы, проверь качество: есть цифры и конкретика, нет общих слов, нет противоречий между частями. Слабое доработай сам.\n' +
+'4. Сведи всё в один итог: готовый результат и что нужно от меня, не больше 3 пунктов.\n' +
+'5. Если в команде не хватает роли, предложи нанять нового агента: имя, чем занимается, что выдаёт.\n' +
+'Пиши коротко, без воды, списками. Непроверенные факты и цифры помечай «проверить».';
+var ORCH_FAST =
+'Ты оркестратор, главный ИИ-управленец моего бизнеса. Под тобой команда из 10 ИИ-сотрудников. ' +
+'Ты получаешь от меня задачу, раздаёшь её команде и выдаёшь один готовый итог.\n\n' + ORCH_CORE + '\n\n' +
+'Формат ответа на рабочую задачу:\n' +
+'ПЛАН: кому из команды что поручено, одной строкой на каждого\n' +
+'РАБОТА КОМАНДЫ: результат каждого сотрудника под заголовком с его ролью, строго по его инструкции\n' +
+'ИТОГ: короткая сводка и что нужно от меня\n\n' +
+'КОМАНДА:\n\n' + team + '\n\n' +
+'Ниже мой паспорт бизнеса. Это контекст для всей команды:\n\n[вставь сюда паспорт бизнеса]';
+var ORCH_FULL =
+'Ты оркестратор, главный в моём ИИ-офисе и моя правая рука. Я пишу тебе в Telegram задачи, мысли и пересланные сообщения, часто голосом.\n\n' + ORCH_CORE + '\n' +
+'6. В офисе я вижу, как команда работает, поэтому не делай работу агентов за них: поручай. Агенты не видят нашу переписку.\n' +
+'Пиши для Telegram: без markdown-разметки, короткие абзацы, списки через «•» или цифры.\n\n' +
+'Мой паспорт бизнеса:\n[вставь сюда паспорт бизнеса]';
+var TASK_FAST =
+'Запуск на неделю. Продукт: [название] за [цена] для [кого], старт в [день].\n' +
+'Раздай задачу всей команде, каждому его часть: план недели по дням, 5 тем для контента, продающий пост и 3 письма, ' +
+'3 сценария рилс, ТЗ на обложку, 3 гипотезы рекламы на бюджет [сумма] ₽, схема воронки, ответы на 5 возражений, ' +
+'сколько нужно заявок и продаж для окупаемости, мой чек-лист на каждый день.\n' +
+'В конце один короткий итог: план недели и что нужно от меня.';
+var HIRE_MSG =
+'Найми в офис команду из 10 агентов. Каждому напиши сильную инструкцию: роль и что приходит на вход, метод по шагам, точный формат результата, контекст моего бизнеса из паспорта. Роли:\n\n' +
+TEAM.map(function(t){ return '• ' + t[0] + ' (' + t[1] + '): ' + t[3]; }).join('\n') +
+'\n\nКогда все будут в офисе, пришли список команды одним сообщением.';
+$('passport').textContent = PASSPORT; $('orchFast').textContent = ORCH_FAST; $('taskFast').textContent = TASK_FAST;
+$('orchFull').textContent = ORCH_FULL; $('hireMsg').textContent = HIRE_MSG; $('tz').textContent = "Задание для Claude Code: собери мне ИИ-офис с главным агентом в Telegram. Ключи из моей заметки дам, когда спросишь. Команду на старте сделай из 10 агентов: операционный директор, трендхантер, копирайтер, сценарист рилс, дизайнер, таргетолог, воронщик, продажник, аналитик, ассистент; оркестратор главный. Контекст бизнеса возьми из паспорта, который я пришлю.\n\n# Часть Б. Техническое задание для Claude Code\n\n> Claude, это задание для тебя. Собери проект целиком, проверяй каждый шаг и спрашивай владельца только про ключи из части А и про решения, которые меняют суть. Ключи никогда не клади в код и в git: только в переменные окружения сервисов Railway. Пиши владельцу по-русски, коротко и понятно, без технического жаргона.\n\n## Б1. Структура репозитория\n\n```\noffice/            ИИ-офис: веб-сервер + пиксельный офис\n  main.py          сервер aiohttp, SQLite, мозг агентов (подписка через agent или API), делегирование\n  departments.py   отделы, сильные агенты, контекст бизнеса, автоподбор отдела при найме\n  index.html       пиксельный офис (canvas) с комнатами-отделами, чат, задачи, найм\n  requirements.txt aiohttp, anthropic\nagent/             главный агент в Telegram\n  Dockerfile       собирается из корня репозитория\n  bot.py           Telegram + Whisper + запуск Claude Code + завод агентов\n  office.py        консольный помощник: связь с офисом\n  tools/factory.py завод агентов\n  tools/subs.py    субтитры и паузы по речи (для монтажа)\n  skills/          навыки главного агента (копируются в .claude/skills)\n  MEMORY.md        память: кто владелец, проекты, договорённости\n.dockerignore      .git и __pycache__\n```\n\n## Б2. ИИ-офис (`office/`)\n\n**Стек:** Python 3.12, aiohttp, SQLite (файл на томе `/data/office.db`). Модель по умолчанию `claude-opus-5-5` (переменная `CLAUDE_MODEL`). Сверь актуальные id моделей по документации Anthropic перед написанием кода.\n\n**Мозг агентов (две дорожки):**\n1. **Подписка (основная).** Офис отправляет запрос сервису `agent` по внутренней сети Railway: `POST http://agent.railway.internal:8080/office-llm {secret, system, messages, model}`. `secret` = HMAC-SHA256 от `OFFICE_PASSWORD` с сообщением `office-llm`, один и тот же на обоих сервисах. Агент запускает `claude -p \"<переписка>\" --output-format json --model <модель> --append-system-prompt \"<инструкция агента>\" --tools \"\"` в пустой папке и возвращает `{text}` или `{error}`. Не больше 3 запусков одновременно, таймаут 15 минут. Переменная офиса `SUBSCRIPTION_URL` (пустая отключает).\n2. **API-ключ (запасная).** Если подписка недоступна и задан `ANTHROPIC_API_KEY`, официальный SDK `anthropic` (AsyncAnthropic). Ошибки API и `stop_reason == \"refusal\"` показывать понятным сообщением в чате офиса, в том числе «закончился баланс».\n\nВ шапке офиса показывай, на чём работает мозг: «claude-opus-5-5 · подписка».\n\n**Переменные:** `OFFICE_PASSWORD`, `DB_PATH=/data/office.db`, `PORT`, необязательно `ANTHROPIC_API_KEY`, `SUBSCRIPTION_URL`.\n\n**Таблицы:**\n- `agents(id, name, role, color, prompt, model, is_main, status, dept, created)`;\n- `messages(id, agent_id, role, author, text, ts)`;\n- `tasks(id, agent_id, title, status, result, from_agent, created, updated)`;\n- `events(id, type, a, b, text, ts)`;\n- `settings(k, v)`. Каждое обновление состава и инструкций команды делай миграцией с флагом в `settings` (`team_v1`, `depts_v1`…), чтобы она прошла один раз и не затёрла правки владельца.\n\n**Отделы (`departments.py`)**: ключ, название, чем занимается. Порядок задаёт расположение комнат:\n\n| Ключ | Отдел | Агенты на старте |\n|---|---|---|\n| `lead` | Штаб | **AI-оркестратор** (главный), операционный директор, продуктовый стратег |\n| `marketing` | Маркетинг | трендхантер, таргетолог, копирайтер |\n| `studio` | Контент-студия | контент-продюсер, сценарист рилс, дизайнер, монтажёр, моушн-дизайнер |\n| `sales` | Продажи | продажник (скрипты, возражения, дожимы), воронщик (автоворонки в ботах) |\n| `analytics` | Аналитика | аналитик (метрики, юнит-экономика, узкое место), исследователь рынка |\n| `edu` | Обучение | методолог, куратор (проверка ДЗ, ответы ученикам) |\n| `tech` | Технический отдел | архитектор внедрений, вайбкодер (сайты и боты словами), промпт-инженер |\n| `reception` | Приёмная | ассистент (почта и срочное), тайм-менеджер |\n\nПодстрой состав под нишу владельца: спроси, какие отделы ему нужны.\n\n**Сильный агент = 4 части промпта:**\n1. Роль и что приходит на вход.\n2. Метод по шагам. Пример для таргетолога: цель → 3–5 гипотез «сегмент × боль × оффер» → аудитории → по 3 текста объявления → бюджет и стоп-метрика на гипотезу → что масштабировать.\n3. Точный формат результата («таблица гипотез, тексты объявлений, медиаплан»).\n4. Общие блоки, которые код добавляет каждому агенту: **контекст бизнеса** (паспорт из шага 6а: кто владелец, аудитории, продукты и цены, ядро смыслов, язык клиента, что нельзя обещать) и **проверка перед сдачей** («результат можно сразу использовать; цифры и конкретика; всё непроверенное помечено «проверить»; в конце 1–3 пункта, что нужно от владельца»). Плюс правила голоса владельца.\n\n**Оркестратор** раздаёт работу команде. Сам отвечает только на вопросы и уточнения, любую рабочую задачу (текст, сценарий, план, исследование, разбор) отдаёт 1–3 агентам по их ролям. Иначе он делает всё сам, и офис стоит: в первой версии так и было. В его системную инструкцию код подставляет команду, сгруппированную по отделам.\n\n**Делегирование:**\n- главный поручает задачу отдельной строкой `@Имя агента: задача` (агенты не видят переписку, всё нужное кладётся в задачу);\n- код находит такие строки, создаёт задачи и событие `talk`, агенты работают параллельно, не больше 3 запросов одновременно;\n- отчёты падают в чат главного, после всех отчётов главный один раз сводит итог без новых поручений;\n- строка `НАНЯТЬ: Имя | роль | инструкция` нанимает агента. Отдел подбирается по ключевым словам роли (рилс, монтаж → студия; реклама, таргет → маркетинг; продажи, воронка → продажи и так далее), иначе агент садится в лаунж.\n\n**API (всё кроме `/`, `/health`, `/api/login` закрыто паролем через cookie):**\n- `GET /`: страница офиса; `GET /health`: `ok`;\n- `POST /api/login {password}`: cookie на 90 дней;\n- `GET /api/state?since=<event_id>`: агенты (с `dept`), список отделов, последние 40 задач, новые события, на чём работает мозг;\n- `GET /api/messages?agent_id=`: последние 60 сообщений; длинные отчёты в чате обрезай до ~2500 символов, целиком они во вкладке «Задачи»;\n- `POST /api/chat {agent_id, text}`, `POST /api/tasks {agent_id, title, from_main?, external?}`, `POST /api/tasks/{id}/done {result, error?}`;\n- `POST /api/agents` (нанять или изменить, поле `dept`), `DELETE /api/agents/{id}` (главного нельзя);\n- `GET /api/templates`: готовые роли всех отделов для найма в один клик.\n\n**Лёгкость:** страница опрашивает `/api/state` каждые 1,5 секунды, поэтому отдавай JSON без экранирования кириллицы (`ensure_ascii=False`) и обрезай заголовки задач в `state` до 400 символов. Без этого офис тянул 1,3 МБ каждые полторы секунды и тормозил.\n\n**Страница `index.html`** (один файл, без сборки):\n- **Офис.** Холст 512×320 логических пикселей, масштаб под размер, `image-rendering: pixelated`. Сверху окна с вечерним городом. Ниже сетка 3×3: 8 комнат-отделов и лаунж (диван, кофемашина). В каждой комнате 4 стола в ряд, у штаба доска с графиком. Пол каждой комнаты своего оттенка.\n- **Таблички отделов** рисуются поверх холста в полном разрешении: иконка, название, число агентов. Число жёлтое, зелёное, если кто-то в отделе работает.\n- **Рассадка.** Агент садится за свободный стол своего отдела, кому не хватило, идёт в лаунж.\n- **Роботы.** Свой цвет и антенна, у главного корона, подпись имени без «AI-». В статусе «работает» на мониторе бегут строчки. В основном сидят у себя, иногда ходят за кофе. Событие `talk`: робот обходит адресатов по очереди с пузырём «📋 несу задачу», возвращается на место.\n- **Найм.** Событие `hire`: жёлтая плашка «🧑‍💼 Новый сотрудник: имя» и роль, новый робот появляется у входа и здоровается, главный идёт к нему «🤝 Добро пожаловать в команду!», карточка в ленте команды мигает.\n- **Шапка:** логотип, на чём работает мозг, «N в работе · M свободны · 8 отделов», кнопки «Задачи» и «+ Нанять агента».\n- **Лента команды** под офисом: карточки по отделам, у каждой статус и отдел.\n- **Правая панель:** вкладки «Чат», «Задачи», «Настройки»; окно найма с готовыми ролями и выбором отдела.\n- **Первая загрузка** проигрывает последние 20 событий, чтобы было видно, как раздавались задачи.\n- **Мобильная версия.** Офис сверху, панель снизу, страница не шире экрана (у сетки `minmax(0,1fr)`, у длинных подписей `min-width: 0`).\n\n## Б3. Главный агент в Telegram (`agent/`)\n\n**Dockerfile** (сборка из корня репозитория, чтобы внутри были все файлы проекта):\n- база: `python:3.12-slim`;\n- пакеты apt: `curl git ripgrep ca-certificates gnupg ffmpeg fontconfig fonts-dejavu-core build-essential cmake chromium`;\n- Node.js 22 (репозиторий nodesource), `gh` (официальный репозиторий GitHub CLI);\n- через npm глобально: `@anthropic-ai/claude-code` и `@railway/cli`;\n- шрифты Montserrat, Oswald, Manrope с github.com/google/fonts в `/usr/share/fonts/truetype/brand`, потом `fc-cache -f`;\n- `pip install aiohttp faster-whisper tzdata`;\n- `COPY . /app/repo`, пользователь `agent` (uid 1000). Claude Code не включает режим без подтверждений под root, поэтому запускаем под обычным пользователем;\n- `CMD`: создать `/data`, `chown agent /data`, `runuser -u agent -- python /app/repo/agent/bot.py`;\n- `ENV REMOTION_CHROME_EXECUTABLE=/usr/bin/chromium`.\n\n**Переменные:**\n- `TG_TOKEN`, `TG_OWNERS` (id владельца);\n- `CLAUDE_CODE_OAUTH_TOKEN` (токен подписки из шага 1; Claude Code на сервере работает на подписке владельца), `MODEL=claude-opus-5-5`;\n- `OFFICE_URL` (адрес офиса), `OFFICE_PASSWORD`;\n- `WHISPER_MODEL=small`;\n- `GH_TOKEN`, `RAILWAY_API_TOKEN`;\n- `RAILWAY_DOCKERFILE_PATH=agent/Dockerfile`.\n\n**bot.py, поведение:**\n\n1. **При старте:**\n   - копирует файлы репозитория в рабочую папку `/data/ws` (новые файлы и более свежие версии, правки агента не затирать);\n   - `agent/skills` копирует в `/data/ws/.claude/skills`, создаёт папки `inbox/`, `outbox/`, `work/`;\n   - ставит `HOME=/data/home`, чтобы память и сессии Claude Code жили на томе;\n   - если есть `GH_TOKEN`: `gh auth setup-git` и имя автора коммитов;\n   - поднимает веб-сервер на `::` (IPv4 и IPv6, иначе офис не достучится по внутренней сети Railway): `/` с ответом `ok` для проверки здоровья и `POST /office-llm` (мозг агентов офиса на подписке, см. Б2: проверка `secret`, `claude -p … --tools \"\"` в пустой папке `/data/office-llm`, не больше 3 одновременно);\n   - в фоне загружает модель Whisper.\n2. **Telegram:** long polling (`getUpdates`, timeout 50). Сначала `deleteWebhook`, потом `setMyCommands`: `/new`, `/stop`, `/office`.\n3. **Доступ.** Отвечает только id из `TG_OWNERS` и тем, кто прислал `/start <пароль офиса>`. Их id сохраняются в `/data/state.json`.\n4. **Голосовые, аудио, кружки:**\n   - скачивает файл, декодирует через ffmpeg в 16 кГц моно и передаёт массив в faster-whisper (`language='ru'`, `vad_filter=True`, `compute_type='int8'`);\n   - **важно:** файл в Whisper напрямую не передавать, новые версии PyAV падают с ошибкой `metadata_errors`;\n   - сначала присылает расшифровку «🎙 …», потом работает.\n5. **Фото и документы** сохраняет в `inbox/` и передаёт путь в задачу. Пересланные сообщения помечает, от кого они. Telegram отдаёт ботам файлы только до 20 МБ, большие видео пусть присылают ссылкой.\n6. **Запуск Claude Code** в `/data/ws`:\n   `claude -p \"<сообщение>\" --output-format stream-json --verbose --model $MODEL --permission-mode bypassPermissions --append-system-prompt \"<SYSTEM>\" [--resume <session_id>]`\n   - id сессии хранится на каждый чат, чтобы разговор продолжался;\n   - одна задача за раз на чат, остальные в очередь;\n   - пока идёт работа, бот редактирует одно сообщение «⏳ Работаю» и пишет последние шаги понятными словами («📖 читаю…», «🏢 поручаю: …»);\n   - итог отправляет кусками до 4000 символов без markdown;\n   - потом отправляет файлы, которые появились в `outbox/` за время задачи (видео, фото, документы до 50 МБ).\n7. **Команды:** `/new` начинает новую сессию, `/stop` останавливает процесс, `/office` присылает ссылку на офис.\n8. **SYSTEM**, системная инструкция главного агента, содержит:\n   - кто владелец и что в начале разговора нужно прочитать `agent/MEMORY.md` и дописывать туда новые факты;\n   - простое делать самому, большое раскладывать и поручать офису через `python agent/office.py` (`team`, `task \"Имя\" \"задача\"`, `wait <id>`, `tasks`, `hire`);\n   - что агенты офиса не видят переписку, поэтому в задачу кладётся весь контекст;\n   - про завод агентов (ниже);\n   - про `inbox/` и `outbox/`, про навыки монтажа, сайтов и публикации;\n   - формат ответов для Telegram;\n   - запреты: не удалять сервисы, данные и репозитории без прямой просьбы, не публиковать ключи.\n\n**office.py:** вход в офис по паролю, команды `team`, `task` (с `from_main: true`), `wait` (опрос до готовности, максимум 15 минут, печать отчётов), `tasks`, `hire`.\n\n**Завод агентов (`tools/factory.py` + цикл в bot.py):**\n- `create <id> --name --role --prompt-file [--skills] [--tools] [--model]`:\n  - пишет субагента `.claude/agents/<id>.md` (frontmatter `name`, `description`, `tools`, `model`; тело: инструкция, список навыков, «голос владельца, outbox/, итог в конце»);\n  - проверяет, что навыки существуют;\n  - нанимает робота в офис и пишет реестр `/data/factory.json`;\n- `list`, `schedule <id> \"<cron>\" \"задача\"`, `unschedule`, `run <id> \"задача\"` (кладёт задание в `/data/factory-queue/`), `delete`;\n- **цикл в bot.py** каждые 15 секунд:\n  - забирает задания из очереди и раз в минуту проверяет cron по Москве (поддержка `*`, списков, диапазонов, шагов `*/n`, воскресенье 0 и 7);\n  - запускает `claude -p <задача> --output-format json --append-system-prompt <тело агента>` с моделью агента;\n  - перед запуском ставит внешнюю задачу в офис, после запуска закрывает её отчётом;\n  - присылает владельцу «🤖 Имя · по расписанию» с итогом и файлами;\n  - один и тот же агент не запускается дважды одновременно;\n- в SYSTEM записать порядок сборки агента:\n  1. продумать роль;\n  2. написать инструкцию в `work/<id>.md`;\n  3. при необходимости создать навык;\n  4. `create`;\n  5. пробный `run`;\n  6. `schedule`;\n- правило: не чаще раза в час без прямой просьбы, каждый запуск тратит деньги.\n\n**Навыки главного агента (`agent/skills/<навык>/SKILL.md`, frontmatter `name`, `description`):**\n- `site-builder`:\n  - сайт одним HTML-файлом;\n  - адаптив 360–1440 px;\n  - проверка скриншотами `chromium --headless --no-sandbox --window-size=390,844 --screenshot=...` и 1440×900 с исправлением найденного;\n  - отдача в `outbox/` или публикация.\n- `publish`:\n  - новый проект: `gh repo create <аккаунт>/<имя> --private --source . --push`;\n  - Railway: `railway init`, `railway up --detach`, `railway domain`, проверка `curl -sI` и логи сборки при ошибке;\n  - существующие сервисы обновляются пушем в ветку;\n  - удалять ничего нельзя без прямой просьбы.\n- `montage`:\n  - ffmpeg: вертикаль 9:16 с обрезкой или размытым фоном, нарезка;\n  - вырезание пауз по таймингам слов из `tools/subs.py silences`;\n  - субтитры ASS с подсветкой текущего слова (`tools/subs.py ass`);\n  - музыка с приглушением, текст-хук, обложка;\n  - проверка кадром, отдача в `outbox/` до 50 МБ.\n- Маркетинговые и дизайнерские навыки, которые есть у владельца в Claude, можно скопировать в `agent/skills`, если у них открытая лицензия (MIT или Apache). Лицензию положи рядом.\n\n**MEMORY.md:** кто владелец, ниша, аудитория, голос, проекты и ссылки, какие доступы подключены. Без паролей и ключей.\n\n## Б4. Публикация на Railway\n\n1. Создай проект Railway, например `ii-office`, через коннектор Railway, CLI с токеном владельца или по шагам для владельца.\n2. **Сервис `office`:**\n   - источник: репозиторий, ветка `main`;\n   - Root Directory `/office`;\n   - Start Command `python main.py`;\n   - Healthcheck `/health`;\n   - том `/data`;\n   - переменные `OFFICE_PASSWORD`, `DB_PATH=/data/office.db`, по желанию `ANTHROPIC_API_KEY` как запасной мозг;\n   - **Generate Domain**: это адрес офиса.\n3. **Сервис `agent`:**\n   - тот же репозиторий, Root Directory пустой;\n   - `RAILWAY_DOCKERFILE_PATH=agent/Dockerfile`;\n   - том `/data`;\n   - Restart Policy: Always;\n   - все переменные из Б3, `OFFICE_URL` = домен офиса;\n   - Watch Paths: `agent/**`, чтобы правки офиса не перезапускали бота;\n   - внутреннее имя сервиса `agent`: офис ходит к нему по адресу `agent.railway.internal:8080` (Private Networking включён в проекте по умолчанию).\n4. Дождись зелёного статуса обоих сервисов и проверь логи.\n5. Важно: у бота должен быть **один** работающий экземпляр. Два экземпляра с одним токеном дают ошибку Telegram 409 Conflict.\n\n## Б5. Проверки перед сдачей владельцу\n\n- [ ] Офис открывается по домену, пароль пускает, 8 комнат с табличками, роботы сидят по своим отделам, в шапке «· подписка».\n- [ ] Тестовая задача любому агенту («ответь одной строкой «работаю») выполняется за секунды: мозг на подписке отвечает.\n- [ ] Рабочая задача оркестратору («подготовь запуск мини-продукта: тексты, рилсы, реклама») уходит 2–3 агентам разных отделов: робот обходит их столы, счётчики отделов зеленеют, итог приходит.\n- [ ] Найм через «+ Нанять агента» показывает плашку «Новый сотрудник», робот входит и садится в нужный отдел.\n- [ ] Страница на телефоне не шире экрана, `/api/state` весит меньше 300 КБ.\n- [ ] Бот в Telegram отвечает владельцу и не отвечает чужому аккаунту.\n- [ ] Голосовое расшифровывается и выполняется.\n- [ ] Просьба «поручи контент-продюсеру 3 идеи для рилс» видна в офисе и возвращается итогом в Telegram.\n- [ ] Завод: тестовый агент создаётся, пробный запуск присылает отчёт, расписание видно в `factory.py list`. Тестового агента потом удали.\n- [ ] Сайт: просьба «сделай одностраничник» присылает HTML и скриншот телефона.\n- [ ] В git нет ни одного ключа: `git grep -nE \"sk-ant|github_pat|AAF\"` пусто.\n\nСдай владельцу коротко: адрес офиса, ссылку на бота, что умеет, примеры команд и сколько примерно стоит одна задача.";
+$('teamList').innerHTML = TEAM.map(function(t){ return '<div class="agent"><div class="h"><b>' + t[0] + '</b><span class="dept">' + t[1] + '</span></div><p>' + t[2] + '</p></div>'; }).join('');
+
+var toastEl = $('toast');
+function toast(s){ toastEl.textContent = s; toastEl.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function(){ toastEl.hidden = true; }, 1600); }
+function sel(el){ var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Выделено, скопируй вручную'); }
+document.querySelectorAll('[data-copy]').forEach(function(b){
+  b.addEventListener('click', function(){ var el = $(b.dataset.copy); try { navigator.clipboard.writeText(el.textContent).then(function(){ toast('Скопировано'); }, function(){ sel(el); }); } catch(e){ sel(el); } });
+});
+document.querySelectorAll('.more').forEach(function(b){ b.addEventListener('click', function(){ var box = b.closest('.box'), o = !box.classList.contains('open'); box.classList.toggle('open', o); b.textContent = o ? 'Свернуть' : 'Показать полностью'; }); });
+function show(p){
+  document.querySelectorAll('.path').forEach(function(x){ x.setAttribute('aria-pressed', x.dataset.path === p); });
+  $('fast').hidden = p !== 'fast'; $('full').hidden = p !== 'full';
+  try { localStorage.setItem('ofis:path', p); } catch(e){}
+}
+document.querySelectorAll('.path').forEach(function(x){ x.addEventListener('click', function(){ show(x.dataset.path); }); });
+try { if (localStorage.getItem('ofis:path') === 'full') show('full'); } catch(e){}
+})();
+</script>

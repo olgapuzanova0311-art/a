@@ -1,0 +1,217 @@
+<title>Шпаргалка эфира 26.11</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Макет: тёмный «пульт ведущей» в стилистике Чёрной ИИшницы; сверху таймлайн эфира, ниже блоки-шаги с командами и кнопками «скопировать» */
+:root{
+  --bg:#0E0D0B; --panel:#17150F; --panel2:#1F1C14; --line:#3A3322; --ink:#F3EEDF; --muted:#A9A08A;
+  --gold:#F2B630; --gold-soft:#3A2E10; --ok:#5BD69A; --warn:#FF7A6B;
+  --display:"Unbounded","Onest",system-ui,sans-serif; --font:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:grid;gap:36px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+h1{font-family:var(--display);font-size:clamp(28px,5vw,46px);letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--gold)}
+h2{font-family:var(--display);font-size:clamp(20px,3vw,26px);letter-spacing:-.01em}
+h3{font-size:18px;font-weight:800}
+p{margin:0}
+.eyebrow{font:700 12px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.lead{color:var(--muted);font-size:17px;max-width:62ch}
+a{color:var(--gold)}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.top{display:grid;gap:14px}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.link{display:inline-flex;gap:8px;align-items:center;background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;text-decoration:none;color:var(--ink);font-weight:700;font-size:14.5px}
+.link:hover{border-color:var(--gold)}
+
+/* таймлайн */
+.timeline{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;font-size:12.5px}
+.tl{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:10px 10px 12px;display:grid;gap:4px;min-width:0}
+.tl b{font:700 13px var(--mono);color:var(--gold)}
+.tl span{color:var(--ink);font-weight:600}
+
+/* блоки */
+.block{background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:20px;display:grid;gap:14px}
+.block.live{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft) inset}
+.bh{display:flex;gap:14px;align-items:flex-start}
+.num{flex:none;width:38px;height:38px;border-radius:12px;background:var(--gold);color:#16130B;display:grid;place-items:center;font:800 17px var(--display)}
+.bh .meta{display:grid;gap:4px;min-width:0}
+.time{font:700 12.5px var(--mono);color:var(--muted);letter-spacing:.06em}
+.say{background:var(--panel2);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:10px 14px;font-size:15px;color:var(--ink)}
+.say::before{content:"Говоришь: ";color:var(--gold);font-weight:800}
+.cmd{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#0A0907;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px}
+.cmd code{font:700 16px var(--mono);color:var(--gold);flex:1;min-width:0;overflow-wrap:anywhere}
+.cmd small{color:var(--muted);font-size:13px;flex-basis:100%}
+.copy{background:var(--gold);color:#16130B;border:0;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13.5px;white-space:nowrap}
+ul.what{margin:0;padding-left:20px;display:grid;gap:4px;color:var(--ink)}
+ul.what li::marker{color:var(--gold)}
+.team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-size:14.5px}
+.team div{display:flex;gap:8px;min-width:0}
+.team b{white-space:nowrap}
+.team span{color:var(--muted);min-width:0}
+.task{background:#0A0907;border:1.5px solid var(--gold);border-radius:14px;padding:14px 16px;white-space:pre-wrap;font:14px/1.6 var(--font);max-height:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.note{font-size:14px;color:var(--muted)}
+
+/* если что-то пошло не так */
+.sos{display:grid;gap:10px}
+details{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px}
+details[open]{border-color:var(--warn)}
+summary{cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::after{content:"+";color:var(--warn);font-weight:800}
+details[open] summary::after{content:"–"}
+details p{margin-top:8px;color:var(--muted);font-size:15px}
+
+/* шпаргалка команд */
+.table{overflow-x:auto;border:1.5px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+td code{font:700 14px var(--mono);color:var(--gold);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--gold);color:#16130B;padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;z-index:20}
+@media (max-width:760px){.timeline{grid-template-columns:repeat(3,minmax(0,1fr))}.team{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:420px){.timeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
+<div class="wrap">
+  <section class="top">
+    <span class="eyebrow">Только для Оли · эфир 26.11 · 19:00</span>
+    <h1>Собираем ИИ-офис <em>за 15 минут</em> на эфире</h1>
+    <p class="lead">Всё управление через твоего бота-оркестратора в Telegram. Команды со слешем срабатывают мгновенно, без раздумий Claude. Задачу команде даёшь обычным сообщением.</p>
+    <div class="links">
+      <a class="link" href="https://office-production-833a.up.railway.app" target="_blank" rel="noopener">🟦 Офис (пиксельный)</a>
+      <a class="link" href="https://office-production-833a.up.railway.app/tower" target="_blank" rel="noopener">🏙 Офис-небоскрёб</a>
+    </div>
+  </section>
+
+  <section class="timeline" aria-label="План блока">
+    <div class="tl"><b>18:30</b><span>Прогон и подготовка</span></div>
+    <div class="tl"><b>0:00</b><span>Пустой офис</span></div>
+    <div class="tl"><b>+2 мин</b><span>Нанимаем 10 агентов</span></div>
+    <div class="tl"><b>+5 мин</b><span>Добавить и убрать</span></div>
+    <div class="tl"><b>+7 мин</b><span>Одна задача на всех</span></div>
+    <div class="tl"><b>+15 мин</b><span>Итог от оркестратора</span></div>
+  </section>
+
+  <section class="block">
+    <div class="bh"><span class="num">0</span><div class="meta"><span class="time">ДО ЭФИРА · 18:30</span><h3>Подготовка за 30 минут</h3></div></div>
+    <ul class="what">
+      <li>Открой офис на компьютере, с которого показываешь экран. Нажми «⛶ Офис крупнее»: справа будет лента, кто кому что поручил.</li>
+      <li>Сделай короткий прогон: команды 1 и 2 ниже, потом <code style="font-family:var(--mono);color:var(--gold)">/live_end</code>. Так ты увидишь, что всё живое.</li>
+      <li>За 5 минут до эфира отправь боту команду ниже. В офисе останется один оркестратор, остальные агенты спрячутся, ничего не удалится.</li>
+    </ul>
+    <div class="cmd"><code>/live_start</code><button class="copy" type="button" data-copy="/live_start">Скопировать</button><small>Офис пустой, только оркестратор с короной</small></div>
+  </section>
+
+  <section class="block live">
+    <div class="bh"><span class="num">1</span><div class="meta"><span class="time">0:00 · 2 МИНУТЫ</span><h3>Пустой офис и главный агент</h3></div></div>
+    <p class="say">Это мой оркестратор, главный ИИ-управленец. Я пишу ему в Telegram, голосом или текстом, а он сам решает, кому из команды что поручить. Сейчас у него нет команды. Давайте наймём.</p>
+    <p class="note">Ничего не нажимаешь, просто показываешь офис и бота.</p>
+  </section>
+
+  <section class="block live">
+    <div class="bh"><span class="num">2</span><div class="meta"><span class="time">+2 МИН · 40 СЕКУНД</span><h3>Нанимаем команду из 10 агентов</h3></div></div>
+    <div class="cmd"><code>/live_pack</code><button class="copy" type="button" data-copy="/live_pack">Скопировать</button><small>Агенты входят в офис по одному, сверху плашка «Новый сотрудник», оркестратор встречает каждого</small></div>
+    <p class="say">Пока они заходят, смотрите: у каждого своя роль и своя подробная инструкция. Это отдел маркетинга, это продажи, это аналитика.</p>
+    <div class="team">
+      <div><b>Операционный директор</b><span>план и сроки</span></div>
+      <div><b>Трендхантер</b><span>темы и тренды</span></div>
+      <div><b>Копирайтер</b><span>посты, письма, офферы</span></div>
+      <div><b>Сценарист рилс</b><span>сценарии роликов</span></div>
+      <div><b>Дизайнер</b><span>обложки и баннеры</span></div>
+      <div><b>Таргетолог</b><span>реклама и бюджет</span></div>
+      <div><b>Воронщик</b><span>схема воронки</span></div>
+      <div><b>Продажник</b><span>скрипты и возражения</span></div>
+      <div><b>Аналитик</b><span>цифры и план</span></div>
+      <div><b>Ассистент</b><span>задачи на каждый день</span></div>
+    </div>
+  </section>
+
+  <section class="block live">
+    <div class="bh"><span class="num">3</span><div class="meta"><span class="time">+5 МИН · 2 МИНУТЫ</span><h3>Добавить и убрать агента</h3></div></div>
+    <p class="say">Команда гибкая. Нужен программист, добавляю. Ассистент сегодня не нужен, отпускаю.</p>
+    <div class="cmd"><code>/live_add Вайбкодер</code><button class="copy" type="button" data-copy="/live_add Вайбкодер">Скопировать</button><small>Работает с любым агентом, который уже был в офисе: Куратор, Промпт-инженер, Исследователь, Контент-продюсер, Тайм-менеджер</small></div>
+    <div class="cmd"><code>/live_remove Ассистент</code><button class="copy" type="button" data-copy="/live_remove Ассистент">Скопировать</button><small>Агент уходит из офиса, его инструкция сохраняется</small></div>
+    <p class="note">Вау-момент: попроси бота голосом нанять совсем нового агента, например «найми юриста, который проверяет договоры с блогерами». Claude сам напишет ему инструкцию, это займёт около минуты.</p>
+  </section>
+
+  <section class="block live">
+    <div class="bh"><span class="num">4</span><div class="meta"><span class="time">+7 МИН · 5–8 МИНУТ</span><h3>Одна задача на всю команду: запуск на неделю</h3></div></div>
+    <p class="say">А теперь главное. Я даю оркестратору одну задачу. Смотрите в офис: сейчас упадёт конверт, и он побежит раздавать.</p>
+    <div class="task" id="task">Запуск на неделю. Продукт: мини-курс «Бот-администратор за 1 вечер» за 990 ₽ для собственников бизнеса, старт в понедельник.
+
+Раздай задачу сразу всем 10 агентам офиса параллельно, каждому его часть:
+• операционный директор: план недели по дням и кто что делает
+• трендхантер: 5 тем для контента на неделю
+• копирайтер: продающий пост и 3 письма для рассылки
+• сценарист рилс: 3 сценария рилс по 30 секунд
+• дизайнер: ТЗ на обложку курса и баннер для рекламы
+• таргетолог: 3 гипотезы рекламы на бюджет 30 000 ₽
+• воронщик: схема воронки бот → мини-курс → основной продукт
+• продажник: ответы на 5 главных возражений
+• аналитик: сколько нужно заявок и продаж, чтобы окупить рекламу
+• ассистент: мой чек-лист задач на каждый день недели
+
+Дождись всех отчётов и пришли мне один короткий итог: план недели и что нужно от меня.</div>
+    <div class="row"><button class="copy" type="button" id="copyTask">📋 Скопировать задачу</button><span class="note">Вставь в бота одним сообщением</span></div>
+    <ul class="what">
+      <li>В офисе: плашка «Новая задача из Telegram», конверт летит к оркестратору, он ходит по отделам и раздаёт поручения.</li>
+      <li>В ленте справа видно каждое поручение и каждый отчёт с текстом.</li>
+      <li>Агенты работают по 5 одновременно, вся команда закончит за 5–8 минут. Пока они работают, рассказывай, как собрать такой офис себе.</li>
+    </ul>
+  </section>
+
+  <section class="block live">
+    <div class="bh"><span class="num">5</span><div class="meta"><span class="time">+15 МИН</span><h3>Итог и шаблон оркестратора</h3></div></div>
+    <ul class="what">
+      <li>Оркестратор пришлёт в Telegram один итог. Покажи его на экране.</li>
+      <li>Полные отчёты каждого агента лежат в офисе: нажми на робота и вкладку «Задачи».</li>
+      <li>Дальше даёшь зрителям инструкцию со сборкой с нуля и шаблоном оркестратора.</li>
+    </ul>
+    <div class="cmd"><code>/live_end</code><button class="copy" type="button" data-copy="/live_end">Скопировать</button><small>После эфира: все агенты возвращаются в офис</small></div>
+  </section>
+
+  <section class="sos">
+    <h2>Если что-то пошло не так</h2>
+    <details><summary>Агенты не появились после /live_pack</summary><p>Обнови страницу офиса. Если их всё ещё нет, отправь /live (покажет, кто в офисе) и ещё раз /live_pack. Повторно агенты не задвоятся.</p></details>
+    <details><summary>Бот долго молчит после задачи</summary><p>Он работает: в офисе видно, как оркестратор разносит поручения. Первый ответ Claude обычно приходит через 30–60 секунд. Если за 2 минуты ничего не сдвинулось, дай ту же задачу в самом офисе: нажми на оркестратора, вставь текст и нажми «Написать». Он раздаст её команде сам.</p></details>
+    <details><summary>Агенты работают дольше 10 минут</summary><p>Не жди в тишине. Открой отчёты, которые уже пришли (лента и вкладка «Задачи»), и разбирай их по одному. Итог досылается в Telegram сам.</p></details>
+    <details><summary>Офис не открывается</summary><p>Он на railway.app, в России местами нужен VPN. Включи VPN на компьютере, с которого показываешь экран, и проверь это заранее на прогоне.</p></details>
+  </section>
+
+  <section class="top">
+    <h2>Все команды</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+        <tbody>
+          <tr><td><code>/live_start</code></td><td>В офисе остаётся только оркестратор, остальные прячутся</td></tr>
+          <tr><td><code>/live_pack</code></td><td>10 агентов входят в офис по одному, около 40 секунд</td></tr>
+          <tr><td><code>/live_add Имя</code></td><td>Вернуть агента в офис, например /live_add Куратор</td></tr>
+          <tr><td><code>/live_remove Имя</code></td><td>Убрать агента из офиса, инструкция сохраняется</td></tr>
+          <tr><td><code>/live</code></td><td>Кто сейчас в офисе</td></tr>
+          <tr><td><code>/live_end</code></td><td>Вернуть всех агентов, режим эфира выключен</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script>
+(function(){
+  var t = document.getElementById('toast');
+  function toast(s){ t.textContent = s; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function(){ t.hidden = true; }, 1600); }
+  function sel(el){ var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Выделено, скопируй вручную'); }
+  function copy(text, el){ try { navigator.clipboard.writeText(text).then(function(){ toast('Скопировано'); }, function(){ sel(el); }); } catch(e){ sel(el); } }
+  document.querySelectorAll('[data-copy]').forEach(function(b){ b.addEventListener('click', function(){ copy(b.dataset.copy, b.previousElementSibling); }); });
+  document.getElementById('copyTask').addEventListener('click', function(){ copy(document.getElementById('task').textContent, document.getElementById('task')); });
+})();
+</script>
