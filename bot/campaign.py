@@ -116,6 +116,26 @@ CAMPAIGNS = [
         BUTTON='➡️ ПОДКЛЮЧАЙТЕСЬ, сейчас покажу на примерах',
         TRACK=False,
     ),
+    dict(
+        KEY='bf_onair_skills',
+        TITLE='Вы всё ещё пишете промпты с нуля',
+        STAGE='all',
+        START=1795710900,               # 26.11.2026 19:35 МСК
+        UNTIL=1795713300,               # 26.11.2026 20:15 МСК
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT=(
+            '🔖🔖 ВЫ ВСЁ ЕЩЁ ПИШЕТЕ ПРОМПТЫ С НУЛЯ? 🤯\n\n'
+            'Рассказываю, почему главное теперь скиллы, и скоро назову кодовое слово на яйцо со скиллами. Внутри:\n'
+            'шаблон скилла и промпты\n'
+            'маркетплейсы скиллов, где их можно брать\n'
+            'аудит вашей рутины'
+        ),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/olgapuzanova/7fc56ae89e9d',
+        BUTTON='➡️ БЕГИТЕ НА ЭФИР, слово скажу только голосом',
+        TRACK=False,
+    ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 
