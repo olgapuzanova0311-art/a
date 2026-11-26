@@ -136,6 +136,42 @@ CAMPAIGNS = [
         BUTTON='➡️ БЕГИТЕ НА ЭФИР, слово скажу только голосом',
         TRACK=False,
     ),
+    dict(
+        KEY='bf_onair_office',
+        TITLE='Как выглядит ИИ-офис из 10 агентов',
+        STAGE='all',
+        START=1795711500,               # 26.11.2026 19:45 МСК
+        UNTIL=1795713900,               # 26.11.2026 20:25 МСК
+        PHOTO='ofis_live.jpg',          # скриншот офиса-небоскрёба
+        PHOTO_URL='https://agent.olgapuzanovva.ru/img/ofis_live.jpg',
+        TEXT=(
+            'КАК ВЫГЛЯДИТ ИИ-ОФИС ИЗ 10 АГЕНТОВ? 🏢\n\n'
+            'Собираю его вживую: раскладываю по отделам и показываю, какой агент за что отвечает и как они работают вместе. '
+            'Можно смотреть и сразу примерять на свой бизнес'
+        ),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/olgapuzanova/7fc56ae89e9d',
+        BUTTON='➡️ СМОТРЕТЬ, КАК СОБИРАЮ',
+        TRACK=False,
+    ),
+    dict(
+        KEY='bf_onair_lots',
+        TITLE='Рассказываю про лоты Чёрной пятницы',
+        STAGE='all',
+        START=1795713600,               # 26.11.2026 20:20 МСК
+        UNTIL=1795716000,               # 26.11.2026 21:00 МСК
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT=(
+            '🥚🥚🥚🥚🥚 РАССКАЗЫВАЮ ПРО ЛОТЫ ЧЁРНОЙ ПЯТНИЦЫ\n\n'
+            'Что внутри и как взять в рассрочку до 12 месяцев (Царь лот от 6 111 ₽ в месяц). '
+            'Подарки первых суток: стратсессия со мной, 3 ИИ-агента под ключ и спринт 5 дней по соцсетям. Сгорают завтра в 19:00'
+        ),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/olgapuzanova/7fc56ae89e9d',
+        BUTTON='➡️ СМОТРЕТЬ ЛОТЫ',
+        TRACK=False,
+    ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 
