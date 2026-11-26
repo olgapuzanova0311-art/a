@@ -47,6 +47,7 @@ SYSTEM = """Ты Claude Code, рабочая копия Claude Ольги Пуз
    python agent/office.py task "Имя агента" "задача"  поручить (агенты не видят вашу переписку, клади в задачу весь контекст и формат результата)
    python agent/office.py wait <id> <id>              дождаться отчётов
    python agent/office.py hire "Имя" "роль" "инструкция"  нанять агента, если роли не хватает
+   python agent/office.py live add "Имя" | remove "Имя" | team   режим эфира: показать или убрать агента в офисе, кто сейчас в офисе
    Поручай нескольким агентам сразу, потом жди всех. Проверь отчёты, доработай слабое и сведи в один итог.
 4. Завод агентов: ты сам создаёшь постоянных агентов под задачи Ольги, пишешь им роль и навыки, ставишь на расписание.
    python agent/tools/factory.py  (без аргументов покажет все команды)
@@ -305,6 +306,8 @@ async def handle(msg):
                 p.terminate()
                 return await say(cid, 'Остановила.')
             return await say(cid, 'Сейчас ничего не выполняется.')
+        if cmd in LIVE_CMDS:
+            return await live_cmd(cid, cmd, text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else '')
         if cmd == '/office':
             return await say(cid, os.environ.get('OFFICE_URL', 'https://office-production-833a.up.railway.app'))
         return await say(cid, HELLO)
@@ -345,11 +348,44 @@ async def handle(msg):
     asyncio.create_task(work(cid, prompt))
 
 
+# ---------------- режим эфира: мгновенные команды без Claude ----------------
+LIVE_CMDS = {'/live': 'team', '/live_start': 'start', '/live_pack': 'pack', '/live_add': 'add', '/live_remove': 'remove', '/live_end': 'end'}
+
+
+async def live_cmd(cid, cmd, arg):
+    act = LIVE_CMDS[cmd]
+    if act in ('add', 'remove') and not arg:
+        return await say(cid, f'Напиши имя агента: {cmd} Копирайтер')
+    try:
+        r = await asyncio.to_thread(office_call, lambda o: o.call('/api/live', {'action': act, 'name': arg}))
+    except Exception as e:
+        return await say(cid, f'⚠️ Офис не ответил: {e}')
+    if not r.get('ok'):
+        return await say(cid, '⚠️ ' + str(r.get('error', 'не получилось')))
+    if act == 'start':
+        return await say(cid, '🎬 Режим эфира: в офисе остался только оркестратор. Собрать команду: /live_pack')
+    if act == 'pack':
+        return await say(cid, f'🏢 Команда входит в офис: {len(r["names"])} агентов, по одному, примерно за {r["seconds"]} сек.')
+    if act == 'add':
+        return await say(cid, f'➕ В офисе: {r["name"]}')
+    if act == 'remove':
+        return await say(cid, f'➖ Из офиса ушёл: {r["name"]}')
+    team = r.get('team') or []
+    head = '✅ Эфир закончен, все агенты вернулись.' if act == 'end' else f'В офисе сейчас {len(team)}:'
+    return await say(cid, head + '\n' + '\n'.join('• ' + n for n in team))
+
+
 async def poll():
     await tg('deleteWebhook')
     await tg('setMyCommands', commands=[{'command': 'new', 'description': 'Новый разговор'},
                                         {'command': 'stop', 'description': 'Остановить задачу'},
-                                        {'command': 'office', 'description': 'Ссылка на ИИ-офис'}])
+                                        {'command': 'office', 'description': 'Ссылка на ИИ-офис'},
+                                        {'command': 'live_start', 'description': 'Эфир: очистить офис'},
+                                        {'command': 'live_pack', 'description': 'Эфир: собрать команду из 10'},
+                                        {'command': 'live_add', 'description': 'Эфир: добавить агента'},
+                                        {'command': 'live_remove', 'description': 'Эфир: убрать агента'},
+                                        {'command': 'live', 'description': 'Эфир: кто в офисе'},
+                                        {'command': 'live_end', 'description': 'Эфир: вернуть всех'}])
     offset = 0
     while True:
         try:
@@ -370,7 +406,7 @@ def office_llm_secret():
     return hmac.new(PASSWORD.encode(), b'office-llm', hashlib.sha256).hexdigest()
 
 
-LLM_SEM = asyncio.Semaphore(3)
+LLM_SEM = asyncio.Semaphore(5)  # на эфире команда из 10 агентов работает параллельно
 
 
 async def office_llm(req):

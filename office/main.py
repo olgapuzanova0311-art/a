@@ -168,6 +168,11 @@ try:
     q('ALTER TABLE agents ADD COLUMN dept TEXT')
 except sqlite3.OperationalError:
     pass
+try:
+    # режим эфира: скрытые агенты не видны в офисе и не получают задач, но сохраняют инструкции и историю
+    q('ALTER TABLE agents ADD COLUMN hidden INTEGER DEFAULT 0')
+except sqlite3.OperationalError:
+    pass
 if not q("SELECT 1 FROM settings WHERE k='depts_v1'").fetchone():
     # отделы: рассаживаем команду по комнатам, нанимаем сильных агентов, старым инструкциям добавляем контекст бизнеса
     for name, dept in D.DEPT_OF.items():
@@ -282,7 +287,7 @@ async def llm_claude(messages, model=None):
 
 
 def team_context(main):
-    others = q('SELECT id, name, role, dept FROM agents WHERE id != ? ORDER BY id', main['id']).fetchall()
+    others = q('SELECT id, name, role, dept FROM agents WHERE id != ? AND COALESCE(hidden,0)=0 ORDER BY id', main['id']).fetchall()
     groups = {}
     for a in others:
         groups.setdefault(a['dept'] if a['dept'] in D.DEPTS else '', []).append(f'- {a["name"]}: {a["role"]}')
@@ -337,7 +342,10 @@ async def agent_reply(agent_id, final=False):
 def hire(text):
     for name, role, prompt in HIRE_RE.findall(text):
         name = name.strip()
-        if q('SELECT id FROM agents WHERE lower(name)=lower(?)', name).fetchone():
+        ex = q('SELECT id, hidden FROM agents WHERE lower(name)=lower(?)', name).fetchone()
+        if ex:
+            if ex['hidden']:
+                live_show(ex['id'])
             continue
         n = q('SELECT COUNT(*) FROM agents').fetchone()[0]
         aid = q('INSERT INTO agents(name, role, color, prompt, dept, created) VALUES(?,?,?,?,?,?)',
@@ -348,7 +356,7 @@ def hire(text):
 
 
 async def delegate(main, text):
-    agents = {r['name'].lower(): row(r) for r in q('SELECT * FROM agents WHERE id != ?', main['id']).fetchall()}
+    agents = {r['name'].lower(): row(r) for r in q('SELECT * FROM agents WHERE id != ? AND COALESCE(hidden,0)=0', main['id']).fetchall()}
     jobs, names = [], []
     for name, task in DELEGATE_RE.findall(text):
         target = agents.get(name.strip().lower())
@@ -421,7 +429,7 @@ def main_agent():
 async def tg_command(cid, text):
     cmd = text.split()[0].split('@')[0].lower()
     if cmd == '/team':
-        rows = q('SELECT name, role, status, is_main FROM agents ORDER BY is_main DESC, id').fetchall()
+        rows = q('SELECT name, role, status, is_main FROM agents WHERE COALESCE(hidden,0)=0 ORDER BY is_main DESC, id').fetchall()
         await tg_send('Команда офиса:\n\n' + '\n'.join(
             f'{"🟢" if r["status"] == "working" else "⚪️"} {r["name"]}{" ★" if r["is_main"] else ""}\n   {r["role"]}' for r in rows), cid)
     elif cmd == '/tasks':
@@ -552,7 +560,7 @@ def dumps_ru(o):
 
 async def state(req):
     since = int(req.query.get('since', 0) or 0)
-    agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status, dept FROM agents ORDER BY is_main DESC, id').fetchall()]
+    agents = [dict(r) for r in q('SELECT id, name, role, color, prompt, model, is_main, status, dept FROM agents WHERE COALESCE(hidden,0)=0 ORDER BY is_main DESC, id').fetchall()]
     # заголовок задачи режем: агенту уходит полный текст, а в офис хватит начала (иначе опрос раз в 1,5 с тянет мегабайт)
     tasks = [dict(r) for r in q('SELECT id, agent_id, substr(title, 1, 400) AS title, status, result, from_agent, created, updated '
                                 'FROM tasks ORDER BY id DESC LIMIT 40').fetchall()]
@@ -608,6 +616,84 @@ async def new_task(req):
     else:
         asyncio.create_task(run_task(tid))
     return web.json_response({'ok': True, 'id': tid})
+
+
+# ---------------- режим эфира ----------------
+# Команда, которую на эфире собираем на глазах у зрителей: 10 агентов под задачу «запуск на неделю».
+LIVE_PACK = ['AI-операционный директор', 'AI-трендхантер', 'AI-копирайтер', 'AI-сценарист рилс', 'AI-дизайнер',
+             'AI-таргетолог', 'AI-воронщик', 'AI-продажник', 'AI-аналитик', 'AI-ассистент']
+
+
+def live_show(aid):
+    a = row(q('SELECT * FROM agents WHERE id=?', aid).fetchone())
+    if not a:
+        return None
+    q('UPDATE agents SET hidden=0, status=? WHERE id=?', 'idle', aid)
+    boss = main_agent()
+    event('hire', aid, boss['id'] if boss else None, f'{a["name"]}|{a["role"]}')
+    return a['name']
+
+
+def find_agent(name):
+    n = (name or '').strip().lower()
+    rows = q('SELECT id, name, hidden, is_main FROM agents').fetchall()
+    for r in rows:
+        if r['name'].lower() == n or r['name'].lower() == 'ai-' + n:
+            return r
+    for r in rows:
+        if n and n in r['name'].lower():
+            return r
+    return None
+
+
+async def live_pack(names, gap):
+    for name in names:
+        r = find_agent(name)
+        if not r:
+            t = next((x for x in D.AGENTS + TEAM if x['name'].lower() == name.lower()), None)
+            if not t:
+                continue
+            aid = q('INSERT INTO agents(name, role, color, prompt, dept, created) VALUES(?,?,?,?,?,?)',
+                    t['name'], t['role'], t['color'], t['prompt'] + ' ' + VOICE, t.get('dept') or D.guess_dept(t['name'], t['role']), time.time()).lastrowid
+            r = {'id': aid, 'hidden': 1, 'is_main': 0}
+        if r['is_main'] or not r['hidden']:
+            continue
+        live_show(r['id'])
+        await asyncio.sleep(gap)
+
+
+async def live(req):
+    """Режим эфира. action: start (в офисе остаётся один оркестратор), pack (10 агентов входят по одному),
+    add {name} (вернуть или нанять агента), remove {name} (убрать из офиса), end (вернуть всех), team (кто сейчас в офисе)."""
+    d = await req.json()
+    act = d.get('action')
+    if act == 'start':
+        q('UPDATE agents SET hidden=1 WHERE is_main=0')
+        event('live', None, None, 'start')
+    elif act == 'pack':
+        names = d.get('names') or LIVE_PACK
+        asyncio.create_task(live_pack(names, float(d.get('gap', 3.5))))
+        return web.json_response({'ok': True, 'names': names, 'seconds': round(len(names) * float(d.get('gap', 3.5)))})
+    elif act == 'add':
+        r = find_agent(d.get('name', ''))
+        if not r:
+            return web.json_response({'ok': False, 'error': 'нет такого агента, найми его: office.py hire'})
+        live_show(r['id'])
+        return web.json_response({'ok': True, 'name': r['name']})
+    elif act == 'remove':
+        r = find_agent(d.get('name', ''))
+        if not r or r['is_main']:
+            return web.json_response({'ok': False, 'error': 'нет такого агента'})
+        q('UPDATE agents SET hidden=1 WHERE id=?', r['id'])
+        event('fire', r['id'])
+        return web.json_response({'ok': True, 'name': r['name']})
+    elif act == 'end':
+        q('UPDATE agents SET hidden=0')
+        event('live', None, None, 'end')
+    elif act != 'team':
+        return web.json_response({'ok': False, 'error': 'action: start | pack | add | remove | end | team'}, status=400)
+    shown = [r['name'] for r in q('SELECT name FROM agents WHERE COALESCE(hidden,0)=0 ORDER BY is_main DESC, id').fetchall()]
+    return web.json_response({'ok': True, 'team': shown})
 
 
 async def inbox(req):
@@ -698,7 +784,7 @@ def make_app():
     app.add_routes([
         web.get('/', index), web.get('/tower', tower), web.get('/tower.jpg', tower_img), web.get('/health', health),
         web.post('/api/login', login), web.get('/api/state', state), web.get('/api/messages', messages),
-        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/inbox', inbox), web.post('/api/agents', save_agent),
+        web.post('/api/chat', chat), web.post('/api/tasks', new_task), web.post('/api/tasks/{id}/done', finish_task), web.post('/api/inbox', inbox), web.post('/api/live', live), web.post('/api/agents', save_agent),
         web.delete('/api/agents/{id}', delete_agent), web.get('/api/templates', templates),
     ])
     app.on_startup.append(on_start)

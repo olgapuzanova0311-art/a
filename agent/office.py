@@ -5,6 +5,7 @@ python agent/office.py task "Имя агента" "задача"    поручи
 python agent/office.py wait 12 13                    дождаться задач и напечатать отчёты
 python agent/office.py tasks                         последние задачи и их статусы
 python agent/office.py hire "Имя" "роль" "инструкция" нанять нового агента
+python agent/office.py live start|pack|add "Имя"|remove "Имя"|end|team   режим эфира
 """
 import json, os, sys, time, urllib.request, http.cookiejar
 
@@ -64,6 +65,11 @@ def main(cmd, *args):
         names = {a['id']: a['name'] for a in agents()}
         for t in call('/api/state')['tasks'][:15]:
             print(f"{t['id']}. [{t['status']}] {names.get(t['agent_id'], '?')}: {t['title'][:100]}")
+    elif cmd == 'live':
+        # режим эфира: start | pack | add "Имя" | remove "Имя" | end | team
+        act = args[0] if args else 'team'
+        r = call('/api/live', {'action': act, 'name': ' '.join(args[1:])})
+        print(r)
     elif cmd == 'hire':
         r = call('/api/agents', {'name': args[0], 'role': args[1], 'prompt': args[2]})
         print(f"Нанят: {args[0]} (id {r['id']})")
