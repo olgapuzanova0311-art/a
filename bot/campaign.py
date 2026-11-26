@@ -96,6 +96,26 @@ CAMPAIGNS = [
         BUTTON='➡️ ПОДКЛЮЧИТЬСЯ',
         TRACK=False,
     ),
+    dict(
+        KEY='bf_onair_hours',
+        TITLE='Сколько часов в неделю вы отдаёте рутине',
+        STAGE='all',
+        START=1795710000,               # 26.11.2026 19:20 МСК
+        UNTIL=1795712400,               # 26.11.2026 20:00 МСК
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT=(
+            '🔥🔥🔥 СКОЛЬКО ЧАСОВ В НЕДЕЛЮ ВЫ ОТДАЁТЕ РУТИНЕ? ⏳\n\n'
+            'Сейчас на эфире считаем это вместе:\n'
+            'какие задачи можно отдать агенту уже сегодня\n'
+            'сколько часов они вернут\n'
+            'куда эти часы потратить с пользой'
+        ),
+        NAMED=False,
+        LINK='https://start.bizon365.ru/room/olgapuzanova/7fc56ae89e9d',
+        BUTTON='➡️ ПОДКЛЮЧАЙТЕСЬ, сейчас покажу на примерах',
+        TRACK=False,
+    ),
 ]
 TEST_USERNAMES = ('olgapuzanovva', 'olgapuzanovvva')
 
