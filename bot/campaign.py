@@ -118,6 +118,21 @@ CAMPAIGNS = [
         TRACK=False,
     ),
     dict(
+        KEY='bf_claude_block_aaa',
+        TITLE='Успели забрать подарки и ссылку?',
+        STAGE='all',
+        START=1795726920,               # 27.11.2026 00:02 МСК, через 30 минут после рассылки про блокировки
+        UNTIL=1795729200,
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT='{hello}вы успели забрать подарки и ссылку на закрытый эфир? 👆👆👆',
+        NAMED=True,
+        HELLO='{name}, ',               # без имени: «Вы успели забрать…»
+        LINK='https://bf.olgapuzanovva.ru/',
+        BUTTON='✅ ЗАБРАТЬ ПОДАРКИ ✅',
+        TRACK=False,
+    ),
+    dict(
         KEY='bf_circle_18',
         TITLE='Кружок перед эфиром',
         STAGE='all',
