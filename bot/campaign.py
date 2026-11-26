@@ -70,6 +70,21 @@ def clicks_text():
     return '\n'.join(out)
 
 
+@router.message(Command('campcircle'))
+async def campcircle_cmd(m: Message, command: CommandObject):
+    if not M_.is_admin(m.from_user.id):
+        return
+    if not (m.reply_to_message and m.reply_to_message.video_note):
+        return await m.answer('Запиши или перешли сюда кружок и ответь на него командой /campcircle')
+    M_.set_setting('camp_circle', m.reply_to_message.video_note.file_id)
+    nxt = [c for c in CAMPAIGNS if c.get('CIRCLE') == 'camp_circle']
+    when = ''
+    if nxt:
+        import datetime as _d
+        when = ' Уйдёт всем в ' + _d.datetime.fromtimestamp(nxt[0]['START'] + 10800, _d.timezone.utc).strftime('%H:%M') + ' по Москве.'
+    await m.answer('✅ Кружок сохранён.' + when)
+
+
 @router.message(Command('clicks'))
 async def clicks_cmd(m: Message, command: CommandObject):
     if not M_.is_admin(m.from_user.id):
@@ -78,6 +93,21 @@ async def clicks_cmd(m: Message, command: CommandObject):
 
 # Каждая рассылка ждёт своего START и уходит один раз. Несколько штук можно запланировать сразу.
 CAMPAIGNS = [
+    dict(
+        KEY='bf_circle_18',
+        TITLE='Кружок перед эфиром',
+        STAGE='all',
+        START=1795705200,               # 26.11.2026 18:00 МСК
+        UNTIL=1795708500,               # 26.11.2026 18:55 МСК
+        CIRCLE='camp_circle',           # кружок, который Ольга сохранила командой /campcircle
+        PHOTO=None,
+        PHOTO_URL=None,
+        TEXT='',
+        NAMED=False,
+        LINK='https://bf.olgapuzanovva.ru',
+        BUTTON='➡️ ПОДКЛЮЧИТЬСЯ К ЭФИРУ',
+        TRACK=False,
+    ),
     dict(
         KEY='bf_in15',
         TITLE='Начинаем через 15 минут',
@@ -219,6 +249,14 @@ async def run_one(M, c):
     if START and M.time.time() < START:
         log.info('campaign %s: ждём до %s', KEY, START)
         await asyncio.sleep(START - M.time.time())
+    circle = None
+    if c.get('CIRCLE'):
+        # кружок берём из настроек бота; если его ещё не прислали, ждём до конца окна рассылки
+        while not (circle := M.setting(c['CIRCLE'])):
+            if UNTIL and M.time.time() > UNTIL:
+                log.info('campaign %s: кружок так и не прислали', KEY)
+                return
+            await asyncio.sleep(30)
     try:
         if STAGE.startswith('test'):
             names = [n.lower() for n in TEST_USERNAMES]
@@ -244,7 +282,9 @@ async def run_one(M, c):
                 url = track_url(KEY, r['id'], LINK) if c.get('TRACK') else LINK
                 kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=BUTTON, url=url)] for _ in range(c.get('REPEAT', 1))])
                 text = text_for(c, r['first_name'])
-                if photo and len(text) > 1024:
+                if circle:
+                    await M.bot.send_video_note(r['id'], circle, reply_markup=kb)
+                elif photo and len(text) > 1024:
                     # подпись к фото в Telegram не длиннее 1024 символов: картинку шлём отдельно, текст с кнопкой следом
                     m = await M.bot.send_photo(r['id'], photo)
                     photo = m.photo[-1].file_id
@@ -262,7 +302,7 @@ async def run_one(M, c):
                 log.info('campaign %s: %s', r['id'], e)
             await asyncio.sleep(0.05)
         mx = 0
-        if STAGE == 'all' and M.MX:
+        if STAGE == 'all' and M.MX and not circle:  # кружки MAX не поддерживает
             for r in M.MX.q('SELECT * FROM max_users WHERE blocked=0 ORDER BY id').fetchall():
                 if M.MX.q('SELECT 1 FROM max_sent WHERE user_id=? AND key=?', r['id'], mark_key).fetchone():
                     continue
